@@ -16,6 +16,8 @@
   let annotations=[],annotationMore=false,annotationOffset=0,annotationLoading=false;
   let selected=null,editId=null,color='yellow',translation=null,penMode=false,drawing=null,pen=null;
   let words=[],wordOffset=0,wordsMore=false,wordLoading=false,wordsLoadedFor='',vocabularyEpoch=0;
+  let toolsVisible=true;
+  try{toolsVisible=localStorage.getItem('lowf.reader.toolsHidden')!=='1';}catch{}
   const uid=()=>String(bridge.getContext().user?.id||'');
   const key=c=>[c.bookId,c.chapter,c.page,String(c.user?.id||'')].join('|');
   const samePage=a=>a.bookId===context.bookId&&a.chapter===context.chapter&&a.page===context.page;
@@ -35,7 +37,30 @@
   const vocabularyDialog=document.createElement('dialog');vocabularyDialog.id='vocabularyDialog';vocabularyDialog.className='reader-vocabulary-dialog';vocabularyDialog.setAttribute('aria-labelledby','vocabularyTitle');vocabularyDialog.innerHTML=`<div class="reader-tools-heading"><div><small>GÓP NHẶT MỖI NGÀY</small><h2 id="vocabularyTitle">Sổ từ vựng của tôi</h2></div>${toolButton('vocabulary-close','×','class="reader-tool-close" aria-label="Đóng sổ từ vựng"')}</div><p class="reader-tool-help">Đọc một cuốn sách, mang theo một vài từ mới.</p><div class="reader-vocabulary-host"></div>`;document.body.append(vocabularyDialog);
   const speech=window.LowfSpeech?.mount($('#readerSpeech'),()=>bridge.getContext());
   function status(id,message,error=false){const node=$(id);node.textContent=message;node.classList.toggle('reader-error',error);}
+  function setToolsVisibility(visible,{announce=false}={}){
+    toolsVisible=!!visible;
+    try{localStorage.setItem('lowf.reader.toolsHidden',toolsVisible?'0':'1');}catch{}
+    reader.classList.toggle('reader-focus-clean',!toolsVisible);
+    ribbon.hidden=!toolsVisible;
+    if(!toolsVisible){
+      hidePanel();
+      if(penMode)setPenMode(false);
+      selectionBar.hidden=true;
+      window.getSelection()?.removeAllRanges();
+    }
+    const eyeBtn=$('#readerEyeToggle',reader);
+    if(eyeBtn){
+      eyeBtn.setAttribute('aria-pressed',String(toolsVisible));
+      eyeBtn.classList.toggle('is-hidden-tools',!toolsVisible);
+      eyeBtn.innerHTML=`<i data-lucide="${toolsVisible?'eye':'eye-off'}" aria-hidden="true"></i><span>${toolsVisible?'Công cụ':'Hiện công cụ'}</span>`;
+      window.lucide?.createIcons();
+    }
+    if(announce){
+      bridge.toast(toolsVisible?'Đã hiện thanh công cụ đọc, nghe, ghi chú và bút.':'Chế độ tập trung: đã ẩn thanh công cụ. Bấm biểu tượng con mắt để bật lại.');
+    }
+  }
   function setTab(name){
+    if(!toolsVisible)setToolsVisibility(true);
     if(penMode&&name!=='notes')setPenMode(false);
     panel.hidden=false;reader.classList.add('tools-open');
     $$('[role=tab]',panel).forEach(n=>{const active=n.dataset.readerTool===name;n.setAttribute('aria-selected',String(active));n.tabIndex=active?0:-1;});
@@ -48,7 +73,7 @@
   function noteSelection(value){selected=value;editId=null;$('#readerQuote').hidden=!value?.quote;$('#readerQuote').textContent=value?.quote||'';$('#readerNote').value='';$('#readerNote').placeholder=value?.quote?'Điều gì khiến bạn dừng lại ở đoạn này?':'Một ý tưởng đáng giữ lại…';status('#noteStatus','');}
   function rootOffset(root,node,offset){const range=document.createRange();range.selectNodeContents(root);range.setEnd(node,offset);return range.toString().length;}
   function captureSelection(){
-    if(!reader.open||!context.ready||penMode)return;
+    if(!reader.open||!context.ready||penMode||!toolsVisible){selectionBar.hidden=true;return;}
     const selection=window.getSelection();if(!selection?.rangeCount||selection.isCollapsed){selectionBar.hidden=true;return;}
     const range=selection.getRangeAt(0),root=textRoot();
     if(!root.contains(range.startContainer)||!root.contains(range.endContainer)){selectionBar.hidden=true;return;}
@@ -186,6 +211,7 @@
   }
   async function handle(button){
     const action=button.dataset.readerTool,id=button.dataset.id;
+    if(action==='toggle-tools-visibility'){setToolsVisibility(!toolsVisible,{announce:true});return;}
     if(['notes','translate','speech','vocabulary'].includes(action)){setTab(action);return;}
     if(action==='panel-close'){hidePanel();return;}
     if(action==='color'){chooseColor(button.dataset.color);return;}
@@ -225,5 +251,5 @@
   vocabularyDialog.addEventListener('cancel',()=>window.LowfSpeech?.stop());
   window.addEventListener('pagehide',()=>{window.LowfSpeech?.stop();resizeObserver.disconnect();});
   window.LowfReaderTools=Object.freeze({openVocabulary});
-  userKey=uid();renderVocabulary();if(reader.open)readerChanged();
+  userKey=uid();renderVocabulary();setToolsVisibility(toolsVisible);if(reader.open)readerChanged();
 })();

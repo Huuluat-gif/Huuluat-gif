@@ -598,7 +598,8 @@ export default function AdminStudio({environment='production'}:{environment?:'pr
   const [loading, setLoading] = useState(false),
     [loadError, setLoadError] = useState(""),
     [query, setQuery] = useState(""),
-    [filter, setFilter] = useState("all");
+    [filter, setFilter] = useState("all"),
+    [bookCategory, setBookCategory] = useState("all");
   const [editor, setEditor] = useState<{ kind: Kind; item: RecordItem } | null>(
       null,
     ),
@@ -1111,21 +1112,52 @@ export default function AdminStudio({environment='production'}:{environment?:'pr
         <div className={styles.studioBadge}>
           STUDIO <span>QUẢN TRỊ</span>
         </div>
-        <p className={styles.navLabel}>KHÔNG GIAN SÁNG TẠO</p>
+        <p className={styles.navLabel}>TỔNG QUAN</p>
         <nav className={styles.nav}>
-          {tabs.map(({ id, label, icon: Icon }) => (
+          {tabs.filter(t => t.id === "overview").map(({ id, label, icon: Icon }) => (
             <button
               key={id}
               className={tab === id ? styles.navActive : ""}
               onClick={() => nav(id)}
               aria-current={tab === id ? "page" : undefined}
             >
-              <Icon size={19} />
+              <Icon size={18} />
               {label}
-              {id === "design" && <span className={styles.navNew}>Mới</span>}
-              {tab === id && (
-                <ChevronRight size={15} className={styles.navArrow} />
-              )}
+              {tab === id && <ChevronRight size={15} className={styles.navArrow} />}
+            </button>
+          ))}
+        </nav>
+        <p className={styles.navLabel}>NỘI DUNG &amp; THƯ VIỆN</p>
+        <nav className={styles.nav}>
+          {tabs.filter(t => ["books", "tracks", "videos"].includes(t.id)).map(({ id, label, icon: Icon }) => {
+            const count = content[id as Kind]?.filter(x => x.status !== "archived").length ?? 0;
+            return (
+              <button
+                key={id}
+                className={tab === id ? styles.navActive : ""}
+                onClick={() => nav(id)}
+                aria-current={tab === id ? "page" : undefined}
+              >
+                <Icon size={18} />
+                {label}
+                <span className={styles.navCount}>{count}</span>
+              </button>
+            );
+          })}
+        </nav>
+        <p className={styles.navLabel}>GIAO DIỆN &amp; BÁN HÀNG</p>
+        <nav className={styles.nav}>
+          {tabs.filter(t => ["design", "plans", "orders", "payments"].includes(t.id)).map(({ id, label, icon: Icon }) => (
+            <button
+              key={id}
+              className={tab === id ? styles.navActive : ""}
+              onClick={() => nav(id)}
+              aria-current={tab === id ? "page" : undefined}
+            >
+              <Icon size={18} />
+              {label}
+              {id === "design" && <span className={styles.navNew}>Studio</span>}
+              {tab === id && <ChevronRight size={15} className={styles.navArrow} />}
             </button>
           ))}
         </nav>
@@ -1517,6 +1549,20 @@ export default function AdminStudio({environment='production'}:{environment?:'pr
                         aria-label={`Tìm ${labels[tab].single}`}
                       />
                     </label>
+                    {tab === "books" && (
+                      <select
+                        className={styles.categorySelect}
+                        value={bookCategory}
+                        onChange={(e) => setBookCategory(e.target.value)}
+                        aria-label="Lọc theo thể loại sách"
+                      >
+                        <option value="all">Tất cả thể loại</option>
+                        <option value="vanhocvn">Văn học Việt Nam</option>
+                        <option value="vanhocqt">Văn học nước ngoài</option>
+                        <option value="kinhte">Kinh tế &amp; Đầu tư</option>
+                        <option value="dacbiet">Tuyển chọn</option>
+                      </select>
+                    )}
                     <div className={styles.filterTabs}>
                       {[
                         ["all", "Tất cả"],
@@ -1538,7 +1584,10 @@ export default function AdminStudio({environment='production'}:{environment?:'pr
                     kind={tab}
                     items={content[tab].filter(
                       (item) =>
-                        titleOf(item)
+                        (tab !== "books" ||
+                          bookCategory === "all" ||
+                          item.category === bookCategory) &&
+                        `${titleOf(item)} ${item.author || ""}`
                           .toLocaleLowerCase("vi")
                           .includes(query.toLocaleLowerCase("vi")) &&
                         (filter === "all" ||
