@@ -44,21 +44,24 @@
     applyPlusMode(next);
   }
 
-  /* Capture /api/bootstrap payload passively so we have book covers & hero asset */
-  const origFetch = window.fetch.bind(window);
-  window.fetch = async function (...args) {
-    const res = await origFetch(...args);
-    try {
-      const url = typeof args[0] === 'string' ? args[0] : args[0]?.url || '';
-      if (url.includes('/api/bootstrap') && res.ok) {
-        res.clone().json().then((data) => {
+  /* Ensure cachedBootstrap is always loaded even if lowf.js fetched before us */
+  let bootstrapLoading = false;
+  function ensureBootstrapData() {
+    if (cachedBootstrap || bootstrapLoading) return;
+    bootstrapLoading = true;
+    fetch('/api/bootstrap', { credentials: 'same-origin', cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data) {
           cachedBootstrap = data;
           enhanceCurrentView();
-        }).catch(() => {});
-      }
-    } catch {}
-    return res;
-  };
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        bootstrapLoading = false;
+      });
+  }
 
   function coverOf(b) {
     if (!b) return '';
@@ -96,9 +99,13 @@
   }
 
   /* 2. Sync Active Top Exhibition Nav Link */
+  function currentView() {
+    const activeSidebar = document.querySelector('.sidebar .nav-item.active[data-view]');
+    if (activeSidebar?.dataset.view) return activeSidebar.dataset.view;
+    return new URLSearchParams(location.search).get('view') || 'dashboard';
+  }
   function syncTopNav() {
-    const params = new URLSearchParams(location.search);
-    const view = params.get('view') || 'dashboard';
+    const view = currentView();
     document.querySelectorAll('.exh-link').forEach((btn) => {
       btn.classList.toggle('active', btn.dataset.view === view);
     });
@@ -261,7 +268,7 @@
     }
 
     /* Inject Section 3: 50/50 Asymmetric Visual & Multimedia Bento Showcase (like stbook Section 3) */
-    if (!document.getElementById('exh-sec-gallery')) {
+    if (cachedBootstrap && !document.getElementById('exh-sec-gallery')) {
       const heroAsset = cachedBootstrap?.settings?.hero?.imageAssetId || cachedBootstrap?.settings?.heroImageAssetId;
       const featuredImg = heroAsset ? `/api/assets/${encodeURIComponent(heroAsset)}` : coverOf(books[0]);
       const trackCount = cachedBootstrap?.tracks?.length || 8;
@@ -430,9 +437,9 @@
   }
 
   function enhanceCurrentView() {
+    ensureBootstrapData();
     syncTopNav();
-    const params = new URLSearchParams(location.search);
-    const view = params.get('view') || 'dashboard';
+    const view = currentView();
     if (view === 'dashboard') {
       enhanceDashboardHero();
       enhanceDashboardSections();
