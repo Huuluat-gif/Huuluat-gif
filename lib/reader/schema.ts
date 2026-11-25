@@ -1,0 +1,6 @@
+export const readerSchemaStatements=[
+ `CREATE TABLE IF NOT EXISTS lowf_reader_annotations(id uuid PRIMARY KEY,user_id text NOT NULL,book_id text NOT NULL CHECK(char_length(book_id) BETWEEN 1 AND 180),chapter integer NOT NULL DEFAULT 0 CHECK(chapter>=0 AND chapter<=9999),page integer NOT NULL DEFAULT 1 CHECK(page>=1 AND page<=100000),data jsonb NOT NULL CHECK(jsonb_typeof(data)='object'),created_at timestamptz NOT NULL DEFAULT now(),updated_at timestamptz NOT NULL DEFAULT now())`,
+ `CREATE INDEX IF NOT EXISTS lowf_reader_annotations_user_book_idx ON lowf_reader_annotations(user_id,book_id,updated_at DESC)`,
+ `CREATE TABLE IF NOT EXISTS lowf_reader_vocabulary(id uuid PRIMARY KEY,user_id text NOT NULL,word text NOT NULL CHECK(char_length(word) BETWEEN 1 AND 200),normalized_word text NOT NULL,translation text NOT NULL CHECK(char_length(translation) BETWEEN 1 AND 2000),ipa text NOT NULL DEFAULT '' CHECK(char_length(ipa)<=160),source_lang text NOT NULL,target_lang text NOT NULL,book_id text,created_at timestamptz NOT NULL DEFAULT now(),updated_at timestamptz NOT NULL DEFAULT now(),UNIQUE(user_id,normalized_word,source_lang,target_lang))`,
+ `CREATE INDEX IF NOT EXISTS lowf_reader_vocabulary_user_updated_idx ON lowf_reader_vocabulary(user_id,updated_at DESC)`
+];

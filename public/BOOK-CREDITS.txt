@@ -1,0 +1,49 @@
+LOWF ENGLISH CLASSICS
+Complete English texts from Standard Ebooks. Source edition licenses preserved below; covers are original Lowf artwork.
+
+Alice’s Adventures in Wonderland — Lewis Carroll
+https://standardebooks.org/ebooks/lewis-carroll/alices-adventures-in-wonderland/john-tenniel
+Source commit: 8da5cac1a4ec2c811322eff79daa5e11e851a813
+The source text and artwork in this ebook are believed to be in the United States public domain; that is, they are believed to be free of copyright restrictions in the United States. They may still be copyrighted in other countries, so users located outside of the United States must check their local laws before using this ebook. The creators of, and contributors to, this ebook dedicate their contributions to the worldwide public domain via the terms in the [CC0 1.0 Universal Public Domain Dedication](https://creativecommons.org/publicdomain/zero/1.0/).
+
+
+Pride and Prejudice — Jane Austen
+https://standardebooks.org/ebooks/jane-austen/pride-and-prejudice
+Source commit: a77a2dbbc0d11a17d6c68c581f17e26a65bd8168
+The source text and artwork in this ebook are believed to be in the United States public domain; that is, they are believed to be free of copyright restrictions in the United States. They may still be copyrighted in other countries, so users located outside of the United States must check their local laws before using this ebook. The creators of, and contributors to, this ebook dedicate their contributions to the worldwide public domain via the terms in the [CC0 1.0 Universal Public Domain Dedication](https://creativecommons.org/publicdomain/zero/1.0/).
+
+
+The Adventures of Sherlock Holmes — Arthur Conan Doyle
+https://standardebooks.org/ebooks/arthur-conan-doyle/the-adventures-of-sherlock-holmes
+Source commit: 6c94b03802c2fb2059b7f1521665a601d640f77e
+The source text and artwork in this ebook are believed to be in the United States public domain; that is, they are believed to be free of copyright restrictions in the United States. They may still be copyrighted in other countries, so users located outside of the United States must check their local laws before using this ebook. The creators of, and contributors to, this ebook dedicate their contributions to the worldwide public domain via the terms in the [CC0 1.0 Universal Public Domain Dedication](https://creativecommons.org/publicdomain/zero/1.0/).
+
+
+Frankenstein — Mary Shelley
+https://standardebooks.org/ebooks/mary-shelley/frankenstein
+Source commit: 52a3e09c21b3cebcb8eec129d274b8801a229147
+The source text and artwork in this ebook are believed to be in the United States public domain; that is, they are believed to be free of copyright restrictions in the United States. They may still be copyrighted in other countries, so users located outside of the United States must check their local laws before using this ebook. The creators of, and contributors to, this ebook dedicate their contributions to the worldwide public domain via the terms in the [CC0 1.0 Universal Public Domain Dedication](https://creativecommons.org/publicdomain/zero/1.0/).
+
+
+Dracula — Bram Stoker
+https://standardebooks.org/ebooks/bram-stoker/dracula
+Source commit: 70f97b61dec0cb43a613c6be79cf65fc58c21e90
+The source text and artwork in this ebook are believed to be in the United States public domain; that is, they are believed to be free of copyright restrictions in the United States. They may still be copyrighted in other countries, so users located outside of the United States must check their local laws before using this ebook. The creators of, and contributors to, this ebook dedicate their contributions to the worldwide public domain via the terms in the [CC0 1.0 Universal Public Domain Dedication](https://creativecommons.org/publicdomain/zero/1.0/).
+
+
+Treasure Island — Robert Louis Stevenson
+https://standardebooks.org/ebooks/robert-louis-stevenson/treasure-island
+Source commit: 8bd59dd6644e732c748d17e89b7370aacda67d76
+The source text and artwork in this ebook are believed to be in the United States public domain; that is, they are believed to be free of copyright restrictions in the United States. They may still be copyrighted in other countries, so users located outside of the United States must check their local laws before using this ebook. The creators of, and contributors to, this ebook dedicate their contributions to the worldwide public domain via the terms in the [CC0 1.0 Universal Public Domain Dedication](https://creativecommons.org/publicdomain/zero/1.0/).
+
+
+The Time Machine — H. G. Wells
+https://standardebooks.org/ebooks/h-g-wells/the-time-machine
+Source commit: fbd98543d4195ffdd8dbb90facb4309223bcb147
+The source text and artwork in this ebook are believed to be in the United States public domain; that is, they are believed to be free of copyright restrictions in the United States. They may still be copyrighted in other countries, so users located outside of the United States must check their local laws before using this ebook. The creators of, and contributors to, this ebook dedicate their contributions to the worldwide public domain via the terms in the [CC0 1.0 Universal Public Domain Dedication](https://creativecommons.org/publicdomain/zero/1.0/).
+
+
+The Wonderful Wizard of Oz — L. Frank Baum
+https://standardebooks.org/ebooks/l-frank-baum/the-wonderful-wizard-of-oz
+Source commit: d32d58737c6a493e1a62c9c97e5a3e29aaed4203
+The source text and artwork in this ebook are believed to be in the United States public domain; that is, they are believed to be free of copyright restrictions in the United States. They may still be copyrighted in other countries, so users located outside of the United States must check their local laws before using this ebook. The creators of, and contributors to, this ebook dedicate their contributions to the worldwide public domain via the terms in the [CC0 1.0 Universal Public Domain Dedication](https://creativecommons.org/publicdomain/zero/1.0/).

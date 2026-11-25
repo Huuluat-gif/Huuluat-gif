@@ -1,0 +1,8 @@
+node_modules
+.next
+.env*
+.git
+work
+playwright-report
+test-results
+private-generated

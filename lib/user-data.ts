@@ -1,0 +1,4 @@
+import { getSQL } from './db';
+import { dayKey } from './api';
+export async function getUserData(userId:string){const sql=getSQL();const [rows,days]=await Promise.all([sql`SELECT saved,progress FROM lowf_user_data WHERE user_id=${userId}`,sql`SELECT to_char(day,'YYYY-MM-DD') AS "day",seconds FROM lowf_reading_days WHERE user_id=${userId}`]);return{saved:rows[0]?.saved||[],progress:rows[0]?.progress||{},secondsByDay:Object.fromEntries(days.map(d=>[d.day,Number(d.seconds)]))};}
+export function statsFor(secondsByDay:Record<string,number>){const day=dayKey(),total=Object.values(secondsByDay).reduce((s,x)=>s+x,0),xp=Math.floor(total/60)*10;return{xp,level:Math.floor(xp/1000)+1,todaySeconds:secondsByDay[day]||0,monthSeconds:Object.entries(secondsByDay).filter(([d])=>d.startsWith(day.slice(0,7))).reduce((s,[,v])=>s+v,0)};}
