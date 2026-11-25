@@ -321,10 +321,13 @@ body {
   animation: lowfShimmer 4s linear infinite;
 }
 [data-plus="on"] .plus-switcher {
-  background: linear-gradient(135deg, #4f46e5, #059669);
-  border-color: transparent;
-  color: #fff;
+  background: linear-gradient(135deg, #4f46e5, #059669) !important;
+  border-color: transparent !important;
+  color: #ffffff !important;
   box-shadow: 0 8px 22px -6px rgba(79, 70, 229, 0.55);
+}
+[data-plus="on"] .plus-switcher span {
+  color: #ffffff !important;
 }
 [data-plus="on"] .plus-switcher .plus-pill {
   background: rgba(255, 255, 255, 0.22);
@@ -658,8 +661,13 @@ body {
 .filter.active {
   background: linear-gradient(135deg, var(--tech-accent), var(--tech-indigo)) !important;
   border-color: transparent !important;
-  color: #fff !important;
-  box-shadow: 0 6px 16px -4px rgba(16, 185, 129, 0.45);
+  color: #ffffff !important;
+  box-shadow: 0 6px 16px -4px rgba(16, 185, 129, 0.38) !important;
+}
+[data-plus="on"] .filter.active {
+  background: linear-gradient(135deg, #6366f1, #10b981) !important;
+  color: #ffffff !important;
+  box-shadow: 0 6px 18px -4px rgba(99, 102, 241, 0.45) !important;
 }
 
 .book-shelf {
