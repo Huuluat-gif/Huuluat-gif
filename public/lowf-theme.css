@@ -7,23 +7,23 @@
 @import url('https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
 :root {
-  --exh-bg: #fcfaf0;
-  --exh-surface: #ffffff;
-  --exh-surface-soft: #f5f1e3;
-  --exh-ink: #1e2420;
-  --exh-muted: #6e6a5e;
-  --exh-line: rgba(149, 104, 60, 0.18);
-  --exh-box: #95683c;
-  --exh-box-dark: #78502b;
-  --exh-gold-light: #fff6b8;
+  --exh-bg: #f8f5ea;
+  --exh-surface: #fdfcf7;
+  --exh-surface-soft: #f1ece0;
+  --exh-ink: #1e2822;
+  --exh-muted: #636b60;
+  --exh-line: rgba(149, 104, 60, 0.17);
+  --exh-box: #8c6239;
+  --exh-box-dark: #704c29;
+  --exh-gold-light: #fff4b8;
   --exh-gold-foil: #eab308;
-  --exh-header-bg: rgba(12, 34, 29, 0.97);
-  --exh-hero-bg: radial-gradient(ellipse at 50% 18%, #1d4d42 0%, #0e2a24 55%, #071714 100%);
-  --exh-mist: linear-gradient(180deg, rgba(252, 250, 240, 0) 0%, rgba(252, 250, 240, 0.82) 65%, #fcfaf0 100%);
-  --exh-footer-bg: linear-gradient(135deg, #0d2923 0%, #163b33 50%, #091d19 100%);
-  --exh-shadow-sm: 0 4px 14px rgba(45, 36, 24, 0.06);
-  --exh-shadow: 0 14px 34px rgba(45, 36, 24, 0.11);
-  --exh-book-shadow: -8px 14px 24px rgba(25, 20, 14, 0.24);
+  --exh-header-bg: rgba(15, 38, 32, 0.97);
+  --exh-hero-bg: radial-gradient(ellipse at 50% 18%, #1e4d41 0%, #102b24 55%, #081814 100%);
+  --exh-mist: linear-gradient(180deg, rgba(248, 245, 234, 0) 0%, rgba(248, 245, 234, 0.84) 65%, #f8f5ea 100%);
+  --exh-footer-bg: linear-gradient(135deg, #0e2923 0%, #173b33 50%, #0a1d19 100%);
+  --exh-shadow-sm: 0 4px 14px rgba(38, 32, 22, 0.06);
+  --exh-shadow: 0 14px 34px rgba(38, 32, 22, 0.1);
+  --exh-book-shadow: -8px 14px 24px rgba(25, 20, 14, 0.22);
   --spring-out: cubic-bezier(0.16, 1, 0.3, 1);
   --spring-snappy: cubic-bezier(0.22, 1, 0.36, 1);
   --font-ui: 'Plus Jakarta Sans', 'Be Vietnam Pro', -apple-system, sans-serif;
@@ -31,22 +31,22 @@
 }
 
 [data-theme="dark"] {
-  --exh-bg: #0b0e12;
-  --exh-surface: #131820;
-  --exh-surface-soft: #1a212c;
-  --exh-ink: #f3efe6;
-  --exh-muted: #9ca3af;
-  --exh-line: rgba(212, 163, 106, 0.2);
-  --exh-box: #d4a36a;
-  --exh-box-dark: #e6b981;
+  --exh-bg: #101613;
+  --exh-surface: #18211c;
+  --exh-surface-soft: #202c25;
+  --exh-ink: #ebe7db;
+  --exh-muted: #9ca89e;
+  --exh-line: rgba(212, 168, 114, 0.2);
+  --exh-box: #d4a66e;
+  --exh-box-dark: #e6bb86;
   --exh-gold-light: #fde68a;
-  --exh-header-bg: rgba(11, 14, 18, 0.97);
-  --exh-hero-bg: radial-gradient(ellipse at 50% 18%, #163830 0%, #0b1917 58%, #06090d 100%);
-  --exh-mist: linear-gradient(180deg, rgba(11, 14, 18, 0) 0%, rgba(11, 14, 18, 0.84) 65%, #0b0e12 100%);
-  --exh-footer-bg: linear-gradient(135deg, #070a0e 0%, #101c1a 100%);
-  --exh-shadow-sm: 0 4px 16px rgba(0, 0, 0, 0.4);
-  --exh-shadow: 0 16px 38px rgba(0, 0, 0, 0.55);
-  --exh-book-shadow: -10px 16px 30px rgba(0, 0, 0, 0.65);
+  --exh-header-bg: rgba(13, 19, 16, 0.97);
+  --exh-hero-bg: radial-gradient(ellipse at 50% 18%, #183a31 0%, #0d1c18 58%, #090f0d 100%);
+  --exh-mist: linear-gradient(180deg, rgba(16, 22, 19, 0) 0%, rgba(16, 22, 19, 0.86) 65%, #101613 100%);
+  --exh-footer-bg: linear-gradient(135deg, #090e0c 0%, #12201c 100%);
+  --exh-shadow-sm: 0 4px 16px rgba(0, 0, 0, 0.38);
+  --exh-shadow: 0 16px 38px rgba(0, 0, 0, 0.52);
+  --exh-book-shadow: -10px 16px 30px rgba(0, 0, 0, 0.62);
 }
 
 /* ==========================================================================
@@ -153,7 +153,7 @@ body {
   color: var(--exh-ink) !important;
   font-family: var(--font-ui) !important;
   font-size: 14px;
-  overflow-x: hidden;
+  overflow-x: clip;
   -webkit-font-smoothing: antialiased;
 }
 #main {
@@ -1271,6 +1271,14 @@ html.drawer-open .sidebar {
   border: 1px solid rgba(255, 246, 184, 0.26) !important;
   border-radius: 999px !important;
   transform: translate3d(0, 0, 0);
+}
+@media (min-width: 768px) {
+  .player {
+    left: 50% !important;
+    right: auto !important;
+    width: min(760px, calc(100vw - 56px));
+    transform: translate3d(-50%, 0, 0) !important;
+  }
 }
 .player-play { background: var(--exh-box) !important; color: #fff !important; }
 .lowf-eq { display: inline-flex; align-items: flex-end; gap: 2.5px; height: 16px; margin-left: 6px; }

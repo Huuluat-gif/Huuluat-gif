@@ -32,7 +32,7 @@
         'Trên đường ra chợ, tôi gặp một người hàng xóm đang tưới cây. Bác hỏi về mùa mưa, rồi kể chuyện giàn hoa vừa ra nụ. Cuộc trò chuyện không dẫn đến một kết quả nào, nhưng khiến con đường trở nên thân thuộc.',
         'Chúng ta thường đo một ngày bằng số việc hoàn thành. Thử thêm một thước đo khác: hôm nay mình đã có mặt trọn vẹn trong bao nhiêu khoảnh khắc? Câu trả lời không cần dài, cũng không cần giống bất kỳ ai.',
         'Ngày mai có thể vẫn bận. Tôi sẽ vẫn trả lời thư và đi qua những ngã tư đông người. Nhưng trong túi áo, tôi muốn giữ một khoảng lặng nhỏ, để khi cần, có thể trở về với nhịp thở của chính mình.') ]},
-    {id:'peace', title:'Đi tìm bình yên', author:'Minh Lam', category:'vanhocqt', format:'Sách giấy', price:89000, oldPrice:119000, rating:4.8, readers:986, tag:'Bán chạy', cover:cover('peace',['Đi tìm','bình yên'],'Minh Lam','#284D60','#F2E9D9'), description:'Những câu chuyện bên bờ biển, dành cho người đang học cách lắng nghe bản thân.',note, chapters:[
+    {id:'peace', title:'Đi tìm bình yên', author:'Minh Lam', category:'vanhocvn', format:'Sách giấy', price:89000, oldPrice:119000, rating:4.8, readers:986, tag:'Bán chạy', cover:cover('peace',['Đi tìm','bình yên'],'Minh Lam','#284D60','#F2E9D9'), description:'Những câu chuyện bên bờ biển, dành cho người đang học cách lắng nghe bản thân.',note, chapters:[
       chapter('01 — Thành phố sau cơn mưa',
         'Cơn mưa vừa ngừng khi Linh rời cửa hiệu. Mặt đường giữ lại ánh đèn thành những vệt dài, còn mùi đất ẩm len qua khe cửa. Lần đầu trong nhiều tuần, cô không vội gọi xe.',
         'Cô đi dọc con phố quen, nhận ra tiệm bánh đã thay rèm cửa và gốc bằng lăng đang rụng lá. Thành phố vẫn ồn, nhưng giữa những âm thanh ấy có một khoảng yên vừa đủ cho một người đi bộ.',
@@ -84,7 +84,7 @@
         'Một ứng dụng mới giúp Nam nhìn biểu đồ đẹp hơn, nhưng không tự ghi lại mọi quyết định. Cậu chọn một tối mỗi tuần để xem lại số dư, khoản cần thanh toán và điều đã làm được.',
         'Thói quen ấy không khiến mọi lo lắng biến mất. Nó khiến những câu hỏi trở nên rõ hơn, từ đó cậu có thể tìm thông tin phù hợp thay vì làm theo một lời hứa chung chung.',
         'Nội dung này chỉ là bài đọc minh họa về quản lý cá nhân, không phải tư vấn đầu tư. Với những quyết định tài chính quan trọng, hãy kiểm tra điều kiện thực tế và tìm sự hỗ trợ chuyên môn khi cần.') ]},
-    {id:'clear', title:'Những ngày trong veo', author:'Thu An', category:'vanhocqt', format:'Ebook Free', price:0, oldPrice:59000, rating:4.8, readers:721, tag:'Miễn phí', cover:cover('clear',['Những ngày','trong veo'],'Thu An','#F3E8D8','#765841'), description:'Những lát cắt đời thường ấm áp, như một tách trà bên ô cửa ngập nắng.',note, chapters:[
+    {id:'clear', title:'Những ngày trong veo', author:'Thu An', category:'vanhocvn', format:'Ebook Free', price:0, oldPrice:59000, rating:4.8, readers:721, tag:'Miễn phí', cover:cover('clear',['Những ngày','trong veo'],'Thu An','#F3E8D8','#765841'), description:'Những lát cắt đời thường ấm áp, như một tách trà bên ô cửa ngập nắng.',note, chapters:[
       chapter('01 — Tiệm trà ở cuối ngõ',
         'Tiệm chỉ có bốn chiếc bàn và một cửa sổ nhìn ra giàn hoa. Chủ tiệm không hỏi tôi có vội không; cô chỉ đặt xuống một bình nước ấm và để tôi chọn chỗ ngồi.',
         'Tôi mang theo công việc, nhưng cuối cùng lại nhìn những giọt nước đọng bên thành cốc. Ngoài ngõ, một con mèo nằm im dưới bóng xe đạp. Buổi chiều không có gì đặc biệt, và chính điều ấy khiến tôi dễ chịu.',
@@ -97,7 +97,7 @@
         'Tôi từng chỉ chụp ảnh khi đi xa. Sau này, album có thêm cửa sổ buổi sáng, bữa cơm nấu hơi mặn và đôi giày để cạnh cửa. Những thứ nhỏ bé ấy kể khá chính xác về cuộc sống của tôi.',
         'Một ngày để nhớ không cần phải hoàn hảo. Nó có thể có một cuộc gọi nhỡ, cơn mưa bất chợt và một việc chưa xong. Chỉ cần đâu đó có khoảnh khắc ta muốn giữ lại.',
         'Trước khi ngủ, tôi viết ba dòng về hôm nay. Đôi khi chỉ có một dòng. Việc tìm một điều để viết đã khiến tôi nhìn ngày mai bằng đôi mắt chú ý hơn.') ]},
-    {id:'atlas', title:'Bản đồ của những giấc mơ', author:'Khánh Du', category:'vanhocqt', format:'Sách giấy', price:95000, oldPrice:125000, rating:4.6, readers:418, tag:'Khám phá', cover:cover('atlas',['Bản đồ của','những giấc mơ'],'Khánh Du','#243F3E','#F2E5C5'), description:'Một hành trình hư cấu về lựa chọn, những ngã rẽ và lòng can đảm bắt đầu lại.',note, chapters:[
+    {id:'atlas', title:'Bản đồ của những giấc mơ', author:'Khánh Du', category:'vanhocvn', format:'Sách giấy', price:95000, oldPrice:125000, rating:4.6, readers:418, tag:'Khám phá', cover:cover('atlas',['Bản đồ của','những giấc mơ'],'Khánh Du','#243F3E','#F2E5C5'), description:'Một hành trình hư cấu về lựa chọn, những ngã rẽ và lòng can đảm bắt đầu lại.',note, chapters:[
       chapter('01 — Con đường chưa có tên',
         'Tấm bản đồ trong cửa hiệu không ghi tên thành phố. Nó chỉ có những đường cong, một dấu chấm đỏ và lời nhắc ở góc giấy: hãy bắt đầu từ nơi bạn đang đứng.',
         'Du mua nó vì tò mò. Khi bước ra đường, cậu nhận ra mình đã đi cùng một lối về nhà suốt nhiều năm. Hôm ấy, cậu rẽ vào con ngõ bên trái, nơi có tiếng đàn vọng qua một cánh cửa mở.',

@@ -47,3 +47,12 @@ The Wonderful Wizard of Oz — L. Frank Baum
 https://standardebooks.org/ebooks/l-frank-baum/the-wonderful-wizard-of-oz
 Source commit: d32d58737c6a493e1a62c9c97e5a3e29aaed4203
 The source text and artwork in this ebook are believed to be in the United States public domain; that is, they are believed to be free of copyright restrictions in the United States. They may still be copyrighted in other countries, so users located outside of the United States must check their local laws before using this ebook. The creators of, and contributors to, this ebook dedicate their contributions to the worldwide public domain via the terms in the [CC0 1.0 Universal Public Domain Dedication](https://creativecommons.org/publicdomain/zero/1.0/).
+
+
+ADDITIONAL PUBLIC DOMAIN SELECTIONS (PROJECT GUTENBERG)
+Curated public-domain English chapters with original Lowf cover artwork:
+- As a Man Thinketh — James Allen (1903) · https://www.gutenberg.org/ebooks/4507
+- The Prophet — Kahlil Gibran (1923) · https://www.gutenberg.org/ebooks/58585
+- Walden — Henry David Thoreau (1854) · https://www.gutenberg.org/ebooks/205
+- The Happy Prince and Other Tales — Oscar Wilde (1888) · https://www.gutenberg.org/ebooks/902
+- Meditations — Marcus Aurelius, trans. George Long · https://www.gutenberg.org/ebooks/2680

@@ -81,9 +81,25 @@
 .reader-vocabulary-dialog>.reader-tool-help{margin-bottom:20px}
 .speech-field>span{display:flex;justify-content:space-between;gap:10px}
 .speech-field input[type=range]{accent-color:var(--green);width:100%;padding:5px 0;margin-top:4px}
-.speech-help,.speech-progress{color:var(--muted);font-size:10px;line-height:1.8;margin-bottom:14px}
-.speech-progress{margin:0;flex-basis:100%}
-.speech-status{margin-top:14px}
+.speech-help,.speech-progress{color:var(--muted);font-size:10px;line-height:1.8;margin-bottom:12px}
+.speech-progress{margin:0;margin-left:auto;font-weight:600;color:var(--green)}
+.speech-status{margin-top:12px}
+.speech-personas{display:grid;gap:8px;margin-bottom:16px}
+.speech-persona-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px;align-items:stretch}
+.speech-persona{display:flex;flex-direction:column;align-items:flex-start;gap:4px;text-align:left;padding:10px 12px!important;border-radius:11px!important;background:var(--bg)!important;border:1px solid var(--line)!important;transition:border-color .18s ease,background-color .18s ease,transform .18s ease}
+.speech-persona:hover{border-color:var(--green)!important;background:var(--surface)!important}
+.speech-persona.active{background:var(--mint)!important;border-color:var(--green)!important;box-shadow:0 3px 12px #1f3a2912}
+.speech-persona-top{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%}
+.speech-persona-top strong{font-size:11.5px;font-weight:600;color:var(--ink)}
+.speech-persona-top em{font-style:normal;font-size:8.5px;font-weight:600;padding:2px 6px;border-radius:99px;background:var(--surface);color:var(--green);border:1px solid var(--line);white-space:nowrap}
+.speech-persona small{font-size:9.5px;line-height:1.5;color:var(--muted)}
+.speech-preview-btn{padding:0 10px!important;font-size:9.5px!important;font-weight:600;border-radius:10px!important;white-space:nowrap;color:var(--green)!important;background:var(--soft)!important}
+.speech-preview-btn.is-playing{background:var(--green)!important;color:#fff!important;border-color:var(--green)!important}
+.speech-duck-toggle{display:flex;align-items:center;gap:8px;font-size:10px;line-height:1.5;color:var(--muted);margin:2px 0 14px;cursor:pointer}
+.speech-duck-toggle input{accent-color:var(--green);width:15px;height:15px;flex-shrink:0}
+.speech-advanced{margin-top:10px;border-top:1px solid var(--line);padding-top:12px;font-size:10px;color:var(--muted)}
+.speech-advanced summary{cursor:pointer;font-weight:500;user-select:none}
+.reader-speaking-active{background:color-mix(in srgb,var(--green) 11%,transparent);border-left:3px solid var(--green);padding:6px 12px;margin-left:-15px;border-radius:0 8px 8px 0;transition:background-color .25s ease}
 .pdf-text-layer{position:absolute;left:0;top:0;overflow:hidden;opacity:1;line-height:1;text-align:initial;transform-origin:0 0;z-index:2;user-select:text;-webkit-user-select:text;text-size-adjust:none;-webkit-text-size-adjust:none;forced-color-adjust:none}
 .pdf-text-layer :is(span,br){color:transparent;position:absolute;white-space:pre;cursor:text;transform-origin:0 0}
 .pdf-text-layer>span:not(.markedContent),.pdf-text-layer .markedContent span:not(.markedContent){z-index:1}

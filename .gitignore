@@ -1,0 +1,12 @@
+node_modules
+.next
+.env*
+.DS_Store
+work
+playwright-report
+test-results
+private-generated
+tsconfig.tsbuildinfo
+tests/.admin-content-*
+tests/.commerce-*
+tests/.owner-preview-*

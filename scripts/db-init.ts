@@ -4,6 +4,7 @@ import { readFile } from 'node:fs/promises';
 import vm from 'node:vm';
 import { getSQL } from '../lib/db';
 import { defaultDesign } from '../lib/validation';
+import { CURATED_BOOKS } from '../lib/curated-books';
 async function main(){
 const sql=getSQL();
 const statements=[
@@ -26,8 +27,12 @@ const context={window:{} as {BOOKS?:Array<Record<string,unknown>>}};
 vm.runInNewContext(await readFile('scripts/data/catalog.js','utf8'),context,{timeout:1000});
 for(const original of context.window.BOOKS||[]){
  const {rating,readers,oldPrice,tag,...book}=original;
- const data={...book,access:'free',status:'published',note:'Nội dung, bìa và tác giả minh họa do Lowf biên soạn. Đọc miễn phí; chưa mở bán sản phẩm mẫu.'};
+ const fixedCategory=['peace','clear','atlas'].includes(String(book.id))?'vanhocvn':book.category;
+ const data={...book,category:fixedCategory,access:'free',status:'published',note:'Nội dung, bìa và tác giả minh họa do Lowf biên soạn. Đọc miễn phí; chưa mở bán sản phẩm mẫu.'};
  await sql`INSERT INTO lowf_content(kind,id,data,status) VALUES('books',${String(book.id)},${JSON.stringify(data)}::jsonb,'published') ON CONFLICT(kind,id) DO NOTHING`;
+}
+for(const book of CURATED_BOOKS){
+ await sql`INSERT INTO lowf_content(kind,id,data,status) VALUES('books',${book.id},${JSON.stringify(book)}::jsonb,'published') ON CONFLICT(kind,id) DO NOTHING`;
 }
 const plans=[{id:'free',name:'Lowf Free',description:'Một nơi để bắt đầu thói quen đọc mỗi ngày.',price:0,interval:'once',features:['Tài khoản và kệ sách đồng bộ','Đọc sách miễn phí','Nhạc nền và cộng đồng'],enabled:true,status:'published'},{id:'plus',name:'Lowf Plus',description:'Đang chuẩn bị. Chưa mở đăng ký trả phí.',price:49000,interval:'month',features:['Thư viện dành cho hội viên','Đọc sách mở rộng'],enabled:false,status:'draft'}];
 for(const p of plans)await sql`INSERT INTO lowf_content(kind,id,data,status) VALUES('plans',${p.id},${JSON.stringify(p)}::jsonb,${p.status}) ON CONFLICT(kind,id) DO NOTHING`;
