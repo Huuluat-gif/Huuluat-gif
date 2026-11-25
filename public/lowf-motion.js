@@ -1,19 +1,60 @@
 /* ==========================================================================
-   LOWF v4.0 — EXHIBITION ENGINE (INSPIRED BY stbook.vn/hochiminh)
-   - Interactive 7-Book 3D Fanned Hero Showcase + Mist & Scroll Pill
-   - Second Curated Shelf (International Classics) + Contextual Hover Arrows
-   - 50/50 Asymmetric Visual & Multimedia Bento Gallery
-   - Right-Edge Sticky Dot Navigation Rail (dot -> capsule pill morph)
-   - Distinct Ceremonial Royal Crimson & Gold Lowf Plus Mode
+   LOWF v4.5 — 120FPS SPRING-PHYSICS EXHIBITION ENGINE
+   - Damped rAF Spring Parallax on 7-Book 3D Hero Stage (auto-sleeps at rest)
+   - Custom 120fps Quintic-Ease Carousel Glide + Desktop Grab-to-Drag
+   - Staggered Domino Cascade Reveal via IntersectionObserver (zero scroll jank)
+   - Zero-reflow IntersectionObserver Sticky Dot Navigation Rail
    ========================================================================== */
 (() => {
   'use strict';
 
   const PLUS_KEY = 'lowf.plusPreview';
+  const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)');
+  const isTouch = window.matchMedia('(hover: none)').matches;
   let cachedBootstrap = null;
+  let bootstrapLoading = false;
 
   const esc = (v) =>
     String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+  /* Custom 120fps Quintic Ease-Out Scroll Helper */
+  const scrollAnimations = new WeakMap();
+  function smoothScrollAxis(targetEl, prop, deltaOrTarget, { absolute = false, duration = 560 } = {}) {
+    if (prefersReduced.matches) {
+      if (targetEl === window) window.scrollTo(0, absolute ? deltaOrTarget : window.scrollY + deltaOrTarget);
+      else targetEl[prop] = absolute ? deltaOrTarget : targetEl[prop] + deltaOrTarget;
+      return;
+    }
+    const prevId = scrollAnimations.get(targetEl);
+    if (prevId) cancelAnimationFrame(prevId);
+
+    const start = targetEl === window ? window.scrollY : targetEl[prop];
+    const end = absolute ? deltaOrTarget : start + deltaOrTarget;
+    const dist = end - start;
+    if (Math.abs(dist) < 1) return;
+
+    const t0 = performance.now();
+    function step(now) {
+      const p = Math.min(1, (now - t0) / duration);
+      const ease = 1 - Math.pow(1 - p, 5); // quintic ease-out
+      const val = start + dist * ease;
+      if (targetEl === window) window.scrollTo(0, val);
+      else targetEl[prop] = val;
+      if (p < 1) {
+        scrollAnimations.set(targetEl, requestAnimationFrame(step));
+      } else {
+        scrollAnimations.delete(targetEl);
+      }
+    }
+    scrollAnimations.set(targetEl, requestAnimationFrame(step));
+  }
+
+  function smoothScrollToElement(el) {
+    if (!el) return;
+    const headerOffset = 72;
+    const targetY = Math.max(0, window.scrollY + el.getBoundingClientRect().top - headerOffset);
+    smoothScrollAxis(window, 'scrollY', targetY, { absolute: true, duration: 640 });
+  }
 
   function isPlusOn() {
     try { return localStorage.getItem(PLUS_KEY) === '1'; } catch { return false; }
@@ -44,8 +85,6 @@
     applyPlusMode(next);
   }
 
-  /* Ensure cachedBootstrap is always loaded even if lowf.js fetched before us */
-  let bootstrapLoading = false;
   function ensureBootstrapData() {
     if (cachedBootstrap || bootstrapLoading) return;
     bootstrapLoading = true;
@@ -58,9 +97,7 @@
         }
       })
       .catch(() => {})
-      .finally(() => {
-        bootstrapLoading = false;
-      });
+      .finally(() => { bootstrapLoading = false; });
   }
 
   function coverOf(b) {
@@ -113,7 +150,46 @@
     if (dotRail) dotRail.hidden = view !== 'dashboard';
   }
 
-  /* 3. Upgrade Hero into 3D Fanned Book Showcase + Mist + Scroll Pill */
+  /* 3. Damped Spring 120fps Parallax on the 7-Book 3D Hero Stage */
+  function attachHeroSpringParallax(hero, fan, watermark) {
+    if (isTouch || prefersReduced.matches) return;
+    let targetX = 0, targetY = 0;
+    let curX = 0, curY = 0;
+    let rafId = 0;
+
+    function tick() {
+      curX += (targetX - curX) * 0.085;
+      curY += (targetY - curY) * 0.085;
+
+      const ry = (curX * 6.5).toFixed(3);
+      const rx = (-curY * 3.2).toFixed(3);
+      fan.style.transform = `rotateY(${ry}deg) rotateX(${rx}deg) translate3d(${(curX * -8).toFixed(2)}px, ${(curY * -4).toFixed(2)}px, 0)`;
+
+      if (watermark) {
+        watermark.style.transform = `translate3d(${(curX * 14).toFixed(2)}px, ${(curY * 10).toFixed(2)}px, 0)`;
+      }
+
+      if (Math.abs(targetX - curX) > 0.001 || Math.abs(targetY - curY) > 0.001) {
+        rafId = requestAnimationFrame(tick);
+      } else {
+        rafId = 0;
+      }
+    }
+
+    hero.addEventListener('pointermove', (e) => {
+      const r = hero.getBoundingClientRect();
+      targetX = (e.clientX - r.left) / r.width - 0.5;
+      targetY = (e.clientY - r.top) / r.height - 0.5;
+      if (!rafId) rafId = requestAnimationFrame(tick);
+    }, { passive: true });
+
+    hero.addEventListener('pointerleave', () => {
+      targetX = 0;
+      targetY = 0;
+      if (!rafId) rafId = requestAnimationFrame(tick);
+    }, { passive: true });
+  }
+
   function enhanceDashboardHero() {
     const hero = document.querySelector('#main .hero');
     if (!hero || hero.dataset.exhEnhanced === '1') return;
@@ -124,18 +200,17 @@
     hero.classList.add('has-3d-fan');
     hero.id = 'exh-sec-hero';
 
-    /* Add subtle watermark of user's uploaded Hero image if present */
+    let wm = null;
     const customImg = hero.querySelector('.hero-custom');
     const heroSrc = customImg?.getAttribute('src') || '';
     if (heroSrc) {
-      const wm = document.createElement('img');
+      wm = document.createElement('img');
       wm.className = 'hero-bg-watermark';
       wm.src = heroSrc;
       wm.alt = '';
       hero.prepend(wm);
     }
 
-    /* Add Ceremonial Kicker above H2 */
     const h2 = hero.querySelector('h2');
     if (h2 && !hero.querySelector('.exh-hero-kicker')) {
       const kicker = document.createElement('span');
@@ -146,74 +221,149 @@
       h2.parentNode.insertBefore(kicker, h2);
     }
 
-    /* Build 7-Book Symmetric 3D Fan (Center focal book + 3 stepped flanks each side) */
     const fanBooks = [];
     const pickOrder = [5, 3, 1, 0, 2, 4, 6];
     for (const idx of pickOrder) {
       if (books[idx]) fanBooks.push(books[idx]);
     }
+    /* Center book rises first (delay 0), flanking pairs ripple outward symmetrically! */
     const poses = [
-      { fry: '26deg',  fz: '-55px', fy: '22px', fs: '0.84', idx: 1 },
-      { fry: '18deg',  fz: '-25px', fy: '12px', fs: '0.91', idx: 2 },
-      { fry: '10deg',  fz: '10px',  fy: '5px',  fs: '0.97', idx: 3 },
-      { fry: '0deg',   fz: '55px',  fy: '0px',  fs: '1.08', idx: 5 },
-      { fry: '-10deg', fz: '10px',  fy: '5px',  fs: '0.97', idx: 3 },
-      { fry: '-18deg', fz: '-25px', fy: '12px', fs: '0.91', idx: 2 },
-      { fry: '-26deg', fz: '-55px', fy: '22px', fs: '0.84', idx: 1 },
+      { fry: '26deg',  fz: '-55px', fy: '22px', fs: '0.84', idx: 1, delay: 3 },
+      { fry: '18deg',  fz: '-25px', fy: '12px', fs: '0.91', idx: 2, delay: 2 },
+      { fry: '10deg',  fz: '10px',  fy: '5px',  fs: '0.97', idx: 3, delay: 1 },
+      { fry: '0deg',   fz: '55px',  fy: '0px',  fs: '1.08', idx: 5, delay: 0 },
+      { fry: '-10deg', fz: '10px',  fy: '5px',  fs: '0.97', idx: 3, delay: 1 },
+      { fry: '-18deg', fz: '-25px', fy: '12px', fs: '0.91', idx: 2, delay: 2 },
+      { fry: '-26deg', fz: '-55px', fy: '22px', fs: '0.84', idx: 1, delay: 3 },
     ];
 
+    const stage = document.createElement('div');
+    stage.className = 'lowf-hero-fan-stage';
     const fan = document.createElement('div');
     fan.className = 'lowf-hero-fan';
     fan.innerHTML = fanBooks
       .map((b, i) => {
         const p = poses[i] || poses[3];
-        return `<button type="button" class="fan-book" data-action="read" data-id="${esc(b.id)}" aria-label="Đọc ${esc(b.title)}" style="--fry:${p.fry};--fz:${p.fz};--fy:${p.fy};--fs:${p.fs};--fz-idx:${p.idx}"><img src="${esc(coverOf(b))}" alt="${esc(b.title)}" loading="eager"><span class="fan-book-tip">${esc(b.title)}</span></button>`;
+        return `<button type="button" class="fan-book" data-action="read" data-id="${esc(b.id)}" aria-label="Đọc ${esc(b.title)}" style="--fry:${p.fry};--fz:${p.fz};--fy:${p.fy};--fs:${p.fs};--fz-idx:${p.idx};--fan-delay:${p.delay}"><img src="${esc(coverOf(b))}" alt="${esc(b.title)}" decoding="async"><span class="fan-book-tip">${esc(b.title)}</span></button>`;
       })
       .join('');
-    hero.appendChild(fan);
+    stage.appendChild(fan);
+    hero.appendChild(stage);
 
-    /* Add Bobbing Scroll-Down Capsule Pill */
+    attachHeroSpringParallax(hero, fan, wm);
+
     const pill = document.createElement('button');
     pill.type = 'button';
     pill.className = 'lowf-scroll-pill';
     pill.setAttribute('aria-label', 'Cuộn xuống kệ sách');
     pill.innerHTML = '⌄';
     pill.addEventListener('click', () => {
-      const target = document.querySelector('.dashboard-section[data-section="books"]') || document.getElementById('bookShelf');
-      target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      const target = document.getElementById('exh-sec-books') || document.getElementById('bookShelf');
+      smoothScrollToElement(target);
     });
     hero.appendChild(pill);
   }
 
-  /* 4. Add Contextual Carousel Arrows + "Xem tất cả" Pill + 2nd Classics Shelf + 50/50 Gallery */
+  /* 4. Smooth Grab-to-Drag + Momentum on Horizontal Book Shelves */
+  function attachSmoothShelfDrag(shelfEl) {
+    if (!shelfEl || isTouch || shelfEl.dataset.dragBound === '1') return;
+    shelfEl.dataset.dragBound = '1';
+    let down = false, startX = 0, startScroll = 0, moved = false, vel = 0, lastX = 0, lastT = 0, momentumId = 0;
+
+    shelfEl.addEventListener('mousedown', (e) => {
+      if (e.button !== 0) return;
+      down = true;
+      moved = false;
+      startX = lastX = e.pageX;
+      lastT = performance.now();
+      startScroll = shelfEl.scrollLeft;
+      vel = 0;
+      if (momentumId) cancelAnimationFrame(momentumId);
+      const prev = scrollAnimations.get(shelfEl);
+      if (prev) cancelAnimationFrame(prev);
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (!down) return;
+      const dx = e.pageX - startX;
+      if (Math.abs(dx) > 5) {
+        moved = true;
+        shelfEl.classList.add('is-dragging');
+      }
+      const now = performance.now();
+      const dt = Math.max(1, now - lastT);
+      vel = (lastX - e.pageX) / dt;
+      lastX = e.pageX;
+      lastT = now;
+      shelfEl.scrollLeft = startScroll - dx;
+    }, { passive: true });
+
+    window.addEventListener('mouseup', () => {
+      if (!down) return;
+      down = false;
+      shelfEl.classList.remove('is-dragging');
+      if (Math.abs(vel) > 0.15 && !prefersReduced.matches) {
+        let v = vel * 16;
+        function coast() {
+          shelfEl.scrollLeft += v;
+          v *= 0.93;
+          if (Math.abs(v) > 0.4) momentumId = requestAnimationFrame(coast);
+        }
+        momentumId = requestAnimationFrame(coast);
+      }
+    });
+
+    shelfEl.addEventListener('click', (e) => {
+      if (moved) {
+        e.preventDefault();
+        e.stopPropagation();
+        moved = false;
+      }
+    }, true);
+  }
+
+  function tagStaggerCards(container) {
+    if (!container) return;
+    const cards = container.querySelectorAll('.book-card, .exh-tile');
+    cards.forEach((c, i) => {
+      c.classList.add('stagger-card');
+      c.style.setProperty('--stagger-i', String(Math.min(i, 7)));
+    });
+  }
+
   function enhanceDashboardSections() {
     const main = document.getElementById('main');
     const shelf = document.getElementById('bookShelf');
     if (!main || !shelf) return;
 
     const booksSec = shelf.closest('.dashboard-section') || shelf.parentElement;
-    if (booksSec) booksSec.id = 'exh-sec-books';
+    if (booksSec) {
+      booksSec.id = 'exh-sec-books';
+      booksSec.classList.add('is-revealed');
+    }
+    tagStaggerCards(shelf);
+    attachSmoothShelfDrag(shelf);
 
-    /* Wrap primary shelf with contextual hover arrows + Xem tất cả pill */
     if (!shelf.parentElement.classList.contains('exh-shelf-wrap')) {
       const wrap = document.createElement('div');
       wrap.className = 'exh-shelf-wrap';
       shelf.parentNode.insertBefore(wrap, shelf);
       wrap.appendChild(shelf);
 
+      const step = () => Math.round(shelf.clientWidth * 0.78);
       const prev = document.createElement('button');
       prev.type = 'button';
       prev.className = 'exh-carousel-arrow prev';
       prev.setAttribute('aria-label', 'Sách trước');
       prev.innerHTML = '‹';
-      prev.addEventListener('click', () => shelf.scrollBy({ left: -520, behavior: 'smooth' }));
+      prev.addEventListener('click', () => smoothScrollAxis(shelf, 'scrollLeft', -step()));
 
       const next = document.createElement('button');
       next.type = 'button';
       next.className = 'exh-carousel-arrow next';
       next.setAttribute('aria-label', 'Sách tiếp');
       next.innerHTML = '›';
-      next.addEventListener('click', () => shelf.scrollBy({ left: 520, behavior: 'smooth' }));
+      next.addEventListener('click', () => smoothScrollAxis(shelf, 'scrollLeft', step()));
 
       wrap.append(prev, next);
 
@@ -223,7 +373,6 @@
       wrap.after(footer);
     }
 
-    /* Inject Second Curated Shelf: Tủ Sách Kinh Điển Thế Giới (like stbook Section 2) */
     const books = cachedBootstrap?.books || [];
     const classics = books.filter((b) => /^[A-Za-z]/.test(b.title || '') && b.category === 'vanhocqt');
     if (classics.length && !document.getElementById('exh-sec-classics')) {
@@ -243,7 +392,7 @@
                 (b) => `
               <article class="book-card">
                 <div class="book-cover">
-                  <img src="${esc(coverOf(b))}" alt="Bìa ${esc(b.title)}" width="300" height="420" loading="lazy">
+                  <img src="${esc(coverOf(b))}" alt="Bìa ${esc(b.title)}" width="300" height="420" loading="lazy" decoding="async">
                   <button class="cover-target" data-action="read" data-id="${esc(b.id)}" aria-label="Đọc ${esc(b.title)}"></button>
                   <span class="format-tag">Kinh điển · IPA</span>
                 </div>
@@ -262,12 +411,14 @@
         </div>
       `;
       const cs = sec2.querySelector('#classicsShelf');
-      sec2.querySelector('.prev')?.addEventListener('click', () => cs?.scrollBy({ left: -520, behavior: 'smooth' }));
-      sec2.querySelector('.next')?.addEventListener('click', () => cs?.scrollBy({ left: 520, behavior: 'smooth' }));
+      tagStaggerCards(cs);
+      attachSmoothShelfDrag(cs);
+      const step2 = () => Math.round((cs?.clientWidth || 640) * 0.78);
+      sec2.querySelector('.prev')?.addEventListener('click', () => cs && smoothScrollAxis(cs, 'scrollLeft', -step2()));
+      sec2.querySelector('.next')?.addEventListener('click', () => cs && smoothScrollAxis(cs, 'scrollLeft', step2()));
       booksSec?.after(sec2);
     }
 
-    /* Inject Section 3: 50/50 Asymmetric Visual & Multimedia Bento Showcase (like stbook Section 3) */
     if (cachedBootstrap && !document.getElementById('exh-sec-gallery')) {
       const heroAsset = cachedBootstrap?.settings?.hero?.imageAssetId || cachedBootstrap?.settings?.heroImageAssetId;
       const featuredImg = heroAsset ? `/api/assets/${encodeURIComponent(heroAsset)}` : coverOf(books[0]);
@@ -284,7 +435,7 @@
         </div>
         <div class="exh-gallery-wrap">
           <button type="button" class="exh-gallery-featured" data-action="nav" data-view="studio">
-            ${featuredImg ? `<img src="${esc(featuredImg)}" alt="Không gian đọc Lowf" loading="lazy">` : ''}
+            ${featuredImg ? `<img src="${esc(featuredImg)}" alt="Không gian đọc Lowf" loading="lazy" decoding="async">` : ''}
             <div class="exh-gallery-caption">
               <small>KHÔNG GIAN TRẢI NGHIỆM LOWF</small>
               <h3>Giữa bộn bề, mở một trang sách & lắng nghe giai điệu dịu êm.</h3>
@@ -323,28 +474,30 @@
           </div>
         </div>
       `;
+      tagStaggerCards(gallery);
       main.appendChild(gallery);
     }
 
-    const rightPanel = document.getElementById('rightPanel');
-    if (rightPanel) rightPanel.dataset.exhAnchor = 'exh-sec-community';
+    bindDotObserver();
   }
 
-  /* 5. Right-Edge Fixed Sticky Dot Navigation Rail (Signature stbook.vn .stiky_menu) */
+  /* 5. Zero-Reflow IntersectionObserver Sticky Dot Rail */
+  let dotObserver = null;
+  const dotTargets = [
+    { target: '#exh-sec-hero', label: 'Giới thiệu & Sân khấu 3D' },
+    { target: '#exh-sec-books', label: 'Tủ sách tuyển chọn' },
+    { target: '#exh-sec-classics', label: 'Kinh điển Thế giới' },
+    { target: '#exh-sec-gallery', label: 'Không gian Đa phương tiện' },
+    { target: '#rightPanel', label: 'Tiến độ & Bảng xếp hạng' },
+  ];
+
   function ensureStickyDotRail() {
     if (document.getElementById('lowfDotRail')) return;
     const rail = document.createElement('nav');
     rail.id = 'lowfDotRail';
     rail.className = 'lowf-dot-rail';
     rail.setAttribute('aria-label', 'Điều hướng nhanh trang chủ');
-    const items = [
-      { target: '#exh-sec-hero', label: 'Giới thiệu & Sân khấu 3D' },
-      { target: '#exh-sec-books', label: 'Tủ sách tuyển chọn' },
-      { target: '#exh-sec-classics', label: 'Kinh điển Thế giới' },
-      { target: '#exh-sec-gallery', label: 'Không gian Đa phương tiện' },
-      { target: '#rightPanel', label: 'Tiến độ & Bảng xếp hạng' },
-    ];
-    rail.innerHTML = items
+    rail.innerHTML = dotTargets
       .map(
         (it, i) =>
           `<button type="button" class="lowf-dot ${i === 0 ? 'active' : ''}" data-target="${it.target}" aria-label="${it.label}"><span class="lowf-dot-tip">${it.label}</span></button>`
@@ -354,26 +507,31 @@
     rail.addEventListener('click', (e) => {
       const btn = e.target.closest('.lowf-dot');
       if (!btn) return;
-      const el = document.querySelector(btn.dataset.target);
-      el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      smoothScrollToElement(document.querySelector(btn.dataset.target));
     });
     document.body.appendChild(rail);
+  }
 
-    window.addEventListener(
-      'scroll',
-      () => {
-        if (rail.hidden) return;
-        let activeIdx = 0;
-        items.forEach((it, idx) => {
-          const el = document.querySelector(it.target);
-          if (el && el.getBoundingClientRect().top <= window.innerHeight * 0.42) {
-            activeIdx = idx;
+  function bindDotObserver() {
+    const rail = document.getElementById('lowfDotRail');
+    if (!rail) return;
+    if (dotObserver) dotObserver.disconnect();
+    const dots = rail.querySelectorAll('.lowf-dot');
+    dotObserver = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((en) => {
+          if (en.isIntersecting) {
+            const idx = dotTargets.findIndex((it) => en.target.matches(it.target));
+            if (idx >= 0) dots.forEach((d, i) => d.classList.toggle('active', i === idx));
           }
         });
-        rail.querySelectorAll('.lowf-dot').forEach((d, idx) => d.classList.toggle('active', idx === activeIdx));
       },
-      { passive: true }
+      { rootMargin: '-32% 0px -48% 0px', threshold: 0 }
     );
+    dotTargets.forEach((it) => {
+      const el = document.querySelector(it.target);
+      if (el) dotObserver.observe(el);
+    });
   }
 
   /* 6. Plans View Lowf Plus Collector Card */
@@ -403,22 +561,25 @@
     grid.appendChild(card);
   }
 
-  /* 7. Scroll-Reveal Observer & Audio Equalizer */
+  /* 7. Staggered Scroll-Reveal Observer & Equalizer */
+  let revealIO = null;
   function observeReveals() {
     const els = document.querySelectorAll('.exh-reveal:not(.is-visible)');
     if (!els.length) return;
-    const io = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((en) => {
-          if (en.isIntersecting) {
-            en.target.classList.add('is-visible');
-            io.unobserve(en.target);
-          }
-        });
-      },
-      { threshold: 0.12 }
-    );
-    els.forEach((el) => io.observe(el));
+    if (!revealIO) {
+      revealIO = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((en) => {
+            if (en.isIntersecting) {
+              en.target.classList.add('is-visible', 'is-revealed');
+              revealIO.unobserve(en.target);
+            }
+          });
+        },
+        { threshold: 0.1 }
+      );
+    }
+    els.forEach((el) => revealIO.observe(el));
   }
 
   function ensureEqualizer() {
@@ -465,7 +626,7 @@
       }).observe(main, { childList: true });
     }
     window.addEventListener('popstate', () => requestAnimationFrame(enhanceCurrentView));
-    document.addEventListener('click', () => setTimeout(() => { syncTopNav(); ensureEqualizer(); }, 80), true);
+    document.addEventListener('click', () => setTimeout(() => { syncTopNav(); ensureEqualizer(); }, 60), true);
 
     const audio = document.getElementById('audio');
     if (audio) ['play', 'pause', 'ended'].forEach((ev) => audio.addEventListener(ev, ensureEqualizer));

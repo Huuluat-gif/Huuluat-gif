@@ -1,35 +1,35 @@
 /* ==========================================================================
-   LOWF v4.0 — DIGITAL BOOK EXHIBITION & 3D SHOWCASE
+   LOWF v4.5 — ULTRA-SMOOTH 120FPS GPU EXHIBITION & 3D SHOWCASE
+   Zero layout-thrash, zero blur-repaint lag, pure transform/opacity spring motion
    Inspired by stbook.vn/hochiminh × Modern 3D Tech × Distinct Lowf Plus Mode
    ========================================================================== */
 
 @import url('https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
 :root {
-  /* Heritage Ivory Exhibition Canvas + Antique Bronze-Gold & Deep Emerald */
   --exh-bg: #fcfaf0;
   --exh-surface: #ffffff;
   --exh-surface-soft: #f5f1e3;
   --exh-ink: #1e2420;
   --exh-muted: #6e6a5e;
   --exh-line: rgba(149, 104, 60, 0.18);
-  --exh-box: #95683c;           /* Signature stbook antique bronze-gold */
+  --exh-box: #95683c;
   --exh-box-dark: #78502b;
-  --exh-gold-light: #fff6b8;    /* Signature stbook pale warm gold */
+  --exh-gold-light: #fff6b8;
   --exh-gold-foil: #eab308;
-  --exh-emerald: #133a32;
+  --exh-header-bg: rgba(12, 34, 29, 0.97);
   --exh-hero-bg: radial-gradient(ellipse at 50% 18%, #1d4d42 0%, #0e2a24 55%, #071714 100%);
-  --exh-mist: linear-gradient(180deg, rgba(252, 250, 240, 0) 0%, rgba(252, 250, 240, 0.78) 65%, #fcfaf0 100%);
+  --exh-mist: linear-gradient(180deg, rgba(252, 250, 240, 0) 0%, rgba(252, 250, 240, 0.82) 65%, #fcfaf0 100%);
   --exh-footer-bg: linear-gradient(135deg, #0d2923 0%, #163b33 50%, #091d19 100%);
   --exh-shadow-sm: 0 4px 14px rgba(45, 36, 24, 0.06);
-  --exh-shadow: 0 14px 36px rgba(45, 36, 24, 0.11);
-  --exh-shadow-hover: 0 22px 48px rgba(149, 104, 60, 0.22);
-  --exh-book-shadow: -8px 14px 26px rgba(25, 20, 14, 0.24), 0 4px 10px rgba(0, 0, 0, 0.1);
+  --exh-shadow: 0 14px 34px rgba(45, 36, 24, 0.11);
+  --exh-book-shadow: -8px 14px 24px rgba(25, 20, 14, 0.24);
+  --spring-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --spring-snappy: cubic-bezier(0.22, 1, 0.36, 1);
   --font-ui: 'Plus Jakarta Sans', 'Be Vietnam Pro', -apple-system, sans-serif;
   --font-display: 'Newsreader', 'Lora', Georgia, serif;
 }
 
-/* Dark Mode — Illuminated Museum Night */
 [data-theme="dark"] {
   --exh-bg: #0b0e12;
   --exh-surface: #131820;
@@ -40,18 +40,17 @@
   --exh-box: #d4a36a;
   --exh-box-dark: #e6b981;
   --exh-gold-light: #fde68a;
+  --exh-header-bg: rgba(11, 14, 18, 0.97);
   --exh-hero-bg: radial-gradient(ellipse at 50% 18%, #163830 0%, #0b1917 58%, #06090d 100%);
-  --exh-mist: linear-gradient(180deg, rgba(11, 14, 18, 0) 0%, rgba(11, 14, 18, 0.8) 65%, #0b0e12 100%);
+  --exh-mist: linear-gradient(180deg, rgba(11, 14, 18, 0) 0%, rgba(11, 14, 18, 0.84) 65%, #0b0e12 100%);
   --exh-footer-bg: linear-gradient(135deg, #070a0e 0%, #101c1a 100%);
   --exh-shadow-sm: 0 4px 16px rgba(0, 0, 0, 0.4);
-  --exh-shadow: 0 16px 40px rgba(0, 0, 0, 0.55);
-  --exh-shadow-hover: 0 24px 54px rgba(0, 0, 0, 0.75), 0 0 24px rgba(212, 163, 106, 0.18);
-  --exh-book-shadow: -10px 18px 34px rgba(0, 0, 0, 0.68), 0 4px 12px rgba(0, 0, 0, 0.45);
+  --exh-shadow: 0 16px 38px rgba(0, 0, 0, 0.55);
+  --exh-book-shadow: -10px 16px 30px rgba(0, 0, 0, 0.65);
 }
 
 /* ==========================================================================
    CHẾ ĐỘ LOWF PLUS ✨ — CEREMONIAL ROYAL CRIMSON & IMPERIAL GOLD EDITION
-   Directly inspired by stbook.vn/hochiminh's iconic crimson-silk & gold stage
    ========================================================================== */
 [data-plus="on"] {
   --exh-bg: #fffdf0;
@@ -60,15 +59,15 @@
   --exh-ink: #291512;
   --exh-muted: #7a5c49;
   --exh-line: rgba(179, 16, 15, 0.18);
-  --exh-box: #9e1b1b;           /* Royal Crimson + Antique Gold accent */
+  --exh-box: #9e1b1b;
   --exh-box-dark: #7a1111;
   --exh-gold-light: #fff9ae;
+  --exh-header-bg: rgba(108, 11, 13, 0.97);
   --exh-hero-bg:
     radial-gradient(circle at 50% 24%, rgba(245, 196, 105, 0.24) 0%, transparent 46%),
     radial-gradient(ellipse at 50% 0%, #b3100f 0%, #7d0b0d 54%, #450507 100%);
-  --exh-mist: linear-gradient(180deg, rgba(255, 253, 240, 0) 0%, rgba(255, 253, 240, 0.82) 68%, #fffdf0 100%);
+  --exh-mist: linear-gradient(180deg, rgba(255, 253, 240, 0) 0%, rgba(255, 253, 240, 0.84) 68%, #fffdf0 100%);
   --exh-footer-bg: linear-gradient(135deg, #5c080a 0%, #8f0f11 50%, #420507 100%);
-  --exh-shadow-hover: 0 24px 52px rgba(158, 27, 27, 0.22), 0 0 20px rgba(234, 179, 8, 0.22);
 }
 
 [data-theme="dark"][data-plus="on"] {
@@ -80,50 +79,74 @@
   --exh-line: rgba(245, 196, 105, 0.24);
   --exh-box: #f5c469;
   --exh-box-dark: #fde08d;
+  --exh-header-bg: rgba(34, 6, 8, 0.97);
   --exh-hero-bg:
     radial-gradient(circle at 50% 20%, rgba(245, 196, 105, 0.22) 0%, transparent 48%),
     radial-gradient(ellipse at 50% 0%, #8c0e11 0%, #470709 55%, #10080a 100%);
-  --exh-mist: linear-gradient(180deg, rgba(16, 8, 10, 0) 0%, rgba(16, 8, 10, 0.85) 68%, #10080a 100%);
+  --exh-mist: linear-gradient(180deg, rgba(16, 8, 10, 0) 0%, rgba(16, 8, 10, 0.86) 68%, #10080a 100%);
   --exh-footer-bg: linear-gradient(135deg, #2b0507 0%, #52090c 50%, #170304 100%);
 }
 
-/* Custom Scrollbar (like stbook --box_color) */
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-track { background: var(--exh-bg); }
 ::-webkit-scrollbar-thumb { background: var(--exh-box); border-radius: 999px; }
 
 /* ==========================================================================
-   KEYFRAMES & SCROLL CHOREOGRAPHY
+   PURE GPU KEYFRAMES (TRANSFORM + OPACITY ONLY — LOCKED 120FPS!)
    ========================================================================== */
 @keyframes exhBobbing {
   0%, 100% { transform: translate3d(-50%, 0, 0); }
-  50%      { transform: translate3d(-50%, 8px, 0); }
+  50%      { transform: translate3d(-50%, 9px, 0); }
 }
-@keyframes exhShimmer {
-  0%   { background-position: -200% center; }
-  100% { background-position: 200% center; }
+@keyframes exhAuraBreath {
+  0%, 100% { opacity: 0.65; transform: translate3d(-50%, -50%, 0) scale(0.96); }
+  50%      { opacity: 1;    transform: translate3d(-50%, -52%, 0) scale(1.06); }
 }
-@keyframes exhLotusGlow {
-  0%, 100% { opacity: 0.55; transform: translate3d(-50%, 0, 0) scale(1); }
-  50%      { opacity: 0.85; transform: translate3d(-50%, -6px, 0) scale(1.05); }
+@keyframes fanBookEntrance {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 56px, -80px) rotateY(0deg) scale(0.82);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, var(--fy, 0px), var(--fz, 0px)) rotateY(var(--fry, 0deg)) scale(var(--fs, 1));
+  }
 }
-@keyframes lowfEq1 { 0%, 100% { height: 4px; } 50% { height: 17px; } }
-@keyframes lowfEq2 { 0%, 100% { height: 14px; } 40% { height: 5px; } 80% { height: 19px; } }
-@keyframes lowfEq3 { 0%, 100% { height: 7px; } 60% { height: 15px; } }
-@keyframes lowfEq4 { 0%, 100% { height: 12px; } 50% { height: 5px; } }
+@keyframes viewSmoothIn {
+  from { opacity: 0; transform: translate3d(0, 14px, 0); }
+  to   { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+@keyframes lowfEq {
+  0%, 100% { transform: scaleY(0.28); }
+  50%      { transform: scaleY(1); }
+}
 
+/* Staggered GPU Scroll Reveal */
 .exh-reveal {
   opacity: 0;
-  transform: translate3d(0, 24px, 0);
-  transition: opacity 0.65s cubic-bezier(0.22, 1, 0.36, 1), transform 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+  transform: translate3d(0, 28px, 0);
+  transition: opacity 0.72s var(--spring-out), transform 0.72s var(--spring-out);
+  will-change: transform, opacity;
 }
 .exh-reveal.is-visible {
   opacity: 1;
   transform: translate3d(0, 0, 0);
 }
+.stagger-card {
+  opacity: 0;
+  transform: translate3d(0, 22px, 0);
+  transition:
+    opacity 0.62s var(--spring-out) calc(var(--stagger-i, 0) * 48ms),
+    transform 0.62s var(--spring-out) calc(var(--stagger-i, 0) * 48ms);
+}
+.is-revealed .stagger-card,
+.stagger-card.is-visible {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+}
 
 /* ==========================================================================
-   EXHIBITION FULL-WIDTH SHELL & SLIDE-OUT DRAWER SIDEBAR
+   EXHIBITION SHELL & GPU SLIDE-OUT DRAWER
    ========================================================================== */
 body {
   background: var(--exh-bg) !important;
@@ -131,10 +154,11 @@ body {
   font-family: var(--font-ui) !important;
   font-size: 14px;
   overflow-x: hidden;
-  transition: background-color 0.3s ease, color 0.3s ease;
+  -webkit-font-smoothing: antialiased;
 }
-
-/* Convert 2-col app-shell into Full-Width Exhibition Workspace + Slide-out Drawer */
+#main {
+  animation: viewSmoothIn 0.42s var(--spring-out);
+}
 .app-shell {
   display: block !important;
   min-height: 100vh;
@@ -150,10 +174,12 @@ body {
   z-index: 95 !important;
   background: var(--exh-surface) !important;
   border-right: 1px solid var(--exh-line) !important;
-  box-shadow: 20px 0 60px rgba(0, 0, 0, 0.28);
+  box-shadow: 20px 0 50px rgba(0, 0, 0, 0.26);
   padding: 20px 18px 16px !important;
-  transform: translate3d(-105%, 0, 0);
-  transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+  transform: translate3d(-104%, 0, 0);
+  backface-visibility: hidden;
+  will-change: transform;
+  transition: transform 0.42s var(--spring-out);
 }
 html.drawer-open .sidebar {
   transform: translate3d(0, 0, 0);
@@ -163,11 +189,20 @@ html.drawer-open .sidebar {
   inset: 0;
   z-index: 90;
   background: rgba(10, 12, 16, 0.52);
-  backdrop-filter: blur(4px);
+  opacity: 1;
+  transition: opacity 0.3s ease;
 }
 
 .nav-label { margin: 18px 10px 8px !important; font-size: 9.5px !important; color: var(--exh-muted) !important; }
-.nav-item { min-height: 38px !important; padding: 8px 11px !important; border-radius: 10px !important; font-size: 12.5px !important; color: var(--exh-ink) !important; }
+.nav-item {
+  min-height: 38px !important;
+  padding: 8px 11px !important;
+  border-radius: 10px !important;
+  font-size: 12.5px !important;
+  color: var(--exh-ink) !important;
+  transition: transform 0.25s var(--spring-out), background-color 0.2s ease;
+}
+.nav-item:hover { transform: translate3d(4px, 0, 0); }
 .nav-item.active { background: var(--exh-surface-soft) !important; color: var(--exh-box) !important; font-weight: 700 !important; }
 .sidebar-bottom { padding-top: 14px !important; }
 .club-card { background: var(--exh-surface-soft) !important; border: 1px solid var(--exh-line); border-radius: 12px !important; padding: 13px !important; }
@@ -176,7 +211,7 @@ html.drawer-open .sidebar {
 .club-card button { background: var(--exh-box) !important; color: #fff !important; border: 0 !important; border-radius: 8px !important; font-weight: 600; font-size: 11px !important; }
 
 /* ==========================================================================
-   TOP EXHIBITION HEADER (LIKE stbook.vn HEADER + OUTWARD EXPANDING UNDERLINE)
+   TOP EXHIBITION HEADER (ZERO BACKDROP-BLUR LAG = LOCKED 120FPS SCROLL!)
    ========================================================================== */
 .topbar {
   position: sticky;
@@ -185,21 +220,11 @@ html.drawer-open .sidebar {
   height: 72px !important;
   padding: 0 max(18px, calc((100vw - 1260px) / 2)) !important;
   gap: 10px !important;
-  background: rgba(12, 34, 29, 0.94) !important;
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: var(--exh-header-bg) !important;
   border-bottom: 1px solid rgba(255, 246, 184, 0.16) !important;
   color: #ffffff !important;
-}
-[data-plus="on"] .topbar {
-  background: rgba(108, 11, 13, 0.95) !important;
-  border-bottom-color: rgba(255, 249, 174, 0.25) !important;
-}
-[data-theme="dark"] .topbar {
-  background: rgba(11, 14, 18, 0.92) !important;
-}
-[data-theme="dark"][data-plus="on"] .topbar {
-  background: rgba(34, 6, 8, 0.94) !important;
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
 }
 
 .drawer-toggle {
@@ -212,9 +237,11 @@ html.drawer-open .sidebar {
   border: 1px solid rgba(255, 246, 184, 0.22) !important;
   background: rgba(255, 255, 255, 0.06) !important;
   flex-shrink: 0;
+  transition: transform 0.22s var(--spring-out), background-color 0.2s ease;
 }
 .drawer-toggle:hover {
   background: rgba(255, 246, 184, 0.16) !important;
+  transform: scale(1.05);
 }
 
 .top-exhibition-brand {
@@ -236,7 +263,10 @@ html.drawer-open .sidebar {
   font-size: 21px;
   display: grid;
   place-items: center;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28);
+  transition: transform 0.3s var(--spring-out);
+}
+.top-exhibition-brand:hover .top-brand-crest {
+  transform: rotate(-6deg) scale(1.06);
 }
 .top-exhibition-brand b {
   display: block;
@@ -256,7 +286,7 @@ html.drawer-open .sidebar {
 }
 .mobile-brand { display: none !important; }
 
-/* Horizontal Exhibition Links with Centered Outward Underline (stbook signature) */
+/* GPU scaleX(0 -> 1) Underline (Instead of CPU width animation!) */
 .exhibition-nav {
   display: flex;
   align-items: center;
@@ -271,19 +301,20 @@ html.drawer-open .sidebar {
   letter-spacing: 0.01em;
   color: var(--exh-gold-light) !important;
   white-space: nowrap;
-  opacity: 0.86;
-  transition: opacity 0.2s ease, color 0.2s ease;
+  opacity: 0.85;
+  transition: opacity 0.22s ease, color 0.22s ease, transform 0.22s var(--spring-out);
 }
 .exh-link::after {
   content: '';
   position: absolute;
   bottom: 3px;
-  left: 50%;
-  width: 0;
+  left: 9px;
+  right: 9px;
   height: 2px;
   background: var(--exh-gold-light);
-  transform: translateX(-50%);
-  transition: width 0.22s ease-in;
+  transform: scaleX(0);
+  transform-origin: center;
+  transition: transform 0.28s var(--spring-out);
   border-radius: 2px;
 }
 .exh-link:hover,
@@ -293,11 +324,9 @@ html.drawer-open .sidebar {
 }
 .exh-link:hover::after,
 .exh-link.active::after {
-  width: calc(100% - 20px);
+  transform: scaleX(1);
 }
-.exh-link-plus {
-  color: #fcd34d !important;
-}
+.exh-link-plus { color: #fcd34d !important; }
 
 .topbar .search {
   background: rgba(255, 255, 255, 0.1) !important;
@@ -310,47 +339,31 @@ html.drawer-open .sidebar {
 }
 .topbar .search kbd { display: none !important; }
 .topbar .search svg { color: var(--exh-gold-light) !important; }
-.topbar .search input {
-  color: #ffffff !important;
-  font-size: 12px !important;
-}
-.topbar .search input::placeholder {
-  color: rgba(255, 249, 194, 0.72) !important;
-}
-.topbar .search kbd {
-  color: var(--exh-gold-light) !important;
-  border-color: rgba(255, 246, 184, 0.28) !important;
-  background: transparent !important;
-}
+.topbar .search input { color: #ffffff !important; font-size: 12px !important; }
+.topbar .search input::placeholder { color: rgba(255, 249, 194, 0.72) !important; }
 
-/* Top Plus Mode Pill */
 .top-plus-btn {
   display: inline-flex;
   align-items: center;
   gap: 5px;
   height: 34px;
-  padding: 0 12px;
+  padding: 0 13px;
   border-radius: 999px;
-  border: 1px solid rgba(252, 211, 77, 0.55);
-  background: linear-gradient(90deg, rgba(179, 16, 15, 0.85), rgba(149, 104, 60, 0.85), rgba(179, 16, 15, 0.85));
-  background-size: 200% auto;
+  border: 1px solid rgba(252, 211, 77, 0.6);
+  background: linear-gradient(135deg, #b3100f, #95683c);
   color: #fff9ae !important;
   font-size: 10.5px;
   font-weight: 800;
   letter-spacing: 0.08em;
-  animation: exhShimmer 4.5s linear infinite;
   flex-shrink: 0;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: transform 0.25s var(--spring-out);
 }
-.top-plus-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 0 16px rgba(252, 211, 77, 0.45);
-}
+.top-plus-btn:hover { transform: translate3d(0, -2px, 0) scale(1.04); }
+.top-plus-btn:active { transform: scale(0.96); }
 [data-plus="on"] .top-plus-btn {
   background: linear-gradient(135deg, #fcd34d, #f59e0b);
   color: #450507 !important;
   border-color: #fff9ae;
-  box-shadow: 0 0 18px rgba(252, 211, 77, 0.55);
 }
 
 .topbar .top-theme-btn,
@@ -364,6 +377,12 @@ html.drawer-open .sidebar {
   background: rgba(255, 255, 255, 0.08) !important;
   border: 1px solid rgba(255, 246, 184, 0.2) !important;
   flex-shrink: 0;
+  transition: transform 0.22s var(--spring-out), background-color 0.2s ease;
+}
+.topbar .top-theme-btn:hover,
+.topbar .header-cart:hover {
+  transform: scale(1.08);
+  background: rgba(255, 255, 255, 0.16) !important;
 }
 
 .topbar .header-user {
@@ -373,7 +392,9 @@ html.drawer-open .sidebar {
   padding: 4px 11px 4px 5px !important;
   color: #ffffff !important;
   flex-shrink: 0;
+  transition: transform 0.22s var(--spring-out);
 }
+.topbar .header-user:hover { transform: translate3d(0, -1px, 0); }
 .topbar .header-user strong { color: #ffffff !important; font-size: 11.5px !important; }
 .topbar .header-user small  { color: var(--exh-gold-light) !important; font-size: 9.5px !important; }
 .avatar {
@@ -383,7 +404,7 @@ html.drawer-open .sidebar {
 }
 
 /* ==========================================================================
-   FULL-WIDTH EXHIBITION CONTAINER (1220px CENTERED LIKE stbook.vn)
+   FULL-WIDTH EXHIBITION CONTAINER
    ========================================================================== */
 .page-layout {
   display: block !important;
@@ -391,23 +412,18 @@ html.drawer-open .sidebar {
   margin: 0 auto !important;
   padding: 0 28px 48px !important;
 }
-.page-intro {
-  padding-top: 34px !important;
-}
+.page-intro { padding-top: 34px !important; }
 
-/* Hide small greeting row above Hero on Dashboard so Hero commands full-bleed drama */
 .dashboard-section[data-section="hero"] {
   margin-left: calc(-50vw + 50%);
   margin-right: calc(-50vw + 50%);
   width: 100vw;
   margin-top: 0 !important;
 }
-#main > .intro {
-  display: none !important;
-}
+#main > .intro { display: none !important; }
 
 /* ==========================================================================
-   GRAND CINEMATIC HERO STAGE + 3D FANNED BOOK SHOWCASE (stbook.vn UPGRADED)
+   GRAND CINEMATIC HERO + 120FPS DAMPED-SPRING 3D BOOK STAGE
    ========================================================================== */
 .hero {
   position: relative !important;
@@ -423,26 +439,24 @@ html.drawer-open .sidebar {
   text-align: center;
   color: #ffffff !important;
   overflow: hidden !important;
+  contain: layout paint;
 }
 
-/* Subtle Đông Sơn / Lotus Geometric Aura behind the 3D Books */
+/* Pure GPU Radial Glow (Zero box-shadow repaint!) */
 .hero::before {
   content: '';
   position: absolute;
-  top: 44%;
+  top: 52%;
   left: 50%;
-  width: 680px;
-  height: 680px;
+  width: 760px;
+  height: 760px;
   border-radius: 50%;
-  border: 1px dashed rgba(255, 246, 184, 0.16);
-  box-shadow:
-    inset 0 0 90px rgba(234, 179, 8, 0.14),
-    0 0 120px rgba(234, 179, 8, 0.12);
-  animation: exhLotusGlow 7s ease-in-out infinite;
+  background: radial-gradient(circle, rgba(250, 204, 21, 0.22) 0%, rgba(250, 204, 21, 0.06) 42%, transparent 68%);
+  animation: exhAuraBreath 6.5s ease-in-out infinite;
+  will-change: transform, opacity;
   pointer-events: none;
   z-index: 1;
 }
-/* Atmospheric Mist Horizon Layer (like stbook may.png fading into #fcfaf0) */
 .hero::after {
   content: '';
   position: absolute;
@@ -455,19 +469,21 @@ html.drawer-open .sidebar {
   z-index: 3;
 }
 
-/* Hide default raw hero-custom/hero-art when our 3D Fanned Book Showcase mounts */
 .hero.has-3d-fan > .hero-custom,
 .hero.has-3d-fan > .hero-art {
   display: none !important;
 }
+/* Pure opacity + GPU layer (removed slow mix-blend-mode: luminosity) */
 .hero .hero-bg-watermark {
   position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
+  inset: -4%;
+  width: 108%;
+  height: 108%;
   object-fit: cover;
-  opacity: 0.13;
-  mix-blend-mode: luminosity;
+  opacity: 0.11;
+  filter: saturate(0.4);
+  transform: translate3d(0, 0, 0);
+  will-change: transform;
   pointer-events: none;
   z-index: 0;
 }
@@ -478,6 +494,7 @@ html.drawer-open .sidebar {
   width: 100% !important;
   max-width: 820px;
   margin: 0 auto;
+  animation: viewSmoothIn 0.65s var(--spring-out) both;
 }
 .hero .eyebrow {
   display: inline-block;
@@ -510,14 +527,13 @@ html.drawer-open .sidebar {
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent !important;
-  text-shadow: 0 8px 28px rgba(0, 0, 0, 0.28);
   margin: 4px auto 12px !important;
   max-width: 780px;
 }
 .hero p {
   font-size: 14.5px !important;
   line-height: 1.65 !important;
-  color: rgba(255, 253, 240, 0.86) !important;
+  color: rgba(255, 253, 240, 0.88) !important;
   margin: 0 auto 18px !important;
   max-width: 580px;
 }
@@ -529,7 +545,15 @@ html.drawer-open .sidebar {
   padding: 11px 28px !important;
   font-size: 13px !important;
   font-weight: 700 !important;
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.3);
+  transition: transform 0.32s var(--spring-out);
+  will-change: transform;
+}
+.hero .button-primary:hover {
+  transform: translate3d(0, -3px, 0) scale(1.03);
+}
+.hero .button-primary:active {
+  transform: translate3d(0, 0, 0) scale(0.97);
 }
 [data-plus="on"] .hero .button-primary {
   background: linear-gradient(135deg, #fcd34d, #d97706) !important;
@@ -537,18 +561,23 @@ html.drawer-open .sidebar {
   border-color: #ffffff !important;
 }
 
-/* Interactive 3D Fanned Book Lineup (Upgraded from stbook's static book_banner.png!) */
-.lowf-hero-fan {
+/* 120FPS 3D Fanned Book Stage (Driven by Damped rAF Spring Parallax + Pure Transform Hover!) */
+.lowf-hero-fan-stage {
   position: relative;
   z-index: 4;
+  perspective: 1400px;
+  width: 100%;
+  max-width: 940px;
+  margin: 26px auto 6px;
+}
+.lowf-hero-fan {
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  margin: 26px auto 6px;
   height: 265px;
-  max-width: 920px;
   width: 100%;
-  perspective: 1400px;
+  transform-style: preserve-3d;
+  will-change: transform;
 }
 .fan-book {
   position: relative;
@@ -557,13 +586,17 @@ html.drawer-open .sidebar {
   margin: 0 -18px;
   border-radius: 4px 8px 8px 4px;
   transform-style: preserve-3d;
+  backface-visibility: hidden;
   transform:
     translate3d(0, var(--fy, 0px), var(--fz, 0px))
     rotateY(var(--fry, 0deg))
     scale(var(--fs, 1));
-  transition: transform 0.42s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.42s ease, z-index 0s;
+  /* Pure GPU transform transition ONLY — zero box-shadow repaint! */
+  transition: transform 0.54s var(--spring-out);
+  animation: fanBookEntrance 0.85s var(--spring-out) calc(var(--fan-delay, 0) * 60ms) backwards;
+  will-change: transform;
   z-index: var(--fz-idx, 1);
-  box-shadow: -12px 20px 36px rgba(0, 0, 0, 0.55);
+  box-shadow: -10px 18px 28px rgba(0, 0, 0, 0.48);
   cursor: pointer;
 }
 .fan-book img {
@@ -572,8 +605,8 @@ html.drawer-open .sidebar {
   object-fit: cover;
   border-radius: 3px 7px 7px 3px;
   border: 1px solid rgba(255, 249, 174, 0.3);
+  backface-visibility: hidden;
 }
-/* 3D Book Spine Crease */
 .fan-book::before {
   content: '';
   position: absolute;
@@ -586,7 +619,6 @@ html.drawer-open .sidebar {
   z-index: 2;
   pointer-events: none;
 }
-/* 3D White Paper Page-Edge Thickness on Right Side */
 .fan-book::after {
   content: '';
   position: absolute;
@@ -596,41 +628,39 @@ html.drawer-open .sidebar {
   width: 4px;
   background: repeating-linear-gradient(90deg, #faf7ee 0px, #e2dccb 2px, #fdfbf5 4px);
   border-radius: 0 3px 3px 0;
-  box-shadow: inset -1px 0 2px rgba(0,0,0,0.2);
   pointer-events: none;
 }
 [data-plus="on"] .fan-book::after {
-  /* Gilded Gold Leaf Page Edges in Lowf Plus Mode! */
   background: linear-gradient(180deg, #fef08a 0%, #eab308 50%, #ca8a04 100%);
 }
 .fan-book:hover {
   z-index: 30 !important;
-  transform: translate3d(0, -24px, 110px) rotateY(0deg) scale(1.15) !important;
-  box-shadow: 0 28px 56px rgba(0, 0, 0, 0.68), 0 0 28px rgba(255, 246, 184, 0.42);
+  transform: translate3d(0, -26px, 115px) rotateY(0deg) scale(1.15) !important;
 }
 .fan-book-tip {
   position: absolute;
   left: 50%;
   bottom: calc(100% + 10px);
-  transform: translateX(-50%) translateY(6px);
-  background: rgba(15, 20, 18, 0.92);
+  transform: translate3d(-50%, 8px, 0) scale(0.94);
+  background: rgba(15, 20, 18, 0.94);
   border: 1px solid var(--exh-gold-light);
   color: #fff9ae;
   font-size: 11px;
   font-weight: 700;
-  padding: 5px 11px;
+  padding: 5px 12px;
   border-radius: 999px;
   white-space: nowrap;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.22s ease, transform 0.22s ease;
+  will-change: transform, opacity;
+  transition: opacity 0.26s var(--spring-out), transform 0.26s var(--spring-out);
 }
 .fan-book:hover .fan-book-tip {
   opacity: 1;
-  transform: translateX(-50%) translateY(0);
+  transform: translate3d(-50%, 0, 0) scale(1);
 }
 
-/* Signature Bobbing Scroll-Down Capsule Pill (.site_more_down from stbook.vn) */
+/* Bobbing Scroll-Down Capsule Pill (Pure translate3d!) */
 .lowf-scroll-pill {
   position: absolute;
   left: 50%;
@@ -640,23 +670,22 @@ html.drawer-open .sidebar {
   height: 52px;
   border-radius: 20px;
   border: 1.5px solid var(--exh-box);
-  background: rgba(255, 255, 255, 0.65);
-  backdrop-filter: blur(6px);
-  box-shadow: 0 0 15px 0 rgba(255, 255, 255, 0.85) inset, 0 4px 14px rgba(149, 104, 60, 0.25);
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 4px 12px rgba(149, 104, 60, 0.2);
   color: var(--exh-box);
   display: grid;
   place-items: center;
   font-size: 15px;
   font-weight: 800;
-  animation: exhBobbing 1.4s ease-in-out infinite;
+  will-change: transform;
+  animation: exhBobbing 1.6s ease-in-out infinite;
 }
 [data-theme="dark"] .lowf-scroll-pill {
-  background: rgba(19, 24, 32, 0.75);
-  box-shadow: 0 0 12px rgba(212, 163, 106, 0.35) inset;
+  background: rgba(19, 24, 32, 0.9);
 }
 
 /* ==========================================================================
-   CENTERED SECTION HEADINGS WITH 100x4px ACCENT BAR (stbook.vn SIGNATURE)
+   CENTERED SECTION HEADINGS & FILTERS
    ========================================================================== */
 .section-heading {
   display: flex !important;
@@ -691,15 +720,8 @@ html.drawer-open .sidebar {
 [data-plus="on"] .section-heading h2::after {
   background: linear-gradient(90deg, #b3100f, #eab308, #b3100f);
 }
-.section-heading p {
-  font-size: 13.5px !important;
-  color: var(--exh-muted) !important;
-  margin-top: 4px !important;
-}
-/* Hide old top-right shelf arrows since we mount contextual side hover arrows */
-.section-heading .shelf-arrows {
-  display: none !important;
-}
+.section-heading p { font-size: 13.5px !important; color: var(--exh-muted) !important; margin-top: 4px !important; }
+.section-heading .shelf-arrows { display: none !important; }
 
 .filters {
   justify-content: center !important;
@@ -715,30 +737,42 @@ html.drawer-open .sidebar {
   padding: 7px 18px !important;
   font-size: 12.5px !important;
   font-weight: 600 !important;
-  transition: all 0.2s ease-in;
+  transition: transform 0.24s var(--spring-out), background-color 0.2s ease, color 0.2s ease;
 }
-.filter:hover,
+.filter:hover {
+  transform: translate3d(0, -2px, 0);
+  background: var(--exh-box) !important;
+  color: #ffffff !important;
+}
 .filter.active {
   background: var(--exh-box) !important;
   border-color: var(--exh-box) !important;
   color: #ffffff !important;
-  box-shadow: 0 6px 16px rgba(149, 104, 60, 0.25);
 }
-[data-theme="dark"] .filter.active {
+[data-theme="dark"] .filter.active,
+[data-theme="dark"] .filter:hover {
   color: #0b0e12 !important;
 }
 
 /* ==========================================================================
-   5-COLUMN EXHIBITION BOOK SHELF + 3D BOOKS + SOLID-TO-OUTLINE INVERT CTA
+   5-COLUMN 120FPS GLIDE CAROUSEL + PURE GPU 3D BOOK CARDS
    ========================================================================== */
 .exh-shelf-wrap {
   position: relative;
 }
+/* Disable snap-fighting on desktop so custom rAF quintic glide & drag run at 120fps! */
 .book-shelf {
   grid-auto-columns: calc((100% - 88px) / 5) !important;
   gap: 22px !important;
-  padding: 12px 6px 20px !important;
+  padding: 14px 6px 22px !important;
+  scroll-snap-type: none !important;
   scrollbar-width: none !important;
+  cursor: grab;
+  user-select: none;
+  -webkit-overflow-scrolling: touch;
+}
+.book-shelf.is-dragging {
+  cursor: grabbing;
 }
 .book-shelf::-webkit-scrollbar { display: none; }
 
@@ -747,38 +781,42 @@ html.drawer-open .sidebar {
   gap: 24px !important;
 }
 
-/* Contextual Left/Right Carousel Arrows (fade & slide in on hover like stbook .owl-nav) */
+/* Contextual Carousel Arrows — Pure transform slide (NOT left/right layout animation!) */
 .exh-carousel-arrow {
   position: absolute;
   top: 38%;
-  transform: translateY(-50%);
-  width: 42px;
-  height: 42px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   background: var(--exh-box) !important;
   border: 1px solid var(--exh-box) !important;
   color: #ffffff !important;
   display: grid;
   place-items: center;
+  font-size: 22px;
   z-index: 15;
   opacity: 0;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.22);
-  transition: opacity 0.25s ease, transform 0.25s ease, background-color 0.2s ease, color 0.2s ease;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.22);
+  will-change: transform, opacity;
+  transition: opacity 0.3s var(--spring-out), transform 0.32s var(--spring-out), background-color 0.2s ease, color 0.2s ease;
 }
 [data-theme="dark"] .exh-carousel-arrow { color: #0b0e12 !important; }
-.exh-carousel-arrow.prev { left: 8px; }
-.exh-carousel-arrow.next { right: 8px; }
+.exh-carousel-arrow.prev { left: -14px; transform: translate3d(16px, -50%, 0) scale(0.92); }
+.exh-carousel-arrow.next { right: -14px; transform: translate3d(-16px, -50%, 0) scale(0.92); }
 .exh-shelf-wrap:hover .exh-carousel-arrow {
   opacity: 1;
+  transform: translate3d(0, -50%, 0) scale(1);
 }
-.exh-shelf-wrap:hover .exh-carousel-arrow.prev { left: -12px; }
-.exh-shelf-wrap:hover .exh-carousel-arrow.next { right: -12px; }
 .exh-carousel-arrow:hover {
   background: var(--exh-surface) !important;
   color: var(--exh-box) !important;
+  transform: translate3d(0, -50%, 0) scale(1.1) !important;
+}
+.exh-carousel-arrow:active {
+  transform: translate3d(0, -50%, 0) scale(0.95) !important;
 }
 
-/* Clean Editorial Book Card (1:1.425 aspect ratio + 3D spine & pages) */
+/* Pure GPU 3D Book Card */
 .book-card {
   background: transparent !important;
   border: 0 !important;
@@ -786,6 +824,7 @@ html.drawer-open .sidebar {
   text-align: center;
   display: flex;
   flex-direction: column;
+  contain: layout style;
 }
 .book-cover {
   background: transparent !important;
@@ -801,11 +840,14 @@ html.drawer-open .sidebar {
   object-fit: cover !important;
   border-radius: 3px 7px 7px 3px !important;
   box-shadow: var(--exh-book-shadow) !important;
-  transform: rotateY(-5deg);
+  transform: rotateY(-5deg) translate3d(0, 0, 0);
   transform-origin: left center;
-  transition: transform 0.36s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.36s ease;
+  backface-visibility: hidden;
+  will-change: transform;
+  /* Pure transform transition ONLY — 120fps buttery tilt! */
+  transition: transform 0.5s var(--spring-out);
+  pointer-events: none;
 }
-/* 3D Spine Highlight */
 .book-cover::before {
   content: '';
   position: absolute;
@@ -817,36 +859,39 @@ html.drawer-open .sidebar {
   border-radius: 3px 0 0 3px;
   z-index: 3;
   pointer-events: none;
+  transition: transform 0.5s var(--spring-out);
 }
-/* 3D Paper Pages Edge */
 .book-cover::after {
   content: '';
   position: absolute;
   top: 7px;
   bottom: 11px;
-  right: 3px;
-  width: 6px;
+  right: 4px;
+  width: 5px;
   background: repeating-linear-gradient(90deg, #faf6ec 0px, #ded7c5 2px, #ffffff 4px);
   border-radius: 0 3px 3px 0;
   z-index: 1;
   pointer-events: none;
-  transition: transform 0.36s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
+  transition: transform 0.5s var(--spring-out);
 }
 [data-plus="on"] .book-cover::after {
   background: linear-gradient(180deg, #fef08a, #eab308, #b45309);
 }
 .book-card:hover .book-cover img {
-  transform: rotateY(-15deg) translate3d(0, -6px, 12px);
-  box-shadow: -16px 22px 36px rgba(25, 20, 14, 0.32) !important;
+  transform: rotateY(-16deg) translate3d(0, -8px, 14px) scale(1.02);
+}
+.book-card:hover .book-cover::before {
+  transform: translate3d(0, -8px, 0);
 }
 .book-card:hover .book-cover::after {
-  transform: translate3d(2px, -6px, 0);
+  transform: translate3d(2px, -8px, 0);
 }
 
 .format-tag {
   top: 12px !important;
   left: 14px !important;
-  background: rgba(30, 36, 32, 0.82) !important;
+  background: rgba(30, 36, 32, 0.86) !important;
   color: #fff9ae !important;
   font-size: 9.5px !important;
   font-weight: 700 !important;
@@ -855,16 +900,11 @@ html.drawer-open .sidebar {
   z-index: 4;
 }
 [data-plus="on"] .format-tag {
-  background: rgba(125, 11, 13, 0.9) !important;
+  background: rgba(125, 11, 13, 0.92) !important;
   border: 1px solid rgba(252, 211, 77, 0.45);
 }
-.bookmark {
-  top: 10px !important;
-  right: 14px !important;
-  z-index: 4;
-}
+.bookmark { top: 10px !important; right: 14px !important; z-index: 4; }
 
-/* Strict 2-line Clamped Title & 1-line Muted Author (exact stbook discipline) */
 .book-card h3 {
   font-family: var(--font-ui) !important;
   font-size: 14px !important;
@@ -893,8 +933,6 @@ html.drawer-open .sidebar {
   color: var(--exh-muted) !important;
   margin-bottom: 8px !important;
 }
-
-/* Signature stbook Solid-to-Outline Inverting Action Button */
 .book-card .button-soft {
   background: var(--exh-box) !important;
   color: #ffffff !important;
@@ -904,23 +942,16 @@ html.drawer-open .sidebar {
   font-size: 12.5px !important;
   font-weight: 700 !important;
   margin-top: auto;
-  transition: background-color 0.2s ease-in, color 0.2s ease-in, transform 0.2s ease;
+  transition: transform 0.25s var(--spring-out), background-color 0.2s ease, color 0.2s ease;
 }
-[data-theme="dark"] .book-card .button-soft {
-  color: #0b0e12 !important;
-}
+[data-theme="dark"] .book-card .button-soft { color: #0b0e12 !important; }
 .book-card .button-soft:hover {
   background: var(--exh-surface) !important;
   color: var(--exh-box) !important;
-  transform: translateY(-1px);
+  transform: translate3d(0, -2px, 0);
 }
 
-/* Centered Section Footer Outline Pill ("Xem tất cả" from stbook.vn) */
-.exh-section-footer {
-  display: flex;
-  justify-content: center;
-  margin-top: 18px;
-}
+.exh-section-footer { display: flex; justify-content: center; margin-top: 18px; }
 .exh-pill-cta {
   display: inline-flex;
   align-items: center;
@@ -932,24 +963,19 @@ html.drawer-open .sidebar {
   color: var(--exh-box) !important;
   font-size: 14px;
   font-weight: 700;
-  transition: all 0.22s ease-in;
+  transition: transform 0.28s var(--spring-out), background-color 0.2s ease, color 0.2s ease;
 }
 .exh-pill-cta:hover {
   background: var(--exh-box);
   color: #ffffff !important;
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(149, 104, 60, 0.25);
+  transform: translate3d(0, -2px, 0);
 }
-[data-theme="dark"] .exh-pill-cta:hover {
-  color: #0b0e12 !important;
-}
+[data-theme="dark"] .exh-pill-cta:hover { color: #0b0e12 !important; }
 
 /* ==========================================================================
-   50/50 ASYMMETRIC BENTO MULTIMEDIA GALLERY (INSPIRED BY stbook SECTION 3)
+   50/50 ASYMMETRIC BENTO MULTIMEDIA GALLERY
    ========================================================================== */
-.exh-gallery-section {
-  margin-top: 56px;
-}
+.exh-gallery-section { margin-top: 56px; }
 .exh-gallery-wrap {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -970,6 +996,7 @@ html.drawer-open .sidebar {
   color: #fff;
   text-align: left;
   cursor: pointer;
+  contain: layout paint;
 }
 .exh-gallery-featured img {
   position: absolute;
@@ -977,10 +1004,12 @@ html.drawer-open .sidebar {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  transform: scale(1.001) translate3d(0, 0, 0);
+  will-change: transform;
+  transition: transform 0.75s var(--spring-out);
 }
 .exh-gallery-featured:hover img {
-  transform: scale(1.05);
+  transform: scale(1.06) translate3d(0, 0, 0);
 }
 .exh-gallery-featured::after {
   content: '';
@@ -988,10 +1017,7 @@ html.drawer-open .sidebar {
   inset: 0;
   background: linear-gradient(180deg, rgba(0,0,0,0.08) 20%, rgba(10, 18, 15, 0.86) 100%);
 }
-.exh-gallery-caption {
-  position: relative;
-  z-index: 2;
-}
+.exh-gallery-caption { position: relative; z-index: 2; }
 .exh-gallery-caption small {
   display: inline-block;
   color: var(--exh-gold-light);
@@ -1009,10 +1035,7 @@ html.drawer-open .sidebar {
   margin-bottom: 6px;
   color: #fff;
 }
-.exh-gallery-caption p {
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.85);
-}
+.exh-gallery-caption p { font-size: 13px; color: rgba(255, 255, 255, 0.85); }
 
 .exh-gallery-grid {
   display: grid;
@@ -1024,19 +1047,19 @@ html.drawer-open .sidebar {
   position: relative;
   background: var(--exh-surface);
   border: 1px solid var(--exh-line);
-  box-shadow: 0 0 0 1px rgba(149, 104, 60, 0.08), var(--exh-shadow-sm);
+  box-shadow: var(--exh-shadow-sm);
   border-radius: 16px;
   padding: 22px;
   text-align: left;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.28s ease, border-color 0.28s ease;
+  will-change: transform;
+  transition: transform 0.38s var(--spring-out), border-color 0.25s ease;
 }
 .exh-tile:hover {
-  transform: translate3d(0, -5px, 0);
+  transform: translate3d(0, -6px, 0);
   border-color: var(--exh-box);
-  box-shadow: var(--exh-shadow-hover);
 }
 .exh-tile-icon {
   width: 42px;
@@ -1046,6 +1069,10 @@ html.drawer-open .sidebar {
   color: var(--exh-box);
   display: grid;
   place-items: center;
+  transition: transform 0.32s var(--spring-out);
+}
+.exh-tile:hover .exh-tile-icon {
+  transform: scale(1.1) rotate(-4deg);
 }
 .exh-tile strong {
   display: block;
@@ -1055,33 +1082,27 @@ html.drawer-open .sidebar {
   color: var(--exh-ink);
   margin: 14px 0 4px;
 }
-.exh-tile span {
-  font-size: 12px;
-  line-height: 1.5;
-  color: var(--exh-muted);
-}
+.exh-tile span { font-size: 12px; line-height: 1.5; color: var(--exh-muted); }
 
 /* ==========================================================================
-   STATS, CONTINUE & RIGHT PANEL (CLEAN HORIZONTAL EXHIBITION STRIP)
+   STATS, CONTINUE & RIGHT PANEL
    ========================================================================== */
-.stats {
-  gap: 16px !important;
-  margin-top: 28px !important;
-}
+.stats { gap: 16px !important; margin-top: 28px !important; }
 .stat, .continue, .widget {
   background: var(--exh-surface) !important;
   border: 1px solid var(--exh-line) !important;
   border-radius: 16px !important;
   box-shadow: var(--exh-shadow-sm);
+  transition: transform 0.35s var(--spring-out), border-color 0.25s ease;
 }
-.stat-icon {
-  background: var(--exh-surface-soft) !important;
-  color: var(--exh-box) !important;
+.stat:hover, .continue:hover {
+  transform: translate3d(0, -4px, 0);
+  border-color: var(--exh-box) !important;
 }
+.stat-icon { background: var(--exh-surface-soft) !important; color: var(--exh-box) !important; }
 .progress-line span { background: var(--exh-box) !important; }
 .reading-ring .ring-progress { stroke: var(--exh-box) !important; }
 
-/* Hide old redundant bottom promo cards on dashboard when 50/50 Gallery is shown */
 .dashboard-section[data-section="ambient"],
 .dashboard-section[data-section="deal"] {
   display: none !important;
@@ -1095,60 +1116,60 @@ html.drawer-open .sidebar {
   padding-top: 36px;
   border-top: 1px solid var(--exh-line);
 }
-#rightPanel .quote-card {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
 
 /* ==========================================================================
-   RIGHT-EDGE STICKY DOT NAVIGATION RAIL (stbook.vn .stiky_menu SIGNATURE!)
+   ZERO-REFLOW STICKY DOT NAVIGATION RAIL (PURE TRANSFORM CAPSULE MORPH!)
    ========================================================================== */
 .lowf-dot-rail {
   position: fixed;
   right: 14px;
   top: 50%;
-  transform: translateY(-50%);
+  transform: translate3d(0, -50%, 0);
   z-index: 70;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 11px;
+  gap: 6px;
   padding: 10px 6px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.72);
-  backdrop-filter: blur(10px);
+  background: var(--exh-surface);
   border: 1px solid var(--exh-line);
   box-shadow: var(--exh-shadow-sm);
 }
-[data-theme="dark"] .lowf-dot-rail {
-  background: rgba(19, 24, 32, 0.78);
-}
 .lowf-dot {
   position: relative;
-  width: 16px;
-  height: 16px;
+  width: 22px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  background: transparent;
+}
+.lowf-dot::before {
+  content: '';
+  width: 12px;
+  height: 12px;
   border-radius: 999px;
   background: var(--exh-surface);
   border: 2px solid var(--exh-box);
-  padding: 0;
-  transition: height 0.22s ease-in, background-color 0.22s ease-in, border-radius 0.22s ease-in;
+  transform: scaleY(1);
+  transition: transform 0.3s var(--spring-out), background-color 0.22s ease;
 }
-.lowf-dot.active,
-.lowf-dot:hover {
-  height: 36px;
-  border-radius: 10px;
+.lowf-dot.active::before,
+.lowf-dot:hover::before {
+  transform: scaleY(1.95);
   background: var(--exh-box);
+  border-radius: 6px;
 }
 .lowf-dot-tip {
   position: absolute;
-  right: 28px;
+  right: 30px;
   top: 50%;
-  transform: translateY(-50%) translateX(8px);
+  transform: translate3d(8px, -50%, 0);
   background: var(--exh-surface);
   color: var(--exh-ink);
   border: 1px solid var(--exh-box);
-  box-shadow: 0 4px 16px rgba(149, 104, 60, 0.22);
+  box-shadow: var(--exh-shadow-sm);
   padding: 5px 12px;
   border-radius: 8px;
   font-size: 11.5px;
@@ -1156,15 +1177,15 @@ html.drawer-open .sidebar {
   white-space: nowrap;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  transition: opacity 0.22s var(--spring-out), transform 0.22s var(--spring-out);
 }
 .lowf-dot:hover .lowf-dot-tip {
   opacity: 1;
-  transform: translateY(-50%) translateX(0);
+  transform: translate3d(0, -50%, 0);
 }
 
 /* ==========================================================================
-   STUDIO, VIDEO & PLANS PAGES HARMONIZED
+   STUDIO, VIDEO & PLANS PAGES
    ========================================================================== */
 .studio-hero {
   background: var(--exh-hero-bg) !important;
@@ -1181,26 +1202,29 @@ html.drawer-open .sidebar {
   border-radius: 999px !important;
   padding: 11px 22px !important;
   font-weight: 700 !important;
+  transition: transform 0.26s var(--spring-out), background-color 0.2s ease;
 }
 .studio-hero .button-white svg { color: var(--exh-box) !important; stroke: var(--exh-box) !important; }
-.studio-hero .button-white:hover { background: var(--exh-gold-light) !important; }
+.studio-hero .button-white:hover { background: var(--exh-gold-light) !important; transform: translate3d(0, -2px, 0); }
 
 .video-card {
   background: var(--exh-surface) !important;
   border: 1px solid var(--exh-line) !important;
   border-radius: 16px !important;
   box-shadow: var(--exh-shadow-sm);
+  transition: transform 0.35s var(--spring-out);
 }
-.video-poster {
-  background: var(--exh-hero-bg) !important;
-}
+.video-card:hover { transform: translate3d(0, -5px, 0); }
+.video-poster { background: var(--exh-hero-bg) !important; }
 .video-poster > span {
   width: 56px !important;
   height: 56px !important;
   background: rgba(255, 249, 174, 0.2) !important;
   border: 1.5px solid var(--exh-gold-light);
   color: var(--exh-gold-light) !important;
+  transition: transform 0.3s var(--spring-out);
 }
+.video-card:hover .video-poster > span { transform: scale(1.12); }
 
 .plans-grid {
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)) !important;
@@ -1210,14 +1234,16 @@ html.drawer-open .sidebar {
   background: var(--exh-surface) !important;
   border: 1px solid var(--exh-line) !important;
   border-radius: 20px !important;
+  transition: transform 0.35s var(--spring-out);
 }
+.plan:hover { transform: translate3d(0, -4px, 0); }
 .plan.plan-plus {
   background:
     radial-gradient(circle at 82% 18%, rgba(245, 196, 105, 0.25), transparent 45%),
     linear-gradient(145deg, #6e0b0e 0%, #9e1619 52%, #3d0608 100%) !important;
   border: 1.5px solid #fcd34d !important;
   color: #ffffff !important;
-  box-shadow: 0 22px 52px -12px rgba(125, 11, 13, 0.48) !important;
+  box-shadow: 0 22px 48px -12px rgba(125, 11, 13, 0.45) !important;
 }
 .plan.plan-plus .eyebrow { color: #fff9ae !important; }
 .plan.plan-plus h2, .plan.plan-plus .plan-price { color: #ffffff !important; font-family: var(--font-display); }
@@ -1229,9 +1255,6 @@ html.drawer-open .sidebar {
   font-weight: 800 !important;
 }
 
-/* ==========================================================================
-   CEREMONIAL FOOTER (LIKE stbook.vn DONG SON CRIMSON/EMERALD FOOTER)
-   ========================================================================== */
 .workspace > footer {
   background: var(--exh-footer-bg) !important;
   color: rgba(255, 253, 240, 0.9) !important;
@@ -1241,24 +1264,33 @@ html.drawer-open .sidebar {
 .workspace > footer b { color: var(--exh-gold-light) !important; font-family: var(--font-display); font-size: 18px; }
 .workspace > footer button, .workspace > footer a { color: var(--exh-gold-light) !important; }
 
-/* Floating Player & Equalizer */
+/* Pure GPU scaleY Audio Equalizer (Zero layout height reflow!) */
 .player {
-  background: rgba(18, 24, 22, 0.94) !important;
-  backdrop-filter: blur(16px);
+  background: rgba(18, 24, 22, 0.96) !important;
   color: #fff !important;
   border: 1px solid rgba(255, 246, 184, 0.26) !important;
   border-radius: 999px !important;
+  transform: translate3d(0, 0, 0);
 }
 .player-play { background: var(--exh-box) !important; color: #fff !important; }
 .lowf-eq { display: inline-flex; align-items: flex-end; gap: 2.5px; height: 16px; margin-left: 6px; }
-.lowf-eq i { display: block; width: 3px; height: 5px; border-radius: 999px; background: #fcd34d; }
-.lowf-eq.is-playing i:nth-child(1) { animation: lowfEq1 0.85s infinite ease-in-out; }
-.lowf-eq.is-playing i:nth-child(2) { animation: lowfEq2 0.72s infinite ease-in-out; }
-.lowf-eq.is-playing i:nth-child(3) { animation: lowfEq3 1.02s infinite ease-in-out; }
-.lowf-eq.is-playing i:nth-child(4) { animation: lowfEq4 0.9s infinite ease-in-out; }
+.lowf-eq i {
+  display: block;
+  width: 3px;
+  height: 16px;
+  border-radius: 999px;
+  background: #fcd34d;
+  transform: scaleY(0.28);
+  transform-origin: bottom;
+  will-change: transform;
+}
+.lowf-eq.is-playing i:nth-child(1) { animation: lowfEq 0.78s infinite ease-in-out; }
+.lowf-eq.is-playing i:nth-child(2) { animation: lowfEq 0.64s infinite ease-in-out 0.15s; }
+.lowf-eq.is-playing i:nth-child(3) { animation: lowfEq 0.92s infinite ease-in-out 0.28s; }
+.lowf-eq.is-playing i:nth-child(4) { animation: lowfEq 0.72s infinite ease-in-out 0.1s; }
 
 /* ==========================================================================
-   RESPONSIVE (TABLET & MOBILE 390x844)
+   RESPONSIVE (TABLET & MOBILE)
    ========================================================================== */
 @media (max-width: 1120px) {
   .exhibition-nav { display: none !important; }
@@ -1271,26 +1303,29 @@ html.drawer-open .sidebar {
   .top-exhibition-brand b { font-size: 19px !important; }
   .top-brand-crest { width: 32px; height: 32px; font-size: 17px; }
   .topbar .search { flex: 1 1 auto !important; width: auto !important; max-width: none !important; padding: 6px 10px !important; }
-  .topbar .search kbd, .topbar .header-label { display: none !important; }
+  .topbar .header-label { display: none !important; }
   .page-layout { padding: 0 16px 90px !important; }
   .hero { min-height: 540px !important; padding: 30px 16px 90px !important; }
-  .lowf-hero-fan { height: 185px; margin-top: 18px; }
+  .lowf-hero-fan { height: 185px; }
   .fan-book { width: 92px; margin: 0 -14px; }
   .fan-book:nth-child(1), .fan-book:nth-child(7) { display: none; }
-  .book-shelf { grid-auto-columns: calc((100% - 16px) / 2) !important; gap: 16px !important; }
+  .book-shelf {
+    grid-auto-columns: calc((100% - 16px) / 2) !important;
+    gap: 16px !important;
+    scroll-snap-type: x mandatory !important;
+  }
   .book-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 16px !important; }
-  .exh-carousel-arrow { opacity: 1; width: 36px; height: 36px; }
+  .exh-carousel-arrow { opacity: 1; width: 36px; height: 36px; left: 4px; transform: translate3d(0, -50%, 0); }
+  .exh-carousel-arrow.next { left: auto; right: 4px; }
   .exh-gallery-wrap { grid-template-columns: 1fr; }
   .exh-gallery-featured { min-height: 260px; }
   .exh-gallery-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
-  .lowf-dot-rail { right: 6px; padding: 7px 4px; gap: 8px; }
-  .lowf-dot { width: 12px; height: 12px; }
-  .lowf-dot.active { height: 26px; }
+  .lowf-dot-rail { right: 6px; padding: 7px 4px; gap: 4px; }
   .bottom-tabs {
-    background: rgba(12, 34, 29, 0.95) !important;
+    background: var(--exh-header-bg) !important;
     border-top: 1px solid rgba(255, 246, 184, 0.2) !important;
+    transform: translate3d(0, 0, 0);
   }
-  [data-plus="on"] .bottom-tabs { background: rgba(108, 11, 13, 0.95) !important; }
   .bottom-tabs button { color: rgba(255, 249, 194, 0.72) !important; }
   .bottom-tabs button.active { color: #fff9ae !important; }
 }
