@@ -1,7 +1,26 @@
 import { createNeonAuth } from '@neon/auth/next/server';
 import { HttpError } from '@/lib/api';
 import { getSQL } from '@/lib/db';
-export type User = { id: string; name: string; email: string; emailVerified: boolean; isAdmin: boolean };
+export type User = { id: string; name: string; email: string; emailVerified: boolean; isAdmin: boolean; avatarUrl?: string };
+let avatarColReady: Promise<void> | null = null;
+export function ensureProfileAvatarColumn(): Promise<void> {
+  if (!avatarColReady) {
+    avatarColReady = (async () => {
+      const sql = getSQL();
+      await sql`ALTER TABLE lowf_profiles ADD COLUMN IF NOT EXISTS avatar_url TEXT NOT NULL DEFAULT ''`;
+    })().catch((err) => {
+      avatarColReady = null;
+      throw err;
+    });
+  }
+  return avatarColReady;
+}
+export async function getProfileAvatar(userId: string): Promise<string> {
+  await ensureProfileAvatarColumn();
+  const sql = getSQL();
+  const rows = await sql`SELECT avatar_url FROM lowf_profiles WHERE user_id=${userId} LIMIT 1`;
+  return typeof rows[0]?.avatar_url === 'string' ? rows[0].avatar_url : '';
+}
 let instance: ReturnType<typeof createNeonAuth> | undefined;
 export function getAuth() {
   if (!instance) {

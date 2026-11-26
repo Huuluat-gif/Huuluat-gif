@@ -1,10 +1,10 @@
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import { getSQL } from '@/lib/db';
-import { requireUser,syncProfile } from '@/lib/auth/server';
+import { requireUser,syncProfile,ensureProfileAvatarColumn,getProfileAvatar } from '@/lib/auth/server';
 import { json,route,assertSameOrigin,parseBody,initials,HttpError } from '@/lib/api';
 import { rateLimit } from '@/lib/rate-limit';
 const schema=z.object({text:z.string().trim().min(1).max(500)}).strict();
 export const dynamic='force-dynamic';
-export const GET=route(async()=>{const sql=getSQL(),rows=await sql`SELECT m.id,m.text,m.created_at,p.display_name FROM lowf_messages m JOIN lowf_profiles p ON p.user_id=m.user_id ORDER BY m.created_at DESC LIMIT 50`;return json({messages:rows.reverse().map(r=>({id:r.id,name:r.display_name,initials:initials(r.display_name),text:r.text,createdAt:r.created_at}))});});
-export const POST=route(async request=>{assertSameOrigin(request);const user=await requireUser();if(!user.emailVerified)throw new HttpError(403,'Hãy xác minh email trước khi gửi tin nhắn.','EMAIL_VERIFICATION_REQUIRED');await rateLimit(`chat:${user.id}`,10,60);const body=await parseBody(request,schema);await syncProfile(user);const sql=getSQL(),id=randomUUID();const rows=await sql`INSERT INTO lowf_messages(id,user_id,text) VALUES(${id}::uuid,${user.id},${body.text}) RETURNING created_at`;return json({message:{id,name:user.name,initials:initials(user.name),text:body.text,createdAt:rows[0].created_at}},201);});
+export const GET=route(async()=>{await ensureProfileAvatarColumn();const sql=getSQL(),rows=await sql`SELECT m.id,m.user_id,m.text,m.created_at,p.display_name,p.avatar_url FROM lowf_messages m JOIN lowf_profiles p ON p.user_id=m.user_id ORDER BY m.created_at DESC LIMIT 50`;return json({messages:rows.reverse().map(r=>({id:r.id,userId:r.user_id,name:r.display_name,initials:initials(r.display_name),avatar:r.avatar_url||'',text:r.text,createdAt:r.created_at}))});});
+export const POST=route(async request=>{assertSameOrigin(request);const user=await requireUser();if(!user.emailVerified)throw new HttpError(403,'Hãy xác minh email trước khi gửi tin nhắn.','EMAIL_VERIFICATION_REQUIRED');await rateLimit(`chat:${user.id}`,10,60);const body=await parseBody(request,schema);await ensureProfileAvatarColumn();await syncProfile(user);const sql=getSQL(),id=randomUUID();const [rows,avatar]=await Promise.all([sql`INSERT INTO lowf_messages(id,user_id,text) VALUES(${id}::uuid,${user.id},${body.text}) RETURNING created_at`,getProfileAvatar(user.id)]);return json({message:{id,userId:user.id,name:user.name,initials:initials(user.name),avatar,text:body.text,createdAt:rows[0].created_at}},201);});
