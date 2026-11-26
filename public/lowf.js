@@ -44,8 +44,15 @@ const TREND_PLAYLISTS=[
  {id:'yt-jazz-night',title:'Late Night Jazz Piano in a Bookshop',artist:'Smooth Jazz Reading',mood:'Bookshop',youtubeId:'MYPVQccHhAQ',color:'#5b4785'}
 ];
 const BG_PATTERNS=[
- {id:'clean',name:'Giấy mịn',desc:'Sạch sẽ, tối giản',group:'basic'},
  {id:'orbs3d',name:'Cầu kính 3D',desc:'Khối cầu nổi chiều sâu',group:'3d'},
+ {id:'cubes3d',name:'Lập phương 3D',desc:'Khối pha lê xoay nổi',group:'3d'},
+ {id:'tunnel3d',name:'Đường hầm 3D',desc:'Khung chiều sâu không gian',group:'3d'},
+ {id:'ribbon3d',name:'Dải lụa 3D',desc:'Sóng lụa ánh sáng chéo',group:'3d'},
+ {id:'nebula3d',name:'Tinh vân 3D',desc:'Đám mây vũ trụ đa sắc',group:'3d'},
+ {id:'hex3d',name:'Tổ ong 3D',desc:'Lưới lục giác nghiêng 3D',group:'3d'},
+ {id:'spotlight3d',name:'Ánh đèn 3D',desc:'Luồng sáng sân khấu dịu',group:'3d'},
+ {id:'bubbles3d',name:'Bong bóng 3D',desc:'Bóng kính ngũ sắc bay lên',group:'3d'},
+ {id:'constellation3d',name:'Chòm sao 3D',desc:'Mạng sao thiên văn xoay',group:'3d'},
  {id:'grid3d',name:'Lưới 3D không gian',desc:'Sàn phối cảnh 3D trượt',group:'3d'},
  {id:'aurora3d',name:'Cực quang 3D',desc:'Dải sáng uốn lượn mượt',group:'3d'},
  {id:'rings3d',name:'Quỹ đạo 3D',desc:'Vòng thiên văn xoay nhẹ',group:'3d'},
@@ -59,24 +66,39 @@ const BG_PATTERNS=[
  {id:'waves',name:'Sóng lụa',desc:'Đường sóng mềm mại',group:'basic'},
  {id:'starry',name:'Ngàn sao',desc:'Bầu trời đêm lấp lánh',group:'basic'},
  {id:'sunset',name:'Hoàng hôn',desc:'Ánh kính ấm nghệ thuật',group:'basic'},
- {id:'botanical',name:'Vân lá cổ',desc:'Họa tiết thư viện',group:'basic'}
+ {id:'botanical',name:'Vân lá cổ',desc:'Họa tiết thư viện',group:'basic'},
+ {id:'clean',name:'Giấy mịn',desc:'Sạch sẽ, tối giản',group:'basic'}
 ];
 const ART_WALLPAPERS={
  'art-mountains':'data:image/svg+xml;charset=UTF-8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice"><defs><linearGradient id="g1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#dfe9e3"/><stop offset="55%" stop-color="#f5efe6"/><stop offset="100%" stop-color="#e8d8c5"/></linearGradient></defs><rect width="1440" height="900" fill="url(#g1)"/><circle cx="1120" cy="210" r="110" fill="#fff7e2" opacity=".88"/><path d="M0 540 Q260 360 540 490 T1120 440 T1440 500 L1440 900 L0 900Z" fill="#90ab9b" opacity=".38"/><path d="M0 640 Q340 470 720 600 T1440 540 L1440 900 L0 900Z" fill="#5b7d6b" opacity=".42"/><path d="M0 750 Q420 620 880 730 T1440 680 L1440 900 L0 900Z" fill="#2f5241" opacity=".48"/></svg>'),
  'art-nightsky':'data:image/svg+xml;charset=UTF-8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice"><defs><linearGradient id="ng" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#141e33"/><stop offset="55%" stop-color="#273259"/><stop offset="100%" stop-color="#4b3b6b"/></linearGradient></defs><rect width="1440" height="900" fill="url(#ng)"/><circle cx="1160" cy="190" r="78" fill="#fef4d4" opacity=".92"/><circle cx="1192" cy="172" r="70" fill="#232d50"/><g fill="#fff8dc" opacity=".8"><circle cx="220" cy="140" r="3"/><circle cx="410" cy="220" r="2.2"/><circle cx="640" cy="110" r="3.2"/><circle cx="840" cy="180" r="2.5"/><circle cx="960" cy="290" r="2"/><circle cx="310" cy="340" r="2.5"/><circle cx="720" cy="310" r="3"/></g><path d="M0 710 Q360 590 760 690 T1440 620 L1440 900 L0 900Z" fill="#101829" opacity=".7"/></svg>'),
- 'art-botanical':'data:image/svg+xml;charset=UTF-8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice"><defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#edf4e8"/><stop offset="50%" stop-color="#f7f2e3"/><stop offset="100%" stop-color="#e5efe0"/></linearGradient></defs><rect width="1440" height="900" fill="url(#bg)"/><circle cx="1180" cy="180" r="260" fill="#c7deb9" opacity=".45"/><circle cx="240" cy="720" r="290" fill="#ead4b2" opacity=".45"/><path d="M980 0 C1050 180 1190 290 1440 320" stroke="#3c7352" stroke-width="6" fill="none" opacity=".28"/><ellipse cx="1120" cy="150" rx="75" ry="34" transform="rotate(-28 1120 150)" fill="#5a926d" opacity=".26"/><ellipse cx="1260" cy="230" rx="88" ry="38" transform="rotate(18 1260 230)" fill="#3b7350" opacity=".24"/><ellipse cx="220" cy="680" rx="95" ry="40" transform="rotate(-22 220 680)" fill="#c98952" opacity=".2"/></svg>')
+ 'art-botanical':'data:image/svg+xml;charset=UTF-8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice"><defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#edf4e8"/><stop offset="50%" stop-color="#f7f2e3"/><stop offset="100%" stop-color="#e5efe0"/></linearGradient></defs><rect width="1440" height="900" fill="url(#bg)"/><circle cx="1180" cy="180" r="260" fill="#c7deb9" opacity=".45"/><circle cx="240" cy="720" r="290" fill="#ead4b2" opacity=".45"/><path d="M980 0 C1050 180 1190 290 1440 320" stroke="#3c7352" stroke-width="6" fill="none" opacity=".28"/><ellipse cx="1120" cy="150" rx="75" ry="34" transform="rotate(-28 1120 150)" fill="#5a926d" opacity=".26"/><ellipse cx="1260" cy="230" rx="88" ry="38" transform="rotate(18 1260 230)" fill="#3b7350" opacity=".24"/><ellipse cx="220" cy="680" rx="95" ry="40" transform="rotate(-22 220 680)" fill="#c98952" opacity=".2"/></svg>'),
+ 'art-sakura-lake':'data:image/svg+xml;charset=UTF-8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice"><defs><linearGradient id="sl" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#fdebf1"/><stop offset="58%" stop-color="#fce2ea"/><stop offset="100%" stop-color="#f4c7d6"/></linearGradient></defs><rect width="1440" height="900" fill="url(#sl)"/><circle cx="1040" cy="220" r="95" fill="#fff7fa" opacity=".9"/><path d="M0 570 Q360 490 740 560 T1440 530 L1440 900 L0 900Z" fill="#e9adc2" opacity=".42"/><path d="M0 680 Q440 635 880 680 T1440 660 L1440 900 L0 900Z" fill="#d989a5" opacity=".34"/><g fill="#f080a5" opacity=".55"><circle cx="220" cy="160" r="65"/><circle cx="310" cy="210" r="48"/><circle cx="1240" cy="140" r="78"/><circle cx="1140" cy="210" r="52"/></g></svg>'),
+ 'art-autumn-moon':'data:image/svg+xml;charset=UTF-8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice"><defs><linearGradient id="am" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#f7dfc1"/><stop offset="55%" stop-color="#f5c998"/><stop offset="100%" stop-color="#d88552"/></linearGradient></defs><rect width="1440" height="900" fill="url(#am)"/><circle cx="1080" cy="230" r="118" fill="#fff3cf" opacity=".92"/><path d="M0 600 Q320 440 690 565 T1440 510 L1440 900 L0 900Z" fill="#b8572c" opacity=".44"/><path d="M0 730 Q420 600 900 715 T1440 670 L1440 900 L0 900Z" fill="#7c3318" opacity=".5"/></svg>'),
+ 'art-winter-cabin':'data:image/svg+xml;charset=UTF-8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice"><defs><linearGradient id="wc" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#cdddf0"/><stop offset="55%" stop-color="#e4eef8"/><stop offset="100%" stop-color="#f7fafe"/></linearGradient></defs><rect width="1440" height="900" fill="url(#wc)"/><circle cx="1130" cy="190" r="74" fill="#ffffff" opacity=".88"/><path d="M0 610 L260 450 L540 590 L860 410 L1180 565 L1440 460 L1440 900 L0 900Z" fill="#89a9d1" opacity=".34"/><path d="M0 720 Q460 630 960 720 T1440 685 L1440 900 L0 900Z" fill="#ffffff" opacity=".78"/><g fill="#3a5a85" opacity=".36"><polygon points="990,740 1030,570 1070,740"/><polygon points="1070,745 1120,535 1170,745"/><polygon points="1175,740 1215,595 1255,740"/></g></svg>'),
+ 'art-sunset-sea':'data:image/svg+xml;charset=UTF-8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice"><defs><linearGradient id="ss" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#f8d8d0"/><stop offset="48%" stop-color="#f7cfa7"/><stop offset="100%" stop-color="#a5c3d9"/></linearGradient></defs><rect width="1440" height="900" fill="url(#ss)"/><circle cx="720" cy="460" r="145" fill="#fff2c2" opacity=".86"/><rect y="510" width="1440" height="390" fill="#5e87a8" opacity=".34"/><path d="M0 570 Q360 540 720 570 T1440 560 L1440 900 L0 900Z" fill="#3a668a" opacity=".28"/></svg>')
 };
 const BG_WALLPAPERS=[
  {id:'none',name:'Không ảnh nền',desc:'Chỉ dùng màu & nền 3D',url:''},
  {id:'photo-library',name:'Thư viện cổ điển',desc:'Kệ sách gỗ & ánh nắng',url:'https://images.unsplash.com/photo-1507842217343-583bb7270b66?auto=format&fit=crop&w=1600&q=75'},
+ {id:'photo-bookshop',name:'Hiệu sách châu Âu',desc:'Không gian sách cổ kính',url:'https://images.unsplash.com/photo-1521587760476-6c12a4b040da?auto=format&fit=crop&w=1600&q=75'},
  {id:'photo-cafe',name:'Quán sách mưa rơi',desc:'Cà phê ấm & cửa kính',url:'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=1600&q=75'},
+ {id:'photo-rainwindow',name:'Cửa kính ngày mưa',desc:'Giọt mưa êm dịu chill',url:'https://images.unsplash.com/photo-1515694346937-94d85e41e6f0?auto=format&fit=crop&w=1600&q=75'},
  {id:'photo-sakura',name:'Vườn hoa anh đào',desc:'Sắc xuân dịu dàng',url:'https://images.unsplash.com/photo-1522383225653-ed111181a951?auto=format&fit=crop&w=1600&q=75'},
+ {id:'photo-autumn',name:'Đường lá phong đỏ',desc:'Sắc thu lãng mạn',url:'https://images.unsplash.com/photo-1507041957456-9c397ce39c97?auto=format&fit=crop&w=1600&q=75'},
+ {id:'photo-kyoto',name:'Phố cổ Kyoto chiều',desc:'Đèn lồng ấm áp Á Đông',url:'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=1600&q=75'},
  {id:'photo-forest',name:'Rừng thông sương sớm',desc:'Yên bình & trong lành',url:'https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=1600&q=75'},
  {id:'photo-ocean',name:'Biển xanh hoàng hôn',desc:'Đường chân trời thư thái',url:'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1600&q=75'},
  {id:'photo-snow',name:'Rừng tuyết Bắc Âu',desc:'Mùa đông êm đềm',url:'https://images.unsplash.com/photo-1483664852095-d6cc6870702d?auto=format&fit=crop&w=1600&q=75'},
+ {id:'photo-aurora',name:'Cực quang Bắc Cực',desc:'Bầu trời đêm huyền ảo',url:'https://images.unsplash.com/photo-1531366936337-7c912a4589a7?auto=format&fit=crop&w=1600&q=75'},
+ {id:'photo-lavender',name:'Cánh đồng Oải Hương',desc:'Tím mộng mơ hoàng hôn',url:'https://images.unsplash.com/photo-1499002238440-d264edd596ec?auto=format&fit=crop&w=1600&q=75'},
  {id:'art-mountains',name:'Tranh núi sương mù',desc:'Thủy mặc nghệ thuật 4K',url:ART_WALLPAPERS['art-mountains']},
  {id:'art-nightsky',name:'Tranh đêm trăng sao',desc:'Bầu trời đêm sâu lắng',url:ART_WALLPAPERS['art-nightsky']},
- {id:'art-botanical',name:'Tranh vườn thực vật',desc:'Lá xanh & nắng vàng 4K',url:ART_WALLPAPERS['art-botanical']}
+ {id:'art-botanical',name:'Tranh vườn thực vật',desc:'Lá xanh & nắng vàng 4K',url:ART_WALLPAPERS['art-botanical']},
+ {id:'art-sakura-lake',name:'Tranh hồ anh đào',desc:'Sắc hồng pastel 4K',url:ART_WALLPAPERS['art-sakura-lake']},
+ {id:'art-autumn-moon',name:'Tranh trăng thu',desc:'Trăng tròn đồi phong 4K',url:ART_WALLPAPERS['art-autumn-moon']},
+ {id:'art-winter-cabin',name:'Tranh rừng tuyết 4K',desc:'Mùa đông trong trẻo',url:ART_WALLPAPERS['art-winter-cabin']},
+ {id:'art-sunset-sea',name:'Tranh biển hoàng hôn',desc:'Nắng chiều lãng mạn 4K',url:ART_WALLPAPERS['art-sunset-sea']}
 ];
 const AVATAR_PRESETS=[
  {id:'cat',name:'Mèo đọc sách',bg:'#f7e4d4',accent:'#b85d38',emoji:'🐱'},
@@ -326,9 +348,69 @@ const SEASON_THEMES={
   palette:{primary:'#2c6546',background:'#f6f5f0',surface:'#fdfcf9',text:'#1d2b22'},
   accent:'#c98552',heroBg1:'#e7efe1',heroBg2:'#f5efe2',heroBorder:'#d3e0c9',
   fxName:'Lá xanh & bụi sao dịu nhẹ'
+ },
+ rainy:{
+  id:'rainy',icon:'🌧️',name:'Mùa Mưa',label:'Phố Mưa Chill · Bên Khung Cửa',
+  badge:'🌧️ MÙA MƯA · TIẾNG MƯA & TRANG SÁCH',
+  ribbon:'Ngoài hiên mưa rơi tí tách, bên trong một tách cà phê nóng và cuốn sách hay.',
+  note:'raindrops on glass & warm pages.',
+  palette:{primary:'#365b78',background:'#eff4f8',surface:'#fafdff',text:'#192734'},
+  accent:'#6ea5cc',heroBg1:'#ddeaf4',heroBg2:'#edf2f6',heroBorder:'#bfd4e5',
+  fxName:'Những giọt mưa bạc rơi chéo'
+ },
+ midautumn:{
+  id:'midautumn',icon:'🌕',name:'Trung Thu',label:'Trăng Rằm · Đèn Hoa Đăng',
+  badge:'🌕 MÙA TRUNG THU · TRĂNG RẰM & TRI THỨC',
+  ribbon:'Ánh trăng rằm dịu ngọt và đèn trời bay lên giữa đêm thu bình yên.',
+  note:'full moon glow & sky lanterns.',
+  palette:{primary:'#9e511c',background:'#fdf6ea',surface:'#fffdf7',text:'#2e1f14'},
+  accent:'#e6a532',heroBg1:'#fce8c8',heroBg2:'#f9f0de',heroBorder:'#ebd0a0',
+  fxName:'Đèn trời & ánh trăng vàng bay lên'
+ },
+ christmas:{
+  id:'christmas',icon:'🎄',name:'Giáng Sinh',label:'Giáng Sinh · Tuyết & Chuông Vàng',
+  badge:'🎄 MÙA GIÁNG SINH · AN LÀNH & ẤM ÁP',
+  ribbon:'Tuyết rơi khẽ bên tán thông xanh — mùa trao tặng những cuốn sách yêu thương.',
+  note:'merry snow & cozy bookshop.',
+  palette:{primary:'#1f5c43',background:'#f3f7f4',surface:'#fcfefd',text:'#172920'},
+  accent:'#c93a3a',heroBg1:'#e0efe6',heroBg2:'#fae8e6',heroBorder:'#c7dfd0',
+  fxName:'Tuyết & ánh sao Giáng Sinh'
+ },
+ meteor:{
+  id:'meteor',icon:'🌠',name:'Sao Băng',label:'Đêm Sao Băng · Dải Ngân Hà',
+  badge:'🌠 ĐÊM SAO BĂNG · KHÁM PHÁ VŨ TRỤ SÁCH',
+  ribbon:'Mỗi cuốn sách là một vì sao sáng giữa bầu trời đêm vô tận.',
+  note:'shooting stars & infinite stories.',
+  palette:{primary:'#4d3d91',background:'#f3f2fa',surface:'#fcfbff',text:'#1f1a36'},
+  accent:'#9c7df2',heroBg1:'#e4e0fb',heroBg2:'#f2ecfa',heroBorder:'#cfc7f2',
+  fxName:'Mưa sao băng chéo lấp lánh'
+ },
+ dandelion:{
+  id:'dandelion',icon:'🌬️',name:'Bồ Công Anh',label:'Gió Chiều · Đồng Cỏ Bồ Công Anh',
+  badge:'🌬️ BỒ CÔNG ANH · NHẸ NHÀNG THEO GIÓ',
+  ribbon:'Thả trôi những lo toan theo cánh bồ công anh bay giữa nắng chiều êm ả.',
+  note:'dandelion seeds & soft breeze.',
+  palette:{primary:'#587a38',background:'#f7f9f0',surface:'#fdfef9',text:'#212b18'},
+  accent:'#c5a34e',heroBg1:'#ebf2dc',heroBg2:'#f8f5e3',heroBorder:'#d6e2bd',
+  fxName:'Cánh bồ công anh trắng bay theo gió'
+ },
+ lotus:{
+  id:'lotus',icon:'🪷',name:'Mùa Sen',label:'Đầm Sen Sớm · Thanh Tịnh',
+  badge:'🪷 MÙA SEN · THANH TỊNH & SÂU LẮNG',
+  ribbon:'Hương sen sớm mai dịu dàng, giữ tâm tĩnh tại cho từng trang sách sâu.',
+  note:'morning lotus & quiet mind.',
+  palette:{primary:'#a8456d',background:'#fbf4f7',surface:'#fffcfd',text:'#2d1a23'},
+  accent:'#5c9a78',heroBg1:'#fae5ee',heroBg2:'#ebf4ee',heroBorder:'#ecc8d8',
+  fxName:'Cánh hoa sen hồng & sương sớm rơi'
  }
 };
 function seasonArtSVG(id){
+ if(id==='rainy')return `<svg class="hero-scene" viewBox="0 0 640 320" fill="none" aria-hidden="true"><defs><linearGradient id="rnG" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#b7d3e8" stop-opacity=".6"/><stop offset="100%" stop-color="#e3eef7" stop-opacity="0"/></linearGradient></defs><rect width="640" height="320" fill="url(#rnG)"/><ellipse cx="470" cy="64" rx="88" ry="34" fill="#8cb3d1" fill-opacity=".35"/><ellipse cx="555" cy="78" rx="64" ry="26" fill="#6f9bbd" fill-opacity=".28"/><g stroke="#4f7fa3" stroke-opacity=".36" stroke-width="2" stroke-linecap="round"><line x1="430" y1="108" x2="412" y2="165"/><line x1="478" y1="102" x2="460" y2="162"/><line x1="528" y1="112" x2="510" y2="174"/><line x1="576" y1="106" x2="558" y2="166"/></g><path d="M0 264 Q200 228 420 264 T640 248 L640 320 L0 320Z" fill="#6d95b5" fill-opacity=".24"/></svg>`;
+ if(id==='midautumn')return `<svg class="hero-scene" viewBox="0 0 640 320" fill="none" aria-hidden="true"><defs><radialGradient id="maM" cx="80%" cy="28%" r="48%"><stop offset="0%" stop-color="#ffe79e" stop-opacity=".95"/><stop offset="100%" stop-color="#ffe79e" stop-opacity="0"/></radialGradient></defs><rect width="640" height="320" fill="url(#maM)"/><circle cx="520" cy="86" r="48" fill="#ffe184" fill-opacity=".82"/><path d="M440 120 Q495 100 560 116 T640 108" stroke="#d48c3b" stroke-opacity=".32" stroke-width="6" stroke-linecap="round"/><path d="M0 264 Q190 210 380 254 T640 226 L640 320 L0 320Z" fill="#d99643" fill-opacity=".3"/></svg>`;
+ if(id==='christmas')return `<svg class="hero-scene" viewBox="0 0 640 320" fill="none" aria-hidden="true"><defs><radialGradient id="xmG" cx="78%" cy="22%" r="48%"><stop offset="0%" stop-color="#ffe2a8" stop-opacity=".85"/><stop offset="100%" stop-color="#ffe2a8" stop-opacity="0"/></radialGradient></defs><rect width="640" height="320" fill="url(#xmG)"/><polygon points="520,56 472,188 568,188" fill="#2c6e50" fill-opacity=".34"/><polygon points="520,104 456,246 584,246" fill="#1f5c43" fill-opacity=".36"/><circle cx="520" cy="48" r="10" fill="#f0b63a" fill-opacity=".85"/><circle cx="496" cy="146" r="5" fill="#d64545" fill-opacity=".8"/><circle cx="542" cy="172" r="5" fill="#f0b63a" fill-opacity=".85"/><circle cx="508" cy="206" r="5.5" fill="#d64545" fill-opacity=".75"/><path d="M0 278 Q220 245 450 278 T640 265 L640 320 L0 320Z" fill="#ffffff" fill-opacity=".72"/></svg>`;
+ if(id==='meteor')return `<svg class="hero-scene" viewBox="0 0 640 320" fill="none" aria-hidden="true"><defs><linearGradient id="mtG" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#9e87f2" stop-opacity=".32"/><stop offset="100%" stop-color="#5d4ea3" stop-opacity=".08"/></linearGradient></defs><rect width="640" height="320" fill="url(#mtG)"/><g stroke="#8c70e8" stroke-linecap="round"><line x1="590" y1="24" x2="468" y2="108" stroke-width="2.5" stroke-opacity=".55"/><line x1="630" y1="78" x2="532" y2="144" stroke-width="2" stroke-opacity=".42"/><line x1="490" y1="18" x2="408" y2="74" stroke-width="1.8" stroke-opacity=".38"/></g><g fill="#7c5ee0" fill-opacity=".5"><circle cx="468" cy="108" r="4"/><circle cx="532" cy="144" r="3"/><circle cx="566" cy="48" r="2.5"/></g><path d="M0 266 Q200 220 420 262 T640 236 L640 320 L0 320Z" fill="#6b56b8" fill-opacity=".2"/></svg>`;
+ if(id==='dandelion')return `<svg class="hero-scene" viewBox="0 0 640 320" fill="none" aria-hidden="true"><defs><radialGradient id="dnG" cx="76%" cy="24%" r="48%"><stop offset="0%" stop-color="#fff0b3" stop-opacity=".9"/><stop offset="100%" stop-color="#fff0b3" stop-opacity="0"/></radialGradient></defs><rect width="640" height="320" fill="url(#dnG)"/><path d="M510 320 Q518 220 538 140" stroke="#587a38" stroke-width="3" stroke-opacity=".45"/><circle cx="538" cy="136" r="34" stroke="#859e5a" stroke-opacity=".42" stroke-width="2" stroke-dasharray="3 6"/><circle cx="538" cy="136" r="14" fill="#d9be6c" fill-opacity=".5"/><path d="M0 266 Q210 218 430 260 T640 236 L640 320 L0 320Z" fill="#89a85d" fill-opacity=".28"/></svg>`;
+ if(id==='lotus')return `<svg class="hero-scene" viewBox="0 0 640 320" fill="none" aria-hidden="true"><defs><radialGradient id="ltG" cx="76%" cy="28%" r="48%"><stop offset="0%" stop-color="#ffdce9" stop-opacity=".9"/><stop offset="100%" stop-color="#ffdce9" stop-opacity="0"/></radialGradient></defs><rect width="640" height="320" fill="url(#ltG)"/><ellipse cx="520" cy="248" rx="96" ry="24" fill="#5c9a78" fill-opacity=".28"/><path d="M520 155 C548 188 548 224 520 242 C492 224 492 188 520 155Z" fill="#e0749c" fill-opacity=".55"/><path d="M520 242 C480 228 456 202 470 174 C495 186 512 212 520 242Z" fill="#eb95b6" fill-opacity=".55"/><path d="M520 242 C560 228 584 202 570 174 C545 186 528 212 520 242Z" fill="#eb95b6" fill-opacity=".55"/><path d="M0 270 Q210 245 430 272 T640 258 L640 320 L0 320Z" fill="#639e7d" fill-opacity=".22"/></svg>`;
  if(id==='spring')return `<svg class="hero-scene" viewBox="0 0 640 320" fill="none" aria-hidden="true"><defs><radialGradient id="spSun" cx="78%" cy="22%" r="48%"><stop offset="0%" stop-color="#ffd5e3" stop-opacity=".95"/><stop offset="100%" stop-color="#ffd5e3" stop-opacity="0"/></radialGradient></defs><rect width="640" height="320" fill="url(#spSun)"/><path d="M0 260 Q160 205 320 248 T640 225 L640 320 L0 320Z" fill="#f3c9d7" fill-opacity=".42"/><path d="M0 288 Q210 240 430 278 T640 264 L640 320 L0 320Z" fill="#e8a7be" fill-opacity=".35"/><path d="M410 -10 C455 48 518 76 645 64" stroke="#8f4d5e" stroke-width="5" stroke-linecap="round" stroke-opacity=".45"/><path d="M495 45 C520 75 552 94 590 105" stroke="#8f4d5e" stroke-width="3" stroke-linecap="round" stroke-opacity=".38"/><g fill="#f289a8"><circle cx="458" cy="36" r="14" fill-opacity=".55"/><circle cx="476" cy="48" r="11" fill-opacity=".7"/><circle cx="534" cy="64" r="16" fill-opacity=".5"/><circle cx="566" cy="54" r="12" fill-opacity=".72"/><circle cx="595" cy="82" r="15" fill-opacity=".6"/><circle cx="614" cy="58" r="11" fill-opacity=".65"/><circle cx="514" cy="84" r="10" fill-opacity=".55"/></g><g fill="#fff2f6"><circle cx="464" cy="40" r="4"/><circle cx="538" cy="63" r="5"/><circle cx="592" cy="80" r="4.5"/><circle cx="568" cy="54" r="3.5"/></g></svg>`;
  if(id==='summer')return `<svg class="hero-scene" viewBox="0 0 640 320" fill="none" aria-hidden="true"><defs><radialGradient id="smSun" cx="82%" cy="18%" r="46%"><stop offset="0%" stop-color="#ffe18c" stop-opacity=".95"/><stop offset="55%" stop-color="#ffd27d" stop-opacity=".32"/><stop offset="100%" stop-color="#ffd27d" stop-opacity="0"/></radialGradient></defs><rect width="640" height="320" fill="url(#smSun)"/><circle cx="532" cy="66" r="36" fill="#ffcf5c" fill-opacity=".75"/><circle cx="532" cy="66" r="54" stroke="#f7b944" stroke-opacity=".35" stroke-width="2" stroke-dasharray="6 8"/><path d="M0 245 Q120 218 250 244 T510 236 T640 248 L640 320 L0 320Z" fill="#76cbe0" fill-opacity=".35"/><path d="M0 274 Q160 250 320 274 T640 264 L640 320 L0 320Z" fill="#2c92b0" fill-opacity=".26"/><path d="M460 120 Q495 102 528 118 Q556 104 590 122" stroke="#166b85" stroke-opacity=".25" stroke-width="2.5" stroke-linecap="round"/><path d="M360 88 Q382 76 402 88" stroke="#166b85" stroke-opacity=".3" stroke-width="2" stroke-linecap="round"/></svg>`;
  if(id==='autumn')return `<svg class="hero-scene" viewBox="0 0 640 320" fill="none" aria-hidden="true"><defs><radialGradient id="auSun" cx="76%" cy="28%" r="48%"><stop offset="0%" stop-color="#ffd28a" stop-opacity=".9"/><stop offset="100%" stop-color="#ffd28a" stop-opacity="0"/></radialGradient></defs><rect width="640" height="320" fill="url(#auSun)"/><circle cx="508" cy="88" r="46" fill="#f3b65d" fill-opacity=".55"/><path d="M0 256 Q175 198 355 245 T640 215 L640 320 L0 320Z" fill="#d98a4a" fill-opacity=".32"/><path d="M0 286 Q210 236 440 276 T640 258 L640 320 L0 320Z" fill="#a84b28" fill-opacity=".24"/><path d="M430 -8 C482 42 544 64 645 48" stroke="#7d3b1e" stroke-width="4.5" stroke-linecap="round" stroke-opacity=".4"/><g fill="#d45d2a" fill-opacity=".62"><ellipse cx="486" cy="40" rx="14" ry="8" transform="rotate(-24 486 40)"/><ellipse cx="540" cy="56" rx="16" ry="9" transform="rotate(18 540 56)"/><ellipse cx="590" cy="42" rx="13" ry="8" transform="rotate(-15 590 42)"/></g><g fill="#e8a135" fill-opacity=".7"><ellipse cx="514" cy="64" rx="12" ry="7" transform="rotate(32 514 64)"/><ellipse cx="574" cy="70" rx="14" ry="8" transform="rotate(-30 574 70)"/></g></svg>`;
@@ -841,7 +923,7 @@ function renderDecorDrawer(){
  drawer.innerHTML=`<div class="decor-head"><div><small>CHỦ WEBSITE · LIVE STUDIO</small><h2>Trang trí theo mùa</h2></div><button type="button" class="icon-button" data-action="decor-close" aria-label="Đóng bảng trang trí">${icon('x')}</button></div>
  <div class="decor-body">
   <section class="decor-group">
-   <h3>1. Chủ đề 4 Mùa &amp; Lễ hội (Đổi cả Màu + Tranh + Hiệu ứng)</h3>
+   <h3>1. Chủ đề 12 Mùa &amp; Cảnh rơi (Đổi cả Màu + Tranh + Hiệu ứng)</h3>
    <div class="decor-seasons">${Object.values(SEASON_THEMES).map(st=>`<button type="button" class="decor-season ${curSea.id===st.id?'active':''}" data-action="decor-season" data-id="${st.id}"><span class="season-ico">${st.icon}</span><span><strong>${st.name}</strong><small>${st.fxName}</small></span><span class="season-dot" style="background:${st.palette.primary}"></span></button>`).join('')}</div>
    <div class="decor-seg-label" style="margin-top:10px">Mức độ hiệu ứng rơi (${curSea.fxName})</div>
    <div class="decor-seg">${[['off','Tắt'],['gentle','Dịu nhẹ'],['vivid','Rực rỡ rõ nét']].map(([id,lbl])=>`<button type="button" class="${(d.fxLevel||'vivid')===id?'active':''}" data-action="decor-fx" data-id="${id}">${lbl}</button>`).join('')}</div>
@@ -861,7 +943,7 @@ function renderDecorDrawer(){
    <label class="decor-color-row"><span>Tự chọn màu nhấn riêng</span><input type="color" id="decorPrimaryColor" value="${esc(p.primary||'#2c6546')}"></label>
   </section>
   <section class="decor-group">
-   <h3>3. Bầu trời sao &amp; Hiệu ứng không gian</h3>
+   <h3>5. Bầu trời sao &amp; Hiệu ứng không gian</h3>
    <div class="decor-seg-label">Hiệu ứng sao lấp lánh</div>
    <div class="decor-seg">${[['off','Tắt'],['soft','Dịu nhẹ'],['bright','Lung linh']].map(([id,lbl])=>`<button type="button" class="${d.stars===id?'active':''}" data-action="decor-stars" data-id="${id}">${lbl}</button>`).join('')}</div>
    <label class="decor-switch"><span>${curSea.icon} ${curSea.fxName}</span><input type="checkbox" data-decor-toggle="petals" ${d.petals!==false?'checked':''}></label>
@@ -869,19 +951,19 @@ function renderDecorDrawer(){
    <label class="decor-switch"><span>📄 Vân giấy sách tinh tế</span><input type="checkbox" data-decor-toggle="paperGrain" ${d.paperGrain!==false?'checked':''}></label>
   </section>
   <section class="decor-group">
-   <h3>4. Thiết kế thẻ sách &amp; phông chữ</h3>
+   <h3>6. Thiết kế thẻ sách &amp; phông chữ</h3>
    <div class="decor-seg">${[['hardcover','Bìa cứng 3D'],['glass','Kính mờ'],['minimal','Tối giản']].map(([id,lbl])=>`<button type="button" class="${(d.cardStyle||'hardcover')===id?'active':''}" data-action="decor-card" data-id="${id}">${lbl}</button>`).join('')}</div>
    <div class="decor-seg" style="margin-top:8px">${[['serif','Chữ Tạp chí (Serif)'],['sans','Chữ Hiện đại (Sans)']].map(([id,lbl])=>`<button type="button" class="${(s.font||'serif')===id?'active':''}" data-action="decor-font" data-id="${id}">${lbl}</button>`).join('')}</div>
    <label class="decor-range"><span>Độ bo góc thẻ <strong>${Number(s.radius??18)}px</strong></span><input type="range" id="decorRadius" min="8" max="28" step="2" value="${Number(s.radius??18)}"></label>
   </section>
   <section class="decor-group">
-   <h3>5. Sửa trực tiếp Thương hiệu &amp; Banner</h3>
+   <h3>7. Sửa trực tiếp Thương hiệu &amp; Banner</h3>
    <label class="decor-input"><span>Tên thương hiệu</span><input type="text" maxlength="40" data-decor-field="brand.name" value="${esc(b.name||'Lowf')}"></label>
    <label class="decor-input"><span>Tiêu đề Banner (xuống dòng được)</span><textarea rows="2" maxlength="160" data-decor-field="hero.title">${esc(h.title||'Giữa bộn bề,\ntìm một trang yên.')}</textarea></label>
    <label class="decor-input"><span>Mô tả ngắn dưới tiêu đề</span><textarea rows="2" maxlength="300" data-decor-field="hero.subtitle">${esc(h.subtitle||'Những cuốn sách hay, một bản nhạc dịu. Và khoảng thời gian dành riêng cho bạn.')}</textarea></label>
   </section>
   <section class="decor-group">
-   <h3>6. Bật / tắt các khu vực trang chủ</h3>
+   <h3>8. Bật / tắt các khu vực trang chủ</h3>
    ${secList.map(([id,lbl])=>`<label class="decor-switch"><span>${lbl}</span><input type="checkbox" data-decor-section="${id}" ${curSections.includes(id)?'checked':''}></label>`).join('')}
   </section>
  </div>
