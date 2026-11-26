@@ -54,7 +54,7 @@ import {
 import styles from "./admin.module.css";
 import { PaymentSettingsPanel, OrdersPanel } from "./commerce";
 
-type Tab = "overview" | "books" | "tracks" | "videos" | "design" | "plans" | "payments" | "orders";
+type Tab = "overview" | "books" | "tracks" | "videos" | "design" | "plans" | "payments" | "orders" | "auth";
 type Kind = "books" | "tracks" | "videos" | "plans";
 type AssetKind = "image" | "pdf" | "audio" | "video";
 type ItemStatus = "draft" | "published" | "archived";
@@ -147,10 +147,11 @@ const tabs: { id: Tab; label: string; icon: typeof BookOpen }[] = [
   { id: "books", label: "Sách & Ebook", icon: BookOpen },
   { id: "tracks", label: "Âm nhạc", icon: Headphones },
   { id: "videos", label: "Video", icon: Film },
-  { id: "design", label: "Giao diện", icon: Paintbrush },
+  { id: "design", label: "Giao diện & 4 Mùa", icon: Paintbrush },
   { id: "plans", label: "Gói thành viên", icon: CreditCard },
   { id: "orders", label: "Đơn hàng", icon: ShoppingBag },
-  { id: "payments", label: "Thanh toán VNPAY", icon: ShieldCheck },
+  { id: "payments", label: "Thanh toán VNPAY", icon: CreditCard },
+  { id: "auth", label: "Đăng nhập & Bảo mật", icon: ShieldCheck },
 ];
 const labels: Record<
   Kind,
@@ -1186,7 +1187,7 @@ export default function AdminStudio({environment='production'}:{environment?:'pr
         </nav>
         <p className={styles.navLabel}>GIAO DIỆN &amp; BÁN HÀNG</p>
         <nav className={styles.nav}>
-          {tabs.filter(t => ["design", "plans", "orders", "payments"].includes(t.id)).map(({ id, label, icon: Icon }) => (
+          {tabs.filter(t => ["design", "plans", "orders", "payments", "auth"].includes(t.id)).map(({ id, label, icon: Icon }) => (
             <button
               key={id}
               className={tab === id ? styles.navActive : ""}
@@ -1195,31 +1196,27 @@ export default function AdminStudio({environment='production'}:{environment?:'pr
             >
               <Icon size={18} />
               {label}
-              {id === "design" && <span className={styles.navNew}>Studio</span>}
-              {tab === id && <ChevronRight size={15} className={styles.navArrow} />}
+              {id === "design" && <span className={styles.navNew}>Live</span>}
+              {id === "plans" && (
+                <span className={styles.navCount}>
+                  {content.plans.filter(x => x.status !== "archived").length}
+                </span>
+              )}
+              {tab === id && id !== "design" && id !== "plans" && <ChevronRight size={15} className={styles.navArrow} />}
             </button>
           ))}
         </nav>
         <div className={styles.sidebarBottom}>
-          <div className={styles.sidebarNote}>
-            <Sparkles size={21} />
-            <strong>
-              Một chút chăm chút,
-              <br />
-              một thế giới riêng.
-            </strong>
-            <p>Mọi thay đổi lớn đều bắt đầu từ một ý tưởng nhỏ.</p>
-            <a href="/" target="_blank" rel="noreferrer">
-              Mở website <ArrowUpRight size={15} />
-            </a>
-          </div>
+          <a href="/" target="_blank" rel="noreferrer" className={styles.sidebarCta}>
+            <Eye size={16} /> Mở website xem thực tế <ArrowUpRight size={15} />
+          </a>
           <a
             className={styles.wordpressLink}
             href="/huong-dan.html"
             target="_blank"
             rel="noreferrer"
           >
-            <FileText size={17} /> Hướng dẫn quản trị <ExternalLink size={12} />
+            <FileText size={16} /> Hướng dẫn quản trị <ExternalLink size={12} />
           </a>
           <div className={styles.owner}>
             <span className={styles.avatar}>
@@ -1295,206 +1292,130 @@ export default function AdminStudio({environment='production'}:{environment?:'pr
                 <>
                   <div className={styles.pageHeading}>
                     <div>
-                      <p className={styles.eyebrow}>
-                        CHÀO NGƯỜI CHĂM SÓC NHỮNG TRANG SÁCH
+                      <p className={styles.eyebrow}>CHÀO CHỦ NHÂN LOWF</p>
+                      <h1>Hôm nay bạn muốn chăm chút gì?</h1>
+                      <p>
+                        Quản lý toàn bộ sách, âm nhạc, giao diện 4 mùa và hệ
+                        thống đăng nhập tại một nơi duy nhất.
                       </p>
-                      <h1>Hôm nay, bạn muốn tạo điều gì?</h1>
-                      <p>Mọi thứ bạn cần để chăm chút cho thế giới Lowf.</p>
-                      <a
-                        href="/huong-dan.html"
-                        target="_blank"
-                        rel="noreferrer"
-                        className={styles.textButton}
+                    </div>
+                    <button
+                      className={styles.primary}
+                      onClick={() => openEditor("books")}
+                    >
+                      <Plus size={17} /> Thêm sách mới ngay
+                    </button>
+                  </div>
+                  <div className={styles.kpiGrid4}>
+                    {(["books", "tracks", "videos"] as Kind[]).map((kind) => (
+                      <button
+                        key={kind}
+                        onClick={() => nav(kind)}
+                        className={styles.kpiCard}
                       >
-                        <BookOpen size={14} /> Hướng dẫn quản trị{" "}
-                        <ArrowUpRight size={13} />
+                        <small>{labels[kind].plural}</small>
+                        <strong>
+                          {
+                            content[kind].filter((x) => x.status !== "archived")
+                              .length
+                          }
+                        </strong>
+                        <span>
+                          {
+                            content[kind].filter((x) => x.status === "published")
+                              .length
+                          }{" "}
+                          đang hiển thị
+                        </span>
+                      </button>
+                    ))}
+                    <button
+                      onClick={() => nav("design")}
+                      className={styles.kpiCard}
+                    >
+                      <small>Giao diện &amp; 4 Mùa</small>
+                      <strong>6</strong>
+                      <span>Chủ đề mùa &amp; Trang trí live</span>
+                    </button>
+                  </div>
+                  <section
+                    className={styles.panel}
+                    aria-label="Thao tác nhanh cho chủ website"
+                  >
+                    <div className={styles.panelTitle}>
+                      <div>
+                        <h2>Thao tác nhanh cho chủ website</h2>
+                        <p>
+                          Bấm 1 nút để thêm nội dung mới hoặc đổi toàn bộ phong
+                          cách theo mùa cho website.
+                        </p>
+                      </div>
+                      <a className={styles.secondary} href="/api/admin/source">
+                        <CloudUpload size={15} /> Tải mã nguồn
                       </a>
                     </div>
-                    <span className={styles.date}>
-                      {new Intl.DateTimeFormat("vi-VN", {
-                        timeZone: "Asia/Ho_Chi_Minh",
-                        dateStyle: "long",
-                      }).format(new Date())}
-                    </span>
-                  </div>
-                  <section className={styles.welcome}>
-                    <div>
-                      <span className={styles.welcomePill}>
-                        <Leaf size={13} /> YOUR LITTLE CREATIVE CORNER
-                      </span>
-                      <h2>
-                        Một thư viện.
-                        <br />
-                        <em>Dấu ấn của riêng bạn.</em>
-                      </h2>
-                      <p>
-                        Thêm một cuốn sách hay, một bản nhạc dịu,
-                        <br />
-                        hoặc khoác cho Lowf một diện mạo mới.
-                      </p>
+                    <div className={styles.quickGrid4}>
                       <button
-                        className={styles.primary}
+                        className={styles.quickCard}
                         onClick={() => openEditor("books")}
                       >
-                        <Plus size={17} /> Thêm một cuốn sách
+                        <BookOpen size={19} />
+                        <strong>Thêm cuốn sách mới</strong>
+                        <small>Ảnh bìa, file PDF, giá bán &amp; quyền đọc</small>
                       </button>
-                    </div>
-                    <div className={styles.welcomeArt} aria-hidden="true">
-                      <span className={styles.artCircle} />
-                      <span className={styles.artSpark}>✳</span>
-                      <div className={styles.artBook1}>
-                        <span>
-                          LOWF
-                          <br />
-                          ORIGINALS
-                        </span>
-                        <BookOpen size={43} />
-                        <b>
-                          every page,
-                          <br />a new beginning.
-                        </b>
-                      </div>
-                      <div className={styles.artBook2}>
-                        <Leaf size={38} />
-                        <b>
-                          a little
-                          <br />
-                          quiet.
-                        </b>
-                      </div>
-                      <div className={styles.artNote}>made with care.</div>
-                    </div>
-                  </section>
-                  <section className={styles.managementGuide} aria-label="Quản lý và phát triển website">
-                    <div><span className={styles.eyebrow}>BẠN MUỐN CHỈNH SỬA LOWF?</span><h2>Nội dung, diện mạo và tính năng.</h2><p>Thêm sách và media ngay tại Studio. Đổi màu, banner hoặc sắp xếp trang chủ trong Giao diện. Những tính năng mới hoặc bố cục tùy ý cần cập nhật mã nguồn và triển khai lên Vercel.</p></div>
-                    <div className={styles.managementButtons}>
-                      <button className={styles.primary} onClick={()=>openEditor('books')}><Plus size={16}/>Thêm sách</button>
-                      <button className={styles.secondary} onClick={()=>nav('design')}><Paintbrush size={16}/>Đổi giao diện</button>
-                      <button className={styles.secondary} onClick={()=>nav('payments')}><CreditCard size={16}/>Thiết lập VNPAY</button>
-                      <a className={styles.secondary} href="/api/admin/source"><CloudUpload size={16}/>Tải mã nguồn</a>
-                    </div>
-                    <p className={styles.commerceStatus}><span className={commerceEnabled?styles.savedDot:styles.unsavedDot}/>{commerceChecked?(commerceEnabled?'VNPAY production đã được cấu hình. Hãy kiểm tra giao dịch thật trước khi mở bán rộng rãi.':'Thanh toán thật chưa mở. Bạn có thể thiết lập và thử VNPAY Sandbox trong mục Thanh toán.'):'Chưa xác định được trạng thái thanh toán. Mở mục Thanh toán để kiểm tra.'}</p>
-                    <div className={styles.authSecurityBox}>
-                      <div>
-                        <strong><ShieldCheck size={15}/> Hệ thống Đăng nhập &amp; Bảo mật tài khoản</strong>
-                        <p>Chủ website đang đăng nhập: <b>{user.email}</b> (Đã xác minh email). Hỗ trợ 3 phương thức hiện đại: <b>Mã Email 6 số không mật khẩu</b>, <b>Đăng nhập Google 1 chạm</b> và <b>Email + Mật khẩu</b> (có xác minh OTP &amp; khôi phục mật khẩu).</p>
-                      </div>
-                      <div className={styles.authMethodPills}>
-                        <span>✓ Mã Email OTP (Không mật khẩu)</span>
-                        <span>✓ Google OAuth 1 chạm</span>
-                        <span>✓ Bảo vệ quyền chủ web theo phiên</span>
-                      </div>
-                    </div>
-                  </section>
-                  <div className={styles.stats}>
-                    {(["books", "tracks", "videos"] as Kind[]).map((kind) => {
-                      const Icon = labels[kind].icon;
-                      return (
-                        <button
-                          key={kind}
-                          onClick={() => nav(kind)}
-                          className={styles.stat}
-                        >
-                          <span>
-                            <Icon size={22} />
-                          </span>
-                          <div>
-                            <small>{labels[kind].plural}</small>
-                            <strong>
-                              {
-                                content[kind].filter(
-                                  (x) => x.status !== "archived",
-                                ).length
-                              }
-                            </strong>
-                            <p>
-                              {
-                                content[kind].filter(
-                                  (x) => x.status === "published",
-                                ).length
-                              }{" "}
-                              đang hiển thị trên website
-                            </p>
-                          </div>
-                          <ArrowUpRight size={17} />
-                        </button>
-                      );
-                    })}
-                  </div>
-                  <div className={styles.overviewColumns}>
-                    <section className={styles.panel}>
-                      <div className={styles.panelTitle}>
-                        <div>
-                          <h2>Một ý tưởng mới</h2>
-                          <p>Bắt đầu từ một việc nhỏ.</p>
-                        </div>
-                        <Sparkles size={19} />
-                      </div>
-                      <div className={styles.quickActions}>
-                        {(
-                          [
-                            {
-                              kind: "books",
-                              title: "Thêm một cuốn sách",
-                              text: "Ảnh bìa, thông tin & file PDF",
-                              icon: BookOpen,
-                            },
-                            {
-                              kind: "tracks",
-                              title: "Gửi một chút âm nhạc",
-                              text: "Tải bản nhạc và tạo không gian đọc",
-                              icon: Headphones,
-                            },
-                            {
-                              kind: "videos",
-                              title: "Kể bằng hình ảnh",
-                              text: "Thêm video vào thư viện",
-                              icon: Film,
-                            },
-                          ] as const
-                        ).map((a) => (
-                          <button
-                            key={a.kind}
-                            onClick={() => openEditor(a.kind)}
-                          >
-                            <span>
-                              <a.icon size={21} />
-                            </span>
-                            <div>
-                              <strong>{a.title}</strong>
-                              <small>{a.text}</small>
-                            </div>
-                            <ArrowRight size={16} />
-                          </button>
-                        ))}
-                      </div>
-                    </section>
-                    <section className={styles.designCallout}>
-                      <span className={styles.eyebrow}>
-                        YOUR BRAND, YOUR WORLD
-                      </span>
-                      <Paintbrush className={styles.calloutBrush} size={52} />
-                      <h2>
-                        Một diện mạo mới.
-                        <br />
-                        Vẫn rất là bạn.
-                      </h2>
-                      <p>
-                        Chọn màu, sửa lời chào và sắp xếp trang chủ. Xem trước
-                        rồi mới xuất bản.
-                      </p>
                       <button
-                        className={styles.secondary}
+                        className={styles.quickCard}
                         onClick={() => nav("design")}
                       >
-                        Thiết kế website <ArrowUpRight size={15} />
+                        <Paintbrush size={19} />
+                        <strong>Đổi màu &amp; Trang trí 4 Mùa</strong>
+                        <small>Xuân, Hạ, Thu, Đông, Tết &amp; hiệu ứng rơi</small>
                       </button>
-                    </section>
-                  </div>
+                      <button
+                        className={styles.quickCard}
+                        onClick={() => openEditor("videos")}
+                      >
+                        <Film size={19} />
+                        <strong>Thêm Video / Nhạc</strong>
+                        <small>Dán link YouTube hoặc tải tệp âm thanh</small>
+                      </button>
+                      <button
+                        className={styles.quickCard}
+                        onClick={() => nav("auth")}
+                      >
+                        <ShieldCheck size={19} />
+                        <strong>Đăng nhập &amp; Bảo mật</strong>
+                        <small>Google 1 chạm, Mã Email không mật khẩu</small>
+                      </button>
+                    </div>
+                    <div className={styles.authSecurityBox}>
+                      <div>
+                        <strong>
+                          <ShieldCheck size={15} /> Hệ thống Đăng nhập tiên tiến
+                          đã sẵn sàng
+                        </strong>
+                        <p>
+                          Chủ website đang đăng nhập: <b>{user.email}</b> (Đã
+                          xác minh email).{" "}
+                          {commerceChecked
+                            ? commerceEnabled
+                              ? "Thanh toán VNPAY Production đã sẵn sàng."
+                              : "Thanh toán VNPAY đang ở chế độ chờ thiết lập."
+                            : ""}
+                        </p>
+                      </div>
+                      <div className={styles.authMethodPills}>
+                        <span>✓ Google OAuth 1 chạm</span>
+                        <span>✓ Mã Email 6 số (Không mật khẩu)</span>
+                        <span>✓ Email + Mật khẩu có nút mắt</span>
+                        <span>✓ Khóa quyền /admin riêng chủ web</span>
+                      </div>
+                    </div>
+                  </section>
                   <section className={styles.panel}>
                     <div className={styles.panelTitle}>
                       <div>
-                        <h2>Đang được chăm chút</h2>
+                        <h2>Sách mới nhất trong thư viện</h2>
                         <p>
                           {totalPublished} nội dung đã xuất bản ·{" "}
                           {
@@ -1505,20 +1426,18 @@ export default function AdminStudio({environment='production'}:{environment?:'pr
                         </p>
                       </div>
                       <button
-                        className={styles.textButton}
+                        className={styles.secondary}
                         onClick={() => nav("books")}
                       >
-                        Đến thư viện <ArrowRight size={14} />
+                        Xem tất cả ({content.books.length}){" "}
+                        <ArrowRight size={14} />
                       </button>
                     </div>
-                    {content.books.slice(0, 4).length ? (
-                      <div className={styles.recentBooks}>
-                        {content.books.slice(0, 4).map((b) => (
-                          <button
-                            key={b.id}
-                            onClick={() => openEditor("books", b)}
-                          >
-                            <span className={styles.recentCover}>
+                    {content.books.slice(0, 6).length ? (
+                      <div className={styles.recentList}>
+                        {content.books.slice(0, 6).map((b) => (
+                          <div key={b.id} className={styles.recentRow}>
+                            <span className={styles.recentThumb}>
                               {b.coverAssetId || b.cover ? (
                                 <img
                                   src={
@@ -1529,15 +1448,27 @@ export default function AdminStudio({environment='production'}:{environment?:'pr
                                   alt=""
                                 />
                               ) : (
-                                <BookOpen />
+                                <BookOpen size={18} />
                               )}
                             </span>
-                            <span>
+                            <div className={styles.recentInfo}>
                               <strong>{titleOf(b)}</strong>
-                              <small>{b.author || "Chưa có tác giả"}</small>
-                              <StateBadge item={b} />
-                            </span>
-                          </button>
+                              <small>
+                                {b.author || "Chưa có tác giả"} ·{" "}
+                                {b.format || "Ebook Free"}
+                                {chapterCount(b) > 0
+                                  ? ` · ${chapterCount(b)} chương`
+                                  : ""}
+                              </small>
+                            </div>
+                            <StateBadge item={b} />
+                            <button
+                              className={styles.secondary}
+                              onClick={() => openEditor("books", b)}
+                            >
+                              <Pencil size={14} /> Sửa
+                            </button>
+                          </div>
                         ))}
                       </div>
                     ) : (
@@ -1657,6 +1588,91 @@ export default function AdminStudio({environment='production'}:{environment?:'pr
               )}
               {tab==='payments'&&<PaymentSettingsPanel onReadinessChange={enabled=>{setCommerceEnabled(enabled);setCommerceChecked(true)}}/>}
               {tab==='orders'&&<OrdersPanel/>}
+              {tab === "auth" && (
+                <>
+                  <div className={styles.pageHeading}>
+                    <div>
+                      <p className={styles.eyebrow}>AN TOÀN &amp; TIỆN LỢI</p>
+                      <h1>Hệ thống Đăng nhập &amp; Bảo mật</h1>
+                      <p>
+                        Tài khoản quản trị hiện tại: <strong>{user.email}</strong>{" "}
+                        (Đã xác minh email).
+                      </p>
+                    </div>
+                    <a
+                      href="/?auth=login"
+                      target="_blank"
+                      rel="noreferrer"
+                      className={styles.primary}
+                    >
+                      Mở màn hình Đăng nhập <ArrowUpRight size={15} />
+                    </a>
+                  </div>
+                  <section className={styles.panel}>
+                    <div className={styles.panelTitle}>
+                      <div>
+                        <h2>3 Phương thức đăng nhập hiện đại trên Lowf</h2>
+                        <p>
+                          Độc giả và chủ website có thể chọn cách đăng nhập nhanh
+                          nhất, đầy đủ báo lỗi tiếng Việt.
+                        </p>
+                      </div>
+                      <ShieldCheck size={20} />
+                    </div>
+                    <div className={styles.authMethodsGrid}>
+                      <div className={styles.quickCard}>
+                        <strong>1. Google OAuth 1 chạm</strong>
+                        <small>
+                          Đăng nhập nhanh bằng tài khoản Google. Đã tích hợp sẵn
+                          trao đổi phiên tự động và quay đúng trang quản trị.
+                        </small>
+                      </div>
+                      <div className={styles.quickCard}>
+                        <strong>2. Mã Email 6 số (Không mật khẩu)</strong>
+                        <small>
+                          Không cần nhớ mật khẩu. Nhập Email → nhận mã OTP 6 số →
+                          vào thẳng website. Hoạt động sẵn ngay trên Neon Auth.
+                        </small>
+                      </div>
+                      <div className={styles.quickCard}>
+                        <strong>3. Email + Mật khẩu chuẩn bảo mật</strong>
+                        <small>
+                          Có nút mắt hiện/ẩn mật khẩu, tự chuyển sang màn hình
+                          xác minh OTP nếu email chưa xác minh và hỗ trợ đặt lại
+                          mật khẩu bằng mã.
+                        </small>
+                      </div>
+                    </div>
+                  </section>
+                  <section className={styles.panel}>
+                    <div className={styles.panelTitle}>
+                      <div>
+                        <h2>Cách bật Google 1 chạm trên tên miền thật (1 phút)</h2>
+                        <p>
+                          Mã Email 6 số và Email + Mật khẩu đã chạy sẵn. Để bật
+                          thêm nút Google OAuth cho mọi độc giả:
+                        </p>
+                      </div>
+                    </div>
+                    <ol className={styles.authStepsList}>
+                      <li>
+                        Mở <strong>Neon Console</strong> → chọn cơ sở dữ liệu
+                        của Lowf → vào mục <strong>Auth → Social Providers</strong>.
+                      </li>
+                      <li>
+                        Bật công tắc <strong>Google</strong> (dùng Google
+                        Credentials của Neon hoặc điền OAuth Client ID / Secret
+                        của bạn).
+                      </li>
+                      <li>
+                        Thêm địa chỉ <code>https://www.lowflibray.com</code> vào{" "}
+                        <strong>Trusted Origins / Redirect URLs</strong> là hoàn
+                        tất.
+                      </li>
+                    </ol>
+                  </section>
+                </>
+              )}
               {tab === "design" && (
                 <>
                   <div className={styles.pageHeading}>
@@ -1699,6 +1715,55 @@ export default function AdminStudio({environment='production'}:{environment?:'pr
                       >
                         <ArrowUpRight size={16} /> Xuất bản
                       </button>
+                    </div>
+                  </div>
+                  <div className={styles.panel} style={{ marginBottom: 18 }}>
+                    <div className={styles.panelTitle}>
+                      <div>
+                        <h2>Chủ đề 4 Mùa &amp; Lễ hội (1 chạm đổi Màu + Tranh + Hiệu ứng rơi)</h2>
+                        <p>Chỉ chủ website có quyền đổi giao diện; sau khi bấm Xuất bản, mọi độc giả sẽ thấy ngay mùa bạn chọn.</p>
+                      </div>
+                    </div>
+                    <div className={styles.presetGrid} aria-label="Chủ đề 4 mùa">
+                      {seasonPresets.map((sp) => (
+                        <button
+                          key={sp.id}
+                          type="button"
+                          className={styles.presetCard}
+                          disabled={designBusy}
+                          style={
+                            (design.decor?.season || "spring") === sp.id
+                              ? { borderColor: "var(--green)", background: "var(--mint)" }
+                              : undefined
+                          }
+                          onClick={() => {
+                            changeDesign({
+                              ...design,
+                              palette: { ...sp.palette },
+                              decor: {
+                                ...defaultDecor,
+                                ...(design.decor || {}),
+                                season: sp.id,
+                                preset: sp.id,
+                                petals: true,
+                                fxLevel: "vivid",
+                                stars: "bright",
+                                aurora: true,
+                              },
+                            });
+                            inform(`Đã áp dụng chủ đề ${sp.icon} ${sp.name} vào bản nháp.`);
+                          }}
+                        >
+                          <span className={styles.presetSwatches}>
+                            <span style={{ background: sp.palette.background }} />
+                            <span style={{ background: sp.palette.primary }} />
+                            <span style={{ background: sp.palette.text }} />
+                          </span>
+                          <strong>{sp.icon} {sp.name}</strong>
+                          <small>{sp.desc}</small>
+                          <span>Chọn mùa này <ArrowRight size={13} /></span>
+                        </button>
+                      ))}
                     </div>
                   </div>
                   <div className={styles.presetGrid} aria-label="Mẫu giao diện">
