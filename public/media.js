@@ -34,39 +34,67 @@
     }
     return buffer;
   }
-  function rainLayer(level = 0.45) {
+  function noiseLayer(level = 0.35, filterType = 'lowpass', freq = 2600, q = 0.7) {
     const noise = track(audioContext.createBufferSource(), true);
-    noise.buffer = makeNoise(); noise.loop = true;
+    noise.buffer = makeNoise(4); noise.loop = true;
     const filter = track(audioContext.createBiquadFilter());
-    filter.type = 'lowpass'; filter.frequency.value = 3000;
+    filter.type = filterType; filter.frequency.value = freq; filter.Q.value = q;
     const gain = track(audioContext.createGain()); gain.gain.value = level;
     noise.connect(filter); filter.connect(gain); gain.connect(master); noise.start();
+    return { filter, gain };
   }
+  function rainLayer(level = 0.45) { noiseLayer(level, 'lowpass', 3000, 0.7); }
   function note(frequency, time, duration = 2.4, loudness = 0.11, type = 'sine') {
     const oscillator = track(audioContext.createOscillator(), true);
     const gain = track(audioContext.createGain());
     oscillator.type = type; oscillator.frequency.value = frequency;
     gain.gain.setValueAtTime(0.0001, time);
-    gain.gain.exponentialRampToValueAtTime(loudness, time + 0.025);
+    gain.gain.exponentialRampToValueAtTime(loudness, time + 0.03);
     gain.gain.exponentialRampToValueAtTime(0.0001, time + duration);
     oscillator.connect(gain); gain.connect(master);
     oscillator.onended = () => {
       audioNodes.delete(oscillator); audioNodes.delete(gain);
       try { oscillator.disconnect(); gain.disconnect(); } catch (_) {}
     };
-    oscillator.start(time); oscillator.stop(time + duration + 0.05);
+    oscillator.start(time); oscillator.stop(time + duration + 0.06);
   }
-  function kick(time) {
+  function kick(time, level = 0.12) {
     const osc = track(audioContext.createOscillator(), true);
     const gain = track(audioContext.createGain());
-    osc.frequency.setValueAtTime(100, time); osc.frequency.exponentialRampToValueAtTime(42, time + 0.18);
-    gain.gain.setValueAtTime(0.13, time); gain.gain.exponentialRampToValueAtTime(0.0001, time + 0.25);
+    osc.frequency.setValueAtTime(102, time); osc.frequency.exponentialRampToValueAtTime(42, time + 0.18);
+    gain.gain.setValueAtTime(level, time); gain.gain.exponentialRampToValueAtTime(0.0001, time + 0.25);
     osc.connect(gain); gain.connect(master);
-    osc.onended = () => { audioNodes.delete(osc); audioNodes.delete(gain); osc.disconnect(); gain.disconnect(); };
+    osc.onended = () => { audioNodes.delete(osc); audioNodes.delete(gain); try { osc.disconnect(); gain.disconnect(); } catch (_) {} };
     osc.start(time); osc.stop(time + 0.28);
   }
+  function hihat(time, level = 0.025) {
+    const src = track(audioContext.createBufferSource(), true);
+    src.buffer = makeNoise(0.06);
+    const hp = track(audioContext.createBiquadFilter());
+    hp.type = 'highpass'; hp.frequency.value = 6200;
+    const gain = track(audioContext.createGain());
+    gain.gain.setValueAtTime(level, time); gain.gain.exponentialRampToValueAtTime(0.0001, time + 0.05);
+    src.connect(hp); hp.connect(gain); gain.connect(master);
+    src.start(time);
+  }
+  const SOUND_PROFILES = {
+    rain: { pureRain: true },
+    piano: { step: 0.72, wave: 'sine', dur: 2.8, vol: 0.10, chords: [[261.63,329.63,392],[220,261.63,329.63],[174.61,220,261.63],[196,246.94,293.66]], pattern: [0,1,2,1,0,2,1,2] },
+    lofi: { step: 0.46, wave: 'triangle', dur: 1.15, vol: 0.09, rain: 0.08, beat: true, chords: [[261.63,329.63,392,493.88],[220,261.63,329.63,392],[174.61,220,261.63,329.63],[196,246.94,293.66,349.23]], pattern: [0,1,2,3,1,2,0,3] },
+    hanoi_rain: { step: 0.52, wave: 'triangle', dur: 1.6, vol: 0.085, rain: 0.22, beat: true, chords: [[220,261.63,329.63,392],[174.61,220,261.63,329.63],[146.83,174.61,220,261.63],[164.81,196,246.94,293.66]], pattern: [0,2,1,3,0,1,2,3] },
+    dalat_pine: { step: 0.85, wave: 'sine', dur: 3.1, vol: 0.09, noise: [0.16,'bandpass',720,1.2], chords: [[196,246.94,293.66,392],[164.81,196,246.94,329.63],[130.81,164.81,196,261.63],[146.83,196,220,293.66]], pattern: [0,1,2,3,2,1,0,2] },
+    tokyo_night: { step: 0.42, wave: 'triangle', dur: 1.0, vol: 0.085, rain: 0.12, beat: true, hat: true, chords: [[233.08,293.66,349.23,440],[196,233.08,293.66,349.23],[155.56,196,233.08,293.66],[174.61,220,261.63,329.63]], pattern: [0,3,1,2,0,2,3,1] },
+    cafe_jazz: { step: 0.50, wave: 'sine', dur: 1.35, vol: 0.095, noise: [0.06,'bandpass',1200,0.8], beat: true, hat: true, chords: [[261.63,329.63,392,493.88],[293.66,349.23,440,523.25],[196,246.94,293.66,392],[220,261.63,329.63,440]], pattern: [0,1,3,2,1,0,2,3] },
+    ocean_sunset: { step: 0.92, wave: 'sine', dur: 3.6, vol: 0.09, noise: [0.22,'lowpass',950,0.6], chords: [[261.63,329.63,392,523.25],[246.94,293.66,392,493.88],[220,261.63,329.63,440],[174.61,220,261.63,349.23]], pattern: [0,1,2,3,2,1,3,0] },
+    fireplace: { step: 0.95, wave: 'triangle', dur: 3.4, vol: 0.075, noise: [0.20,'bandpass',420,0.9], chords: [[146.83,220,293.66],[130.81,196,261.63],[110,164.81,220],[123.47,196,246.94]], pattern: [0,1,2,1,0,2,1,0] },
+    kyoto_zen: { step: 0.88, wave: 'sine', dur: 3.2, vol: 0.095, noise: [0.07,'highpass',2200,0.7], chords: [[293.66,329.63,440,587.33],[261.63,293.66,392,523.25],[220,261.63,329.63,440],[246.94,293.66,392,493.88]], pattern: [0,2,3,1,2,0,3,2] },
+    starlight: { step: 1.05, wave: 'sine', dur: 4.2, vol: 0.08, chords: [[196,293.66,392,493.88],[174.61,261.63,349.23,440],[146.83,220,293.66,392],[164.81,246.94,329.63,440]], pattern: [0,2,1,3,0,3,2,1] },
+    alpha_focus: { step: 0.78, wave: 'sine', dur: 2.6, vol: 0.085, noise: [0.09,'lowpass',1100,0.7], chords: [[220,277.18,329.63,440],[196,246.94,293.66,392],[164.81,207.65,246.94,329.63],[174.61,220,261.63,349.23]], pattern: [0,1,2,3,0,1,2,3] },
+    saigon_morning: { step: 0.44, wave: 'sine', dur: 1.25, vol: 0.095, beat: true, hat: true, chords: [[293.66,369.99,440,587.33],[246.94,293.66,369.99,493.88],[196,246.94,293.66,392],[220,277.18,329.63,440]], pattern: [0,2,1,3,2,1,3,0] }
+  };
   async function play(mode = 'rain') {
-    if (!['rain', 'piano', 'lofi'].includes(mode)) throw new Error('Âm thanh này chưa có. Hãy chọn Piano, Lo-fi hoặc Tiếng mưa.');
+    const profile = SOUND_PROFILES[mode];
+    if (!profile) throw new Error('Âm thanh này chưa có. Hãy chọn một giai điệu trong thư viện.');
     const Audio = window.AudioContext || window.webkitAudioContext;
     if (!Audio) throw new Error('Trình duyệt này chưa hỗ trợ âm thanh. Hãy thử Chrome hoặc Safari mới hơn.');
     const request = ++audioEpoch;
@@ -75,30 +103,48 @@
       audioContext = new Audio({ latencyHint: 'playback' });
       master = audioContext.createGain(); master.connect(audioContext.destination);
     }
-    // resume is invoked directly inside the user's gesture, before any asynchronous work.
     await audioContext.resume();
     if (request !== audioEpoch) return;
     if (audioContext.state !== 'running') throw new Error('Chạm nút phát một lần nữa để cho phép âm thanh.');
     master.gain.setValueAtTime(volume, audioContext.currentTime);
     currentMode = mode; isPlaying = true;
-    if (mode === 'rain') { rainLayer(); return; }
-    if (mode === 'lofi') rainLayer(0.08);
-    const chords = [[261.63, 329.63, 392], [220, 261.63, 329.63], [174.61, 220, 261.63], [196, 246.94, 293.66]];
-    const stepLength = mode === 'piano' ? 0.72 : 0.46;
+    if (profile.pureRain) { rainLayer(); return; }
+    if (profile.rain) rainLayer(profile.rain);
+    if (profile.noise) noiseLayer(...profile.noise);
+    const { chords, pattern, step: stepLength, wave, dur, vol, beat, hat } = profile;
     let step = 0, nextTime = audioContext.currentTime + 0.06;
     const schedule = () => {
       if (!isPlaying || request !== audioEpoch || audioContext.state !== 'running') return;
       if (nextTime < audioContext.currentTime - 0.2) nextTime = audioContext.currentTime + 0.03;
-      while (nextTime < audioContext.currentTime + 0.3) {
+      while (nextTime < audioContext.currentTime + 0.32) {
         const chord = chords[Math.floor(step / 8) % chords.length];
-        const melody = chord[[0, 1, 2, 1, 0, 2, 1, 2][step % 8]];
-        note(melody * (step % 4 === 3 ? 2 : 1), nextTime, mode === 'piano' ? 2.6 : 1.1, 0.10, mode === 'piano' ? 'sine' : 'triangle');
-        if (step % 8 === 0) note(chord[0] / 2, nextTime, 3.5, 0.08);
-        if (mode === 'lofi' && step % 2 === 0) kick(nextTime);
+        const melody = chord[pattern[step % pattern.length] % chord.length];
+        note(melody * (step % 4 === 3 ? 2 : 1), nextTime, dur, vol, wave);
+        if (step % 8 === 0) note(chord[0] / 2, nextTime, dur * 1.4, vol * 0.8, 'sine');
+        if (beat && step % 2 === 0) kick(nextTime, 0.11);
+        if (hat && step % 2 === 1) hihat(nextTime, 0.022);
         nextTime += stepLength; step++;
       }
     };
     schedule(); audioTimer = setInterval(schedule, 200);
+  }
+  async function chime() {
+    try {
+      const Audio = window.AudioContext || window.webkitAudioContext;
+      if (!Audio) return;
+      const ctx = audioContext && audioContext.state !== 'closed' ? audioContext : new Audio();
+      await ctx.resume();
+      const now = ctx.currentTime;
+      [523.25, 659.25, 783.99].forEach((freq, idx) => {
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.type = 'sine'; o.frequency.value = freq;
+        g.gain.setValueAtTime(0.0001, now + idx * 0.18);
+        g.gain.exponentialRampToValueAtTime(0.14, now + idx * 0.18 + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, now + idx * 0.18 + 1.3);
+        o.connect(g); g.connect(ctx.destination);
+        o.start(now + idx * 0.18); o.stop(now + idx * 0.18 + 1.35);
+      });
+    } catch (_) {}
   }
   function pause() {
     audioEpoch++; isPlaying = false; cleanupAudio();
@@ -312,7 +358,7 @@
   }
   window.addEventListener('pagehide', () => { pause(); cancelPDF(); });
   window.BookMedia = Object.freeze({
-    play, pause, setVolume, savePDF, listPDFs, deletePDF, renderPDF, renderRemotePDF, cancelPDF, exportPDF,
+    play, pause, chime, setVolume, savePDF, listPDFs, deletePDF, renderPDF, renderRemotePDF, cancelPDF, exportPDF,
     get playing() { return isPlaying; }, get mode() { return currentMode; },
     get volume() { return volume; }, maxPDFBytes: MAX_PDF_BYTES
   });
