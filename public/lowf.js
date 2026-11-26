@@ -403,9 +403,16 @@ function applySettings(){
  if(wpLayer){
   const wpEntry=BG_WALLPAPERS.find(w=>w.id===decor.bgWallpaper);
   const wpUrl=decor.bgImageAssetId?asset(decor.bgImageAssetId):(wpEntry?.url||'');
-  const op=Math.max(5,Math.min(70,Number(decor.bgOpacity??24)))/100;
-  wpLayer.style.backgroundImage=wpUrl?`url("${wpUrl.replace(/"/g,'\\"')}")`:'';
-  wpLayer.style.opacity=wpUrl?String(op):'0';
+  const op=Math.max(8,Math.min(70,Number(decor.bgOpacity??32)))/100;
+  if(wpUrl){
+   let img=$('img',wpLayer);
+   if(!img){img=document.createElement('img');img.alt='';img.decoding='async';wpLayer.replaceChildren(img);}
+   if(img.getAttribute('src')!==wpUrl)img.src=wpUrl;
+   wpLayer.style.opacity=String(op);
+  }else{
+   wpLayer.replaceChildren();
+   wpLayer.style.opacity='0';
+  }
   root.classList.toggle('has-bg-wallpaper',!!wpUrl);
  }
  const petals=$('#petalsLayer');if(petals)petals.hidden=!(decor.petals!==false&&(decor.fxLevel||'vivid')!=='off');
