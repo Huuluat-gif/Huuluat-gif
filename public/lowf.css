@@ -1115,12 +1115,13 @@ body:has(#player:not([hidden])) .workspace{padding-bottom:96px}
 /* ==========================================================================
    17. Giant 3D Volumetric Seasonal Landmarks (Christmas Tree 3D & 12 Seasons)
    ========================================================================== */
+/* Soft full-viewport ambient 3D depth layer behind translucent cards (never blocks text!) */
 .season-landmark-3d{
-  position:fixed;right:8px;bottom:-4px;width:300px;height:400px;z-index:3;
+  position:fixed;right:-16px;bottom:-20px;width:360px;height:470px;z-index:0;
   pointer-events:none;perspective:1100px;
   display:flex;align-items:flex-end;justify-content:center;
   transition:opacity .45s ease,transform .45s ease;
-  opacity:.95;
+  opacity:.52;
 }
 .season-landmark-3d[hidden]{display:none!important}
 .lm3d-rig{
@@ -1132,44 +1133,59 @@ body:has(#player:not([hidden])) .workspace{padding-bottom:96px}
 }
 .lm3d-svg{
   width:100%;height:100%;overflow:visible;
-  filter:drop-shadow(0 22px 26px rgba(14,28,20,.26)) drop-shadow(0 0 28px color-mix(in srgb,var(--season-accent,#e88aa5) 36%,transparent));
+  filter:drop-shadow(0 18px 22px rgba(14,28,20,.24)) drop-shadow(0 0 26px color-mix(in srgb,var(--season-accent,#e88aa5) 38%,transparent));
   transform:translateZ(26px);
   animation:lmFloat3d 7.5s ease-in-out infinite;
 }
 .lm3d-floor{
-  position:absolute;left:50%;bottom:6px;width:240px;height:52px;
+  position:absolute;left:50%;bottom:8px;width:210px;height:46px;
   transform:translateX(-50%) rotateX(72deg) translateZ(-8px);
   border-radius:50%;
-  background:radial-gradient(ellipse at center,color-mix(in srgb,var(--season-accent,#ffd56b) 55%,rgba(255,255,255,.85)) 0%,color-mix(in srgb,var(--green) 24%,transparent) 55%,transparent 75%);
-  filter:blur(6px);
+  background:radial-gradient(ellipse at center,color-mix(in srgb,var(--season-accent,#ffd56b) 58%,rgba(255,255,255,.9)) 0%,color-mix(in srgb,var(--green) 24%,transparent) 55%,transparent 75%);
+  filter:blur(5px);
   animation:lmFloorPulse 4.5s ease-in-out infinite;
 }
 .lm3d-ring{
-  position:absolute;left:50%;bottom:16px;width:230px;height:230px;
+  position:absolute;left:50%;bottom:16px;width:205px;height:205px;
   transform:translateX(-50%) rotateX(76deg);
   border-radius:50%;
-  border:1.5px dashed color-mix(in srgb,var(--season-accent,#f0b63a) 55%,rgba(255,255,255,.5));
+  border:1.5px dashed color-mix(in srgb,var(--season-accent,#f0b63a) 58%,rgba(255,255,255,.55));
   animation:lmOrbitSpin 24s linear infinite;
 }
 .lm3d-caption{
-  position:absolute;right:14px;bottom:10px;
-  font-size:9px;font-weight:700;letter-spacing:1.1px;text-transform:uppercase;
-  padding:4px 10px;border-radius:999px;
-  background:color-mix(in srgb,var(--surface) 78%,transparent);
+  position:absolute;left:50%;bottom:10px;transform:translateX(-50%) translateZ(42px);
+  font-size:9px;font-weight:700;letter-spacing:1.1px;text-transform:uppercase;white-space:nowrap;
+  padding:4px 11px;border-radius:999px;
+  background:color-mix(in srgb,var(--surface) 86%,transparent);
   backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
-  border:1px solid color-mix(in srgb,var(--season-accent) 36%,var(--line));
-  color:var(--ink);opacity:.85;
-  transform:translateZ(42px);
+  border:1px solid color-mix(in srgb,var(--season-accent) 42%,var(--line));
+  color:var(--ink);
 }
 
-/* Hero companion 3D seasonal centerpiece behind & beside the floating books */
-.hero-landmark-3d{
-  position:absolute;right:6px;bottom:-14px;width:290px;height:330px;
-  pointer-events:none;z-index:1;perspective:900px;
-  opacity:.95;
+/* Dedicated Unobstructed 3D Seasonal Diorama Widget in Right Panel */
+.season-stage-widget{
+  position:relative;overflow:hidden;padding:16px 14px 14px!important;
+  background:linear-gradient(160deg,color-mix(in srgb,var(--hero-bg-1,var(--mint)) 76%,var(--surface)),color-mix(in srgb,var(--hero-bg-2,var(--bg)) 82%,var(--surface)))!important;
+  border-color:color-mix(in srgb,var(--season-accent) 36%,var(--line))!important;
 }
+.season-stage-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px}
+.season-stage-head small{font-size:8px;font-weight:700;letter-spacing:1.3px;color:var(--nav-accent,var(--green));text-transform:uppercase}
+.season-stage-head span{font-size:9px;font-weight:600;color:var(--muted)}
+.season-stage-box{
+  position:relative;height:278px;width:100%;perspective:950px;
+  display:flex;align-items:flex-end;justify-content:center;
+}
+.season-stage-box .lm3d-rig{width:236px;height:278px}
+
+/* Hero companion 3D seasonal centerpiece positioned cleanly on the far right */
+.hero-landmark-3d{
+  position:absolute;right:4px;bottom:-16px;width:230px;height:290px;
+  pointer-events:none;z-index:2;perspective:900px;
+  opacity:.98;
+}
+.hero:has(.hero-landmark-3d) .hero-art{right:148px;width:30%}
 .hero-landmark-3d .lm3d-svg{
-  filter:drop-shadow(0 14px 22px rgba(15,30,22,.22)) drop-shadow(0 0 22px color-mix(in srgb,var(--season-accent,#ffd56b) 42%,transparent));
+  filter:drop-shadow(0 16px 22px rgba(15,30,22,.24)) drop-shadow(0 0 24px color-mix(in srgb,var(--season-accent,#ffd56b) 44%,transparent));
   animation:lmFloat3d 6.5s ease-in-out infinite;
 }
 
