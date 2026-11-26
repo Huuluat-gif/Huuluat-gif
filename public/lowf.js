@@ -10,7 +10,7 @@ const money=n=>new Intl.NumberFormat('vi-VN',{style:'currency',currency:'VND',ma
 const time=n=>`${Math.floor((Number(n)||0)/60)}:${String(Math.floor((Number(n)||0)%60)).padStart(2,'0')}`;
 const initials=name=>String(name||'Bạn đọc').split(' ').filter(Boolean).slice(-2).map(s=>s[0]).join('').toUpperCase();
 const dateKey=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Ho_Chi_Minh',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
-const safeURL=v=>{try{const u=new URL(String(v),location.origin);return ['https:','http:'].includes(u.protocol)?u.href:''}catch{return ''}};
+const safeURL=v=>{if(typeof v!=='string'||!v.trim())return '';try{const u=new URL(v.trim(),location.origin);return ['https:','http:'].includes(u.protocol)?u.href:''}catch{return ''}};
 const asset=id=>'/api/assets/'+encodeURIComponent(id);
 const state={view:'dashboard',books:[],tracks:[],videos:[],settings:{},environment:null,designPreview:false,plans:[],commerce:{enabled:false},user:null,data:{saved:[],progress:{},secondsByDay:{}},membership:null,stats:{xp:0,level:1,todaySeconds:0,monthSeconds:0},query:'',filter:'all',sort:'featured',reviewCat:'all',loaded:false,error:null,pdfs:[],messages:[],readers:[],reviews:[],communityLoaded:false,reviewsLoaded:false,authTab:'login',reader:null,font:19,sessionSeconds:0,trackIndex:-1,ambient:null,volume:.4,pdfBusy:false,pdfError:null,cart:loadCart(),shippingDraft:{},orders:[],ordersPage:1,ordersHasMore:false,ordersLoading:false,ordersError:'',selectedOrder:null,selectedOrderId:'',orderLoading:false,orderError:'',orderPolls:0,afterAuth:'',checkoutBusy:false};
 const isOwner=()=>state.user?.isAdmin===true&&state.user?.emailVerified===true;
