@@ -500,8 +500,7 @@ function applySettings(){
   root.style.setProperty('--nav-accent',navAccent);
   root.style.setProperty('--mint',`color-mix(in srgb,${navAccent} 13%,var(--bg))`);
  }else{
-  if(customNav)root.style.setProperty('--nav-accent',customNav);
-  else root.style.removeProperty('--nav-accent');
+  root.style.setProperty('--nav-accent',customNav||`color-mix(in srgb,${navAccent} 72%,#ffffff)`);
   root.style.removeProperty('--mint');
  }
  root.dataset.fxLevel=decor.fxLevel||'vivid';
