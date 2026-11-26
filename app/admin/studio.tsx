@@ -143,6 +143,10 @@ type DesignDecor = {
   bgWallpaper?: string;
   bgImageAssetId?: string;
   bgOpacity?: number;
+  navSync?: boolean;
+  navColor?: string;
+  navStyle?: "glass" | "pill-glow" | "floating" | "solid-season" | "minimal-line";
+  navEffect?: "magnetic" | "glow-border" | "ripple-slide" | "neon-pulse" | "clean";
   fxLevel?: "off" | "gentle" | "vivid";
   stars?: "off" | "soft" | "bright";
   petals?: boolean;
@@ -238,6 +242,10 @@ const defaultDecor: Required<Omit<DesignDecor, "bgImageAssetId">> & { bgImageAss
   bgPattern: "orbs3d",
   bgWallpaper: "none",
   bgOpacity: 24,
+  navSync: true,
+  navColor: "",
+  navStyle: "pill-glow",
+  navEffect: "magnetic",
   fxLevel: "vivid",
   stars: "bright",
   petals: true,
@@ -2195,6 +2203,89 @@ export default function AdminStudio({environment='production'}:{environment?:'pr
                               <option value="off">Tắt sao</option>
                               <option value="soft">Dịu nhẹ</option>
                               <option value="bright">Lung linh nổi bật</option>
+                            </select>
+                          </Field>
+                        </div>
+                        <div className={styles.formGrid}>
+                          <Field label="Đồng bộ màu thanh công cụ (Khám phá / Đọc / Mua sách)">
+                            <select
+                              value={design.decor?.navSync === false ? "custom" : "season"}
+                              onChange={(e) => {
+                                const sync = e.target.value === "season";
+                                changeDesign({
+                                  ...design,
+                                  decor: {
+                                    ...defaultDecor,
+                                    ...(design.decor || {}),
+                                    navSync: sync,
+                                    ...(sync ? { navColor: "" } : { navColor: design.decor?.navColor || design.palette.primary }),
+                                  },
+                                });
+                              }}
+                            >
+                              <option value="season">🔄 Đồng bộ tự động theo mùa &amp; màu web</option>
+                              <option value="custom">🎨 Dùng màu thanh công cụ riêng tôi chọn</option>
+                            </select>
+                          </Field>
+                          <Field label="Màu thanh công cụ riêng">
+                            <input
+                              type="color"
+                              value={design.decor?.navColor || design.palette.primary}
+                              onChange={(e) =>
+                                changeDesign({
+                                  ...design,
+                                  decor: {
+                                    ...defaultDecor,
+                                    ...(design.decor || {}),
+                                    navSync: false,
+                                    navColor: e.target.value,
+                                  },
+                                })
+                              }
+                            />
+                          </Field>
+                        </div>
+                        <div className={styles.formGrid}>
+                          <Field label="Kiểu thanh công cụ Uiverse (5 mẫu)">
+                            <select
+                              value={design.decor?.navStyle || "pill-glow"}
+                              onChange={(e) =>
+                                changeDesign({
+                                  ...design,
+                                  decor: {
+                                    ...defaultDecor,
+                                    ...(design.decor || {}),
+                                    navStyle: e.target.value as NonNullable<DesignDecor["navStyle"]>,
+                                  },
+                                })
+                              }
+                            >
+                              <option value="pill-glow">✨ Viên nang Glow — Nổi sáng theo mùa</option>
+                              <option value="glass">🪟 Kính mờ Glass — Trong suốt phản chiếu</option>
+                              <option value="floating">🧊 Thẻ nổi 3D — Soft-UI hiện đại</option>
+                              <option value="solid-season">🎨 Phủ màu đậm — Thanh bên nổi bật</option>
+                              <option value="minimal-line">〰️ Vạch sáng tối giản — Thanh trượt tinh tế</option>
+                            </select>
+                          </Field>
+                          <Field label="Hiệu ứng di chuột thanh công cụ Uiverse (5 kiểu)">
+                            <select
+                              value={design.decor?.navEffect || "magnetic"}
+                              onChange={(e) =>
+                                changeDesign({
+                                  ...design,
+                                  decor: {
+                                    ...defaultDecor,
+                                    ...(design.decor || {}),
+                                    navEffect: e.target.value as NonNullable<DesignDecor["navEffect"]>,
+                                  },
+                                })
+                              }
+                            >
+                              <option value="magnetic">⚡ Quét sáng 3D — Vệt sáng lướt + nảy nhẹ</option>
+                              <option value="glow-border">🌟 Viền phát sáng — Hào quang quanh nút</option>
+                              <option value="ripple-slide">🌊 Trượt sóng màu — Nền trượt ngang + icon nảy</option>
+                              <option value="neon-pulse">💫 Nhịp thở Neon — Tỏa sáng nhịp nhàng</option>
+                              <option value="clean">🍃 Chuyển mượt nhẹ — Tối giản êm mắt</option>
                             </select>
                           </Field>
                         </div>
