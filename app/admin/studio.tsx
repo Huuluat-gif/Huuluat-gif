@@ -100,6 +100,16 @@ type User = {
   isAdmin: boolean;
 };
 type Me = { user: User | null };
+type DesignDecor = {
+  preset?: string;
+  season?: "classic" | "spring" | "summer" | "autumn" | "winter" | "festive";
+  fxLevel?: "off" | "gentle" | "vivid";
+  stars?: "off" | "soft" | "bright";
+  petals?: boolean;
+  aurora?: boolean;
+  paperGrain?: boolean;
+  cardStyle?: "hardcover" | "glass" | "minimal";
+};
 type Design = {
   brand: { name: string; tagline: string };
   palette: {
@@ -119,6 +129,7 @@ type Design = {
   font: "serif" | "sans";
   radius: number;
   featuredBookIds: string[];
+  decor?: DesignDecor;
 };
 type Version = {
   id: string;
@@ -180,16 +191,40 @@ const sectionLabels: Record<string, string> = {
   ambient: "Không gian âm nhạc",
   deal: "Gói thành viên",
 };
+const defaultDecor: Required<DesignDecor> = {
+  preset: "blush",
+  season: "spring",
+  fxLevel: "vivid",
+  stars: "bright",
+  petals: true,
+  aurora: true,
+  paperGrain: true,
+  cardStyle: "hardcover",
+};
+const seasonPresets: {
+  id: NonNullable<DesignDecor["season"]>;
+  icon: string;
+  name: string;
+  desc: string;
+  palette: Design["palette"];
+}[] = [
+  { id: "spring", icon: "🌸", name: "Mùa Xuân · Hoa Anh Đào", desc: "Sắc hồng đào & cánh hoa rơi", palette: { primary: "#b84568", background: "#fcf6f7", surface: "#fffdfd", text: "#2c1c23" } },
+  { id: "summer", icon: "☀️", name: "Mùa Hạ · Biển Xanh", desc: "Xanh biển sáng & hạt nắng bay", palette: { primary: "#166b85", background: "#f1f8fb", surface: "#fcfefe", text: "#152a34" } },
+  { id: "autumn", icon: "🍁", name: "Mùa Thu · Lá Phong", desc: "Cam đất ấm & lá phong rơi", palette: { primary: "#a84b28", background: "#fbf4eb", surface: "#fffcf7", text: "#2e1e15" } },
+  { id: "winter", icon: "❄️", name: "Mùa Đông · Tuyết Pha Lê", desc: "Xanh tuyết & bông tuyết rơi", palette: { primary: "#2c4e82", background: "#f2f5fa", surface: "#fbfdff", text: "#182336" } },
+  { id: "festive", icon: "🏮", name: "Tết & Lễ Hội", desc: "Đỏ son vàng kim & đèn hoa đăng", palette: { primary: "#b3322a", background: "#fdf8ee", surface: "#fffdf8", text: "#301c17" } },
+  { id: "classic", icon: "🌿", name: "Vườn Lowf Mặc Định", desc: "Xanh rừng dịu mắt & bụi sao", palette: { primary: "#2c6546", background: "#f6f5f0", surface: "#fdfcf9", text: "#1d2b22" } },
+];
 const initialDesign: Design = {
   brand: { name: "Lowf", tagline: "Book & beyond" },
   palette: {
-    primary: "#347353",
-    background: "#f6f7f3",
-    surface: "#ffffff",
-    text: "#26382e",
+    primary: "#2c6546",
+    background: "#f6f5f0",
+    surface: "#fdfcf9",
+    text: "#1d2b22",
   },
   hero: {
-    title: "Giữa bộn bề, tìm một trang yên.",
+    title: "Giữa bộn bề,\ntìm một trang yên.",
     subtitle:
       "Những cuốn sách hay, một bản nhạc dịu. Và khoảng thời gian dành riêng cho bạn.",
     ctaLabel: "Khám phá thư viện",
@@ -199,11 +234,15 @@ const initialDesign: Design = {
   font: "serif",
   radius: 18,
   featuredBookIds: [],
+  decor: defaultDecor,
 };
 const designPresets: {id:string;name:string;description:string;palette:Design['palette'];font:Design['font'];radius:number}[] = [
-  {id:'forest',name:'Rừng xanh',description:'Dịu mắt, gần gũi với những trang sách.',palette:{primary:'#347353',background:'#f6f7f3',surface:'#ffffff',text:'#26382e'},font:'serif',radius:18},
-  {id:'minimal',name:'Sáng tối giản',description:'Nền trắng, chữ gọn và nhiều khoảng thở.',palette:{primary:'#365b88',background:'#f6f8fb',surface:'#ffffff',text:'#26354a'},font:'sans',radius:12},
-  {id:'warm',name:'Hiệu sách ấm',description:'Sắc giấy, nâu đất và nét chữ cổ điển.',palette:{primary:'#8b5138',background:'#fbf5eb',surface:'#fffdf8',text:'#443329'},font:'serif',radius:24},
+  {id:'botanical',name:'Giấy Ấm & Rừng Thông',description:'Êm mắt, thanh lịch — bản sắc Lowf hiện đại.',palette:{primary:'#2c6546',background:'#f6f5f0',surface:'#fdfcf9',text:'#1d2b22'},font:'serif',radius:18},
+  {id:'espresso',name:'Cà Phê & Giấy Kraft',description:'Ấm áp, cổ điển như hiệu sách gỗ.',palette:{primary:'#8a5436',background:'#f7f1e8',surface:'#fffcf7',text:'#2c211a'},font:'serif',radius:20},
+  {id:'nordic',name:'Sương Sớm Bắc Âu',description:'Tươi sáng, gọn gàng và nhiều khoảng thở.',palette:{primary:'#2b5b78',background:'#f2f6f8',surface:'#fcfdfe',text:'#1b2a34'},font:'sans',radius:14},
+  {id:'blush',name:'Lụa Ngà & Hoa Đào',description:'Dịu dàng, tinh tế và giàu chất thơ.',palette:{primary:'#9a4a61',background:'#faf4f3',surface:'#fffcfc',text:'#2e1f24'},font:'serif',radius:20},
+  {id:'twilight',name:'Tím Khói & Mực Cổ',description:'Sáng tạo, sâu lắng cho buổi đọc tối.',palette:{primary:'#5b4785',background:'#f5f3f9',surface:'#fdfcff',text:'#231d30'},font:'serif',radius:18},
+  {id:'collector',name:'Vàng Kim & Sách Quý',description:'Sang trọng, tinh tuyển ấn bản sưu tầm.',palette:{primary:'#92692c',background:'#faf7ee',surface:'#fffef9',text:'#292218'},font:'serif',radius:16},
 ];
 const money = (n = 0) =>
   new Intl.NumberFormat("vi-VN", {
@@ -598,7 +637,8 @@ export default function AdminStudio({environment='production'}:{environment?:'pr
   const [loading, setLoading] = useState(false),
     [loadError, setLoadError] = useState(""),
     [query, setQuery] = useState(""),
-    [filter, setFilter] = useState("all");
+    [filter, setFilter] = useState("all"),
+    [bookCategory, setBookCategory] = useState("all");
   const [editor, setEditor] = useState<{ kind: Kind; item: RecordItem } | null>(
       null,
     ),
@@ -983,7 +1023,7 @@ export default function AdminStudio({environment='production'}:{environment?:'pr
     setDesignDirty(true);
   }
   function applyPreset(preset:typeof designPresets[number]){
-    const apply=()=>{changeDesign({...design,palette:{...preset.palette},font:preset.font,radius:preset.radius});inform(`Đã áp dụng ${preset.name} vào bản nháp. Lưu và xuất bản khi bạn sẵn sàng.`);};
+    const apply=()=>{changeDesign({...design,palette:{...preset.palette},font:preset.font,radius:preset.radius,decor:{...defaultDecor,...(design.decor||{}),preset:preset.id}});inform(`Đã áp dụng ${preset.name} vào bản nháp. Lưu và xuất bản khi bạn sẵn sàng.`);};
     if(designDirty){setConfirm({title:`Dùng giao diện ${preset.name}?`,body:'Màu sắc, phông chữ và độ bo góc đang chỉnh sẽ được thay bằng mẫu đã chọn. Nội dung và thứ tự các phần vẫn được giữ.',action:async()=>apply()});}
     else apply();
   }
@@ -1080,7 +1120,7 @@ export default function AdminStudio({environment='production'}:{environment?:'pr
               {accessChecking?<LoaderCircle className={styles.spin} size={16}/>:<RefreshCw size={16}/>}{accessChecking?"Đang kiểm tra…":"Kiểm tra lại"}
             </button>}
           </div>
-          {!user&&<><a className={styles.backLink} href={`/?auth=verify&next=${encodeURIComponent(adminReturnPath)}`}>Tôi đã có mã xác minh email</a><a className={styles.backLink} href={`/?auth=forgot&next=${encodeURIComponent(adminReturnPath)}`}>Đã có tài khoản nhưng quên mật khẩu?</a></>}
+          {!user&&<><a className={styles.backLink} href={`/?auth=otp-signin&next=${encodeURIComponent(adminReturnPath)}`}>Đăng nhập nhanh không mật khẩu (Mã Email 6 số)</a><a className={styles.backLink} href={`/?auth=verify&next=${encodeURIComponent(adminReturnPath)}`}>Tôi đã có mã xác minh email</a><a className={styles.backLink} href={`/?auth=forgot&next=${encodeURIComponent(adminReturnPath)}`}>Đã có tài khoản nhưng quên mật khẩu?</a></>}
           {!user&&authError&&<button type="button" className={styles.secondary} disabled={accessChecking} onClick={refreshAccess}><RefreshCw size={16}/> Thử kiểm tra lại</button>}
           <a className={styles.backLink} href="/">
             <ArrowLeft size={14} /> Trở về không gian đọc
@@ -1111,21 +1151,52 @@ export default function AdminStudio({environment='production'}:{environment?:'pr
         <div className={styles.studioBadge}>
           STUDIO <span>QUẢN TRỊ</span>
         </div>
-        <p className={styles.navLabel}>KHÔNG GIAN SÁNG TẠO</p>
+        <p className={styles.navLabel}>TỔNG QUAN</p>
         <nav className={styles.nav}>
-          {tabs.map(({ id, label, icon: Icon }) => (
+          {tabs.filter(t => t.id === "overview").map(({ id, label, icon: Icon }) => (
             <button
               key={id}
               className={tab === id ? styles.navActive : ""}
               onClick={() => nav(id)}
               aria-current={tab === id ? "page" : undefined}
             >
-              <Icon size={19} />
+              <Icon size={18} />
               {label}
-              {id === "design" && <span className={styles.navNew}>Mới</span>}
-              {tab === id && (
-                <ChevronRight size={15} className={styles.navArrow} />
-              )}
+              {tab === id && <ChevronRight size={15} className={styles.navArrow} />}
+            </button>
+          ))}
+        </nav>
+        <p className={styles.navLabel}>NỘI DUNG &amp; THƯ VIỆN</p>
+        <nav className={styles.nav}>
+          {tabs.filter(t => ["books", "tracks", "videos"].includes(t.id)).map(({ id, label, icon: Icon }) => {
+            const count = content[id as Kind]?.filter(x => x.status !== "archived").length ?? 0;
+            return (
+              <button
+                key={id}
+                className={tab === id ? styles.navActive : ""}
+                onClick={() => nav(id)}
+                aria-current={tab === id ? "page" : undefined}
+              >
+                <Icon size={18} />
+                {label}
+                <span className={styles.navCount}>{count}</span>
+              </button>
+            );
+          })}
+        </nav>
+        <p className={styles.navLabel}>GIAO DIỆN &amp; BÁN HÀNG</p>
+        <nav className={styles.nav}>
+          {tabs.filter(t => ["design", "plans", "orders", "payments"].includes(t.id)).map(({ id, label, icon: Icon }) => (
+            <button
+              key={id}
+              className={tab === id ? styles.navActive : ""}
+              onClick={() => nav(id)}
+              aria-current={tab === id ? "page" : undefined}
+            >
+              <Icon size={18} />
+              {label}
+              {id === "design" && <span className={styles.navNew}>Studio</span>}
+              {tab === id && <ChevronRight size={15} className={styles.navArrow} />}
             </button>
           ))}
         </nav>
@@ -1303,6 +1374,17 @@ export default function AdminStudio({environment='production'}:{environment?:'pr
                       <a className={styles.secondary} href="/api/admin/source"><CloudUpload size={16}/>Tải mã nguồn</a>
                     </div>
                     <p className={styles.commerceStatus}><span className={commerceEnabled?styles.savedDot:styles.unsavedDot}/>{commerceChecked?(commerceEnabled?'VNPAY production đã được cấu hình. Hãy kiểm tra giao dịch thật trước khi mở bán rộng rãi.':'Thanh toán thật chưa mở. Bạn có thể thiết lập và thử VNPAY Sandbox trong mục Thanh toán.'):'Chưa xác định được trạng thái thanh toán. Mở mục Thanh toán để kiểm tra.'}</p>
+                    <div className={styles.authSecurityBox}>
+                      <div>
+                        <strong><ShieldCheck size={15}/> Hệ thống Đăng nhập &amp; Bảo mật tài khoản</strong>
+                        <p>Chủ website đang đăng nhập: <b>{user.email}</b> (Đã xác minh email). Hỗ trợ 3 phương thức hiện đại: <b>Mã Email 6 số không mật khẩu</b>, <b>Đăng nhập Google 1 chạm</b> và <b>Email + Mật khẩu</b> (có xác minh OTP &amp; khôi phục mật khẩu).</p>
+                      </div>
+                      <div className={styles.authMethodPills}>
+                        <span>✓ Mã Email OTP (Không mật khẩu)</span>
+                        <span>✓ Google OAuth 1 chạm</span>
+                        <span>✓ Bảo vệ quyền chủ web theo phiên</span>
+                      </div>
+                    </div>
                   </section>
                   <div className={styles.stats}>
                     {(["books", "tracks", "videos"] as Kind[]).map((kind) => {
@@ -1517,6 +1599,20 @@ export default function AdminStudio({environment='production'}:{environment?:'pr
                         aria-label={`Tìm ${labels[tab].single}`}
                       />
                     </label>
+                    {tab === "books" && (
+                      <select
+                        className={styles.categorySelect}
+                        value={bookCategory}
+                        onChange={(e) => setBookCategory(e.target.value)}
+                        aria-label="Lọc theo thể loại sách"
+                      >
+                        <option value="all">Tất cả thể loại</option>
+                        <option value="vanhocvn">Văn học Việt Nam</option>
+                        <option value="vanhocqt">Văn học nước ngoài</option>
+                        <option value="kinhte">Kinh tế &amp; Đầu tư</option>
+                        <option value="dacbiet">Tuyển chọn</option>
+                      </select>
+                    )}
                     <div className={styles.filterTabs}>
                       {[
                         ["all", "Tất cả"],
@@ -1538,7 +1634,10 @@ export default function AdminStudio({environment='production'}:{environment?:'pr
                     kind={tab}
                     items={content[tab].filter(
                       (item) =>
-                        titleOf(item)
+                        (tab !== "books" ||
+                          bookCategory === "all" ||
+                          item.category === bookCategory) &&
+                        `${titleOf(item)} ${item.author || ""}`
                           .toLocaleLowerCase("vi")
                           .includes(query.toLocaleLowerCase("vi")) &&
                         (filter === "all" ||
@@ -1831,6 +1930,170 @@ export default function AdminStudio({environment='production'}:{environment?:'pr
                               }
                             />
                           </Field>
+                        </div>
+                      </section>
+                      <section className={styles.controlPanel}>
+                        <h2>
+                          <Sparkles size={18} /> Chủ đề 4 Mùa &amp; Trang trí không gian
+                        </h2>
+                        <p className={styles.controlHint}>
+                          Chọn mùa để đổi đồng bộ cả bảng màu, tranh minh họa đầu trang và hiệu ứng rơi (chỉ Chủ website thay đổi; mọi độc giả sẽ thấy sau khi bạn Xuất bản).
+                        </p>
+                        <div className={styles.presetGrid} aria-label="Chủ đề theo mùa">
+                          {seasonPresets.map((sp) => (
+                            <button
+                              key={sp.id}
+                              type="button"
+                              className={styles.presetCard}
+                              style={
+                                (design.decor?.season || "spring") === sp.id
+                                  ? { borderColor: "var(--green)", background: "var(--mint)" }
+                                  : undefined
+                              }
+                              onClick={() => {
+                                changeDesign({
+                                  ...design,
+                                  palette: { ...sp.palette },
+                                  decor: {
+                                    ...defaultDecor,
+                                    ...(design.decor || {}),
+                                    season: sp.id,
+                                    preset: sp.id,
+                                    petals: true,
+                                    fxLevel: "vivid",
+                                    stars: "bright",
+                                    aurora: true,
+                                  },
+                                });
+                                inform(`Đã chọn chủ đề ${sp.icon} ${sp.name}.`);
+                              }}
+                            >
+                              <span className={styles.presetSwatches}>
+                                <span style={{ background: sp.palette.background }} />
+                                <span style={{ background: sp.palette.primary }} />
+                                <span style={{ background: sp.palette.text }} />
+                              </span>
+                              <strong>
+                                {sp.icon} {sp.name}
+                              </strong>
+                              <small>{sp.desc}</small>
+                            </button>
+                          ))}
+                        </div>
+                        <div className={styles.formGrid}>
+                          <Field label="Mức độ hiệu ứng rơi theo mùa">
+                            <select
+                              value={design.decor?.fxLevel || "vivid"}
+                              onChange={(e) =>
+                                changeDesign({
+                                  ...design,
+                                  decor: {
+                                    ...defaultDecor,
+                                    ...(design.decor || {}),
+                                    fxLevel: e.target.value as "off" | "gentle" | "vivid",
+                                    petals: e.target.value !== "off",
+                                  },
+                                })
+                              }
+                            >
+                              <option value="vivid">Rực rỡ rõ nét (Khuyên dùng)</option>
+                              <option value="gentle">Dịu nhẹ tinh tế</option>
+                              <option value="off">Tắt hiệu ứng rơi</option>
+                            </select>
+                          </Field>
+                          <Field label="Hiệu ứng sao lấp lánh">
+                            <select
+                              value={design.decor?.stars || "bright"}
+                              onChange={(e) =>
+                                changeDesign({
+                                  ...design,
+                                  decor: {
+                                    ...defaultDecor,
+                                    ...(design.decor || {}),
+                                    stars: e.target.value as "off" | "soft" | "bright",
+                                  },
+                                })
+                              }
+                            >
+                              <option value="off">Tắt sao</option>
+                              <option value="soft">Dịu nhẹ</option>
+                              <option value="bright">Lung linh nổi bật</option>
+                            </select>
+                          </Field>
+                        </div>
+                        <div className={styles.formGrid}>
+                          <Field label="Kiểu thẻ bìa sách">
+                            <select
+                              value={design.decor?.cardStyle || "hardcover"}
+                              onChange={(e) =>
+                                changeDesign({
+                                  ...design,
+                                  decor: {
+                                    ...defaultDecor,
+                                    ...(design.decor || {}),
+                                    cardStyle: e.target.value as "hardcover" | "glass" | "minimal",
+                                  },
+                                })
+                              }
+                            >
+                              <option value="hardcover">Bìa cứng 3D hiện đại</option>
+                              <option value="glass">Kính mờ (Glassmorphism)</option>
+                              <option value="minimal">Tối giản Editorial</option>
+                            </select>
+                          </Field>
+                        </div>
+                        <div className={styles.decorSwitches}>
+                          <label className={styles.decorSwitchRow}>
+                            <span>🍃 Cánh lá / hạt sáng rơi nhẹ trên màn hình</span>
+                            <input
+                              type="checkbox"
+                              checked={design.decor?.petals === true}
+                              onChange={(e) =>
+                                changeDesign({
+                                  ...design,
+                                  decor: {
+                                    ...defaultDecor,
+                                    ...(design.decor || {}),
+                                    petals: e.target.checked,
+                                  },
+                                })
+                              }
+                            />
+                          </label>
+                          <label className={styles.decorSwitchRow}>
+                            <span>✨ Vầng sáng Aurora nhẹ ở đầu trang</span>
+                            <input
+                              type="checkbox"
+                              checked={design.decor?.aurora !== false}
+                              onChange={(e) =>
+                                changeDesign({
+                                  ...design,
+                                  decor: {
+                                    ...defaultDecor,
+                                    ...(design.decor || {}),
+                                    aurora: e.target.checked,
+                                  },
+                                })
+                              }
+                            />
+                          </label>
+                          <label className={styles.decorSwitchRow}>
+                            <span>📄 Vân giấy sách nghệ thuật tinh tế</span>
+                            <input
+                              type="checkbox"
+                              checked={design.decor?.paperGrain !== false}
+                              onChange={(e) =>
+                                changeDesign({
+                                  ...design,
+                                  decor: {
+                                    ...defaultDecor,
+                                    ...(design.decor || {}),
+                                    paperGrain: e.target.checked,
+                                  },
+                                })
+                              }
+                            />
+                          </label>
                         </div>
                       </section>
                       <section className={styles.controlPanel}>

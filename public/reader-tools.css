@@ -100,6 +100,14 @@
 .speech-advanced{margin-top:10px;border-top:1px solid var(--line);padding-top:12px;font-size:10px;color:var(--muted)}
 .speech-advanced summary{cursor:pointer;font-weight:500;user-select:none}
 .reader-speaking-active{background:color-mix(in srgb,var(--green) 11%,transparent);border-left:3px solid var(--green);padding:6px 12px;margin-left:-15px;border-radius:0 8px 8px 0;transition:background-color .25s ease}
+.reader-eye-btn{display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 11px;border-radius:999px;border:1px solid color-mix(in srgb,var(--green) 32%,var(--line));background:var(--mint);color:var(--green);font-size:10.5px;font-weight:600;white-space:nowrap;transition:background-color .2s ease,color .2s ease,border-color .2s ease,transform .18s ease}
+.reader-eye-btn:hover{border-color:var(--green);transform:translateY(-1px)}
+.reader-eye-btn svg{width:15px!important;height:15px!important}
+.reader-eye-btn.is-hidden-tools{background:var(--soft);color:var(--muted);border-color:var(--line)}
+.reader-eye-btn.is-hidden-tools:hover{color:var(--ink);border-color:var(--muted)}
+.reader.reader-focus-clean .reader-tool-ribbon,.reader.reader-focus-clean .reader-tools-panel,.reader.reader-focus-clean .reader-selection-bar,.reader.reader-focus-clean .reader-ink{display:none!important}
+.reader.reader-focus-clean .reader-highlight{background:transparent!important;pointer-events:none;cursor:text}
+@media(max-width:760px){.reader-eye-btn{padding:0 8px;height:30px;font-size:9.5px}.reader-eye-btn span{display:none}}
 .pdf-text-layer{position:absolute;left:0;top:0;overflow:hidden;opacity:1;line-height:1;text-align:initial;transform-origin:0 0;z-index:2;user-select:text;-webkit-user-select:text;text-size-adjust:none;-webkit-text-size-adjust:none;forced-color-adjust:none}
 .pdf-text-layer :is(span,br){color:transparent;position:absolute;white-space:pre;cursor:text;transform-origin:0 0}
 .pdf-text-layer>span:not(.markedContent),.pdf-text-layer .markedContent span:not(.markedContent){z-index:1}
