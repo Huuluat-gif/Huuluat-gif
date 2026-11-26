@@ -1111,3 +1111,89 @@ body:has(#player:not([hidden])) .workspace{padding-bottom:96px}
   .dm-list{border-right:0;border-bottom:1px solid var(--line);max-height:175px}
   .comm-thread-text,.comm-thread-actions,.comm-replies,.comm-reply-form{margin-left:0}
 }
+
+/* ==========================================================================
+   17. Giant 3D Volumetric Seasonal Landmarks (Christmas Tree 3D & 12 Seasons)
+   ========================================================================== */
+.season-landmark-3d{
+  position:fixed;right:8px;bottom:-4px;width:300px;height:400px;z-index:3;
+  pointer-events:none;perspective:1100px;
+  display:flex;align-items:flex-end;justify-content:center;
+  transition:opacity .45s ease,transform .45s ease;
+  opacity:.95;
+}
+.season-landmark-3d[hidden]{display:none!important}
+.lm3d-rig{
+  position:relative;width:100%;height:100%;
+  transform-style:preserve-3d;
+  transform:rotateX(var(--lm-rx,3deg)) rotateY(var(--lm-ry,-8deg));
+  transition:transform .25s ease-out;
+  will-change:transform;
+}
+.lm3d-svg{
+  width:100%;height:100%;overflow:visible;
+  filter:drop-shadow(0 22px 26px rgba(14,28,20,.26)) drop-shadow(0 0 28px color-mix(in srgb,var(--season-accent,#e88aa5) 36%,transparent));
+  transform:translateZ(26px);
+  animation:lmFloat3d 7.5s ease-in-out infinite;
+}
+.lm3d-floor{
+  position:absolute;left:50%;bottom:6px;width:240px;height:52px;
+  transform:translateX(-50%) rotateX(72deg) translateZ(-8px);
+  border-radius:50%;
+  background:radial-gradient(ellipse at center,color-mix(in srgb,var(--season-accent,#ffd56b) 55%,rgba(255,255,255,.85)) 0%,color-mix(in srgb,var(--green) 24%,transparent) 55%,transparent 75%);
+  filter:blur(6px);
+  animation:lmFloorPulse 4.5s ease-in-out infinite;
+}
+.lm3d-ring{
+  position:absolute;left:50%;bottom:16px;width:230px;height:230px;
+  transform:translateX(-50%) rotateX(76deg);
+  border-radius:50%;
+  border:1.5px dashed color-mix(in srgb,var(--season-accent,#f0b63a) 55%,rgba(255,255,255,.5));
+  animation:lmOrbitSpin 24s linear infinite;
+}
+.lm3d-caption{
+  position:absolute;right:14px;bottom:10px;
+  font-size:9px;font-weight:700;letter-spacing:1.1px;text-transform:uppercase;
+  padding:4px 10px;border-radius:999px;
+  background:color-mix(in srgb,var(--surface) 78%,transparent);
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  border:1px solid color-mix(in srgb,var(--season-accent) 36%,var(--line));
+  color:var(--ink);opacity:.85;
+  transform:translateZ(42px);
+}
+
+/* Hero companion 3D seasonal centerpiece behind & beside the floating books */
+.hero-landmark-3d{
+  position:absolute;right:6px;bottom:-14px;width:290px;height:330px;
+  pointer-events:none;z-index:1;perspective:900px;
+  opacity:.95;
+}
+.hero-landmark-3d .lm3d-svg{
+  filter:drop-shadow(0 14px 22px rgba(15,30,22,.22)) drop-shadow(0 0 22px color-mix(in srgb,var(--season-accent,#ffd56b) 42%,transparent));
+  animation:lmFloat3d 6.5s ease-in-out infinite;
+}
+
+/* 3D Twinkling bulbs, rotating star, swaying branches & planetary orbit */
+.lm3d-star{transform-box:fill-box;transform-origin:center;animation:lmStarGlow 2.8s ease-in-out infinite}
+.lm3d-bulb{transform-box:fill-box;transform-origin:center;animation:lmBulbTwinkle 1.8s ease-in-out infinite}
+.lm3d-bulb.b2{animation-delay:.45s;animation-duration:2.1s}
+.lm3d-bulb.b3{animation-delay:.9s;animation-duration:1.6s}
+.lm3d-bulb.b4{animation-delay:1.3s;animation-duration:2.3s}
+.lm3d-sway{transform-box:fill-box;transform-origin:bottom center;animation:lmGentleSway 5.5s ease-in-out infinite}
+.lm3d-spin{transform-box:fill-box;transform-origin:center;animation:lmSlowSpin 22s linear infinite}
+.lm3d-steam{animation:lmSteamRise 4s ease-in-out infinite}
+
+@keyframes lmFloat3d{0%,100%{transform:translate3d(0,0,26px) rotateZ(0deg)}50%{transform:translate3d(0,-10px,36px) rotateZ(.8deg)}}
+@keyframes lmFloorPulse{0%,100%{opacity:.72;transform:translateX(-50%) rotateX(72deg) scale(1)}50%{opacity:1;transform:translateX(-50%) rotateX(72deg) scale(1.08)}}
+@keyframes lmOrbitSpin{from{transform:translateX(-50%) rotateX(76deg) rotateZ(0deg)}to{transform:translateX(-50%) rotateX(76deg) rotateZ(360deg)}}
+@keyframes lmStarGlow{0%,100%{transform:scale(1) rotate(0deg);filter:drop-shadow(0 0 8px #ffe47a)}50%{transform:scale(1.16) rotate(12deg);filter:drop-shadow(0 0 20px #fff2a8)}}
+@keyframes lmBulbTwinkle{0%,100%{opacity:.45;transform:scale(.85)}50%{opacity:1;transform:scale(1.25)}}
+@keyframes lmGentleSway{0%,100%{transform:rotate(-2deg)}50%{transform:rotate(2.4deg)}}
+@keyframes lmSlowSpin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+@keyframes lmSteamRise{0%,100%{opacity:.25;transform:translateY(4px)}50%{opacity:.8;transform:translateY(-10px)}}
+
+/* Hide ambient corner landmark while reader modal is open so reading stays distraction-free */
+body:has(dialog.reader[open]) .season-landmark-3d{opacity:0;visibility:hidden}
+[data-fx-level=off] .season-landmark-3d,[data-fx-level=off] .hero-landmark-3d{display:none!important}
+@media(max-width:1180px){.season-landmark-3d{width:220px;height:300px;right:4px;opacity:.82}}
+@media(max-width:767px){.season-landmark-3d{width:150px;height:210px;right:-6px;bottom:76px;opacity:.72}.lm3d-caption{display:none}.hero-landmark-3d{width:190px;height:220px;right:-14px;bottom:-10px}}

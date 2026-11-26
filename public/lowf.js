@@ -451,7 +451,309 @@ const NAV_EFFECTS=[
  {id:'clean',name:'Chuyển mượt nhẹ',desc:'Tối giản êm mắt'}
 ];
 const NAV_COLOR_SWATCHES=['#2c6546','#b84568','#9e511c','#166b85','#4d3d91','#b3322a','#0f766e','#1e293b'];
-const defaultDecor={preset:'blush',season:'spring',bgPattern:'orbs3d',bgWallpaper:'none',bgOpacity:24,navSync:true,navColor:'',navStyle:'pill-glow',navEffect:'magnetic',fxLevel:'vivid',stars:'bright',petals:true,aurora:true,paperGrain:true,cardStyle:'hardcover'};
+const defaultDecor={preset:'blush',season:'spring',bgPattern:'orbs3d',bgWallpaper:'none',bgOpacity:24,navSync:true,navColor:'',navStyle:'pill-glow',navEffect:'magnetic',landmark3d:true,fxLevel:'vivid',stars:'bright',petals:true,aurora:true,paperGrain:true,cardStyle:'hardcover'};
+function seasonLandmark3D(id){
+ const labels3d={
+  christmas:'🎄 Cây Thông Noel 3D',
+  winter:'❄️ Rừng Tuyết & Nhà Gỗ 3D',
+  spring:'🌸 Cây Anh Đào 3D',
+  festive:'🏮 Hoa Mai & Đèn Lồng 3D',
+  midautumn:'🌕 Siêu Trăng & Đèn 3D',
+  autumn:'🍁 Cây Phong Đỏ 3D',
+  summer:'☀️ Mặt Trời & Đảo Dừa 3D',
+  rainy:'🌧️ Đèn Phố Mưa Chill 3D',
+  meteor:'🌠 Hành Tinh Vòng Nhẫn 3D',
+  dandelion:'🌬️ Đóa Bồ Công Anh 3D',
+  lotus:'🪷 Đóa Sen Nở Rộ 3D',
+  classic:'🌿 Vườn Sách Nổi 3D'
+ };
+ let svg='';
+ if(id==='christmas'){
+  svg=`<svg class="lm3d-svg" viewBox="0 0 320 420" fill="none">
+   <defs>
+    <radialGradient id="xmHalo" cx="50%" cy="46%" r="50%"><stop offset="0%" stop-color="#ffe58f" stop-opacity=".55"/><stop offset="60%" stop-color="#2e8b57" stop-opacity=".16"/><stop offset="100%" stop-color="#2e8b57" stop-opacity="0"/></radialGradient>
+    <linearGradient id="xmP1" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#3ca36e"/><stop offset="52%" stop-color="#1d6b47"/><stop offset="100%" stop-color="#0f3d28"/></linearGradient>
+    <linearGradient id="xmP2" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#329462"/><stop offset="55%" stop-color="#17593a"/><stop offset="100%" stop-color="#0b301f"/></linearGradient>
+    <linearGradient id="xmSnow" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#ffffff"/><stop offset="100%" stop-color="#d7ecff"/></linearGradient>
+    <radialGradient id="xmRed" cx="32%" cy="28%" r="70%"><stop offset="0%" stop-color="#ff9ea2"/><stop offset="45%" stop-color="#d92b3a"/><stop offset="100%" stop-color="#7c0f1b"/></radialGradient>
+    <radialGradient id="xmGold" cx="32%" cy="28%" r="70%"><stop offset="0%" stop-color="#fff8cc"/><stop offset="45%" stop-color="#f2b82e"/><stop offset="100%" stop-color="#9e6208"/></radialGradient>
+    <radialGradient id="xmBlue" cx="32%" cy="28%" r="70%"><stop offset="0%" stop-color="#e3f7ff"/><stop offset="45%" stop-color="#53b4e8"/><stop offset="100%" stop-color="#1c5c8a"/></radialGradient>
+   </defs>
+   <circle cx="160" cy="210" r="150" fill="url(#xmHalo)"/>
+   <ellipse cx="160" cy="390" rx="116" ry="20" fill="#e8f3fb" fill-opacity=".85"/>
+   <ellipse cx="160" cy="392" rx="86" ry="12" fill="#173a29" fill-opacity=".22"/>
+   <rect x="142" y="328" width="36" height="58" rx="6" fill="#6b3e26"/>
+   <rect x="160" y="328" width="18" height="58" rx="4" fill="#4d2917" fill-opacity=".6"/>
+   <g class="lm3d-sway">
+    <path d="M160 198 L40 342 Q160 364 280 342 Z" fill="url(#xmP2)"/>
+    <path d="M40 342 Q100 356 160 354 Q220 356 280 342 Q265 328 248 336 Q205 346 160 344 Q115 346 72 336 Q55 328 40 342Z" fill="url(#xmSnow)" fill-opacity=".85"/>
+    <path d="M160 132 L62 268 Q160 288 258 268 Z" fill="url(#xmP1)"/>
+    <path d="M62 268 Q112 282 160 280 Q208 282 258 268 Q244 256 230 263 Q195 272 160 270 Q125 272 90 263 Q76 256 62 268Z" fill="url(#xmSnow)" fill-opacity=".88"/>
+    <path d="M160 76 L88 194 Q160 212 232 194 Z" fill="url(#xmP2)"/>
+    <path d="M88 194 Q124 206 160 205 Q196 206 232 194 Q220 183 206 190 Q182 197 160 196 Q138 197 114 190 Q100 183 88 194Z" fill="url(#xmSnow)" fill-opacity=".9"/>
+    <path d="M160 36 L114 128 Q160 142 206 128 Z" fill="url(#xmP1)"/>
+    <path d="M114 128 Q138 138 160 137 Q182 138 206 128 Q196 119 186 124 Q172 129 160 128 Q148 129 134 124 Q124 119 114 128Z" fill="url(#xmSnow)" fill-opacity=".92"/>
+    <path d="M122 114 Q160 130 198 106 M96 184 Q162 204 224 174 M72 256 Q160 282 248 242 M54 330 Q162 356 266 314" stroke="#ffe794" stroke-width="2.4" stroke-dasharray="5 6" stroke-linecap="round" opacity=".82"/>
+    <circle cx="136" cy="112" r="7.5" fill="url(#xmRed)"/>
+    <circle cx="182" cy="120" r="6.5" fill="url(#xmGold)"/>
+    <circle cx="122" cy="176" r="8.5" fill="url(#xmGold)"/>
+    <circle cx="164" cy="164" r="8" fill="url(#xmRed)"/>
+    <circle cx="204" cy="184" r="7.5" fill="url(#xmBlue)"/>
+    <circle cx="102" cy="244" r="9.5" fill="url(#xmRed)"/>
+    <circle cx="148" cy="232" r="8.5" fill="url(#xmBlue)"/>
+    <circle cx="192" cy="248" r="9.5" fill="url(#xmGold)"/>
+    <circle cx="228" cy="252" r="8" fill="url(#xmRed)"/>
+    <circle cx="88" cy="316" r="10.5" fill="url(#xmGold)"/>
+    <circle cx="136" cy="306" r="10" fill="url(#xmRed)"/>
+    <circle cx="184" cy="320" r="10" fill="url(#xmBlue)"/>
+    <circle cx="234" cy="312" r="10.5" fill="url(#xmRed)"/>
+    <circle class="lm3d-bulb" cx="152" cy="96" r="4" fill="#fff4b8"/>
+    <circle class="lm3d-bulb b2" cx="174" cy="144" r="4.2" fill="#ffd25e"/>
+    <circle class="lm3d-bulb b3" cx="138" cy="204" r="4.5" fill="#fff4b8"/>
+    <circle class="lm3d-bulb b4" cx="196" cy="212" r="4.2" fill="#ff9e9e"/>
+    <circle class="lm3d-bulb" cx="118" cy="284" r="4.8" fill="#ffe787"/>
+    <circle class="lm3d-bulb b2" cx="166" cy="288" r="4.5" fill="#a8e6ff"/>
+    <circle class="lm3d-bulb b3" cx="216" cy="282" r="4.8" fill="#fff4b8"/>
+    <circle class="lm3d-bulb b4" cx="250" cy="330" r="4.5" fill="#ffd25e"/>
+    <g class="lm3d-star">
+     <circle cx="160" cy="34" r="24" fill="#ffe47a" fill-opacity=".35"/>
+     <polygon points="160,8 167,26 186,27 171,38 176,56 160,46 144,56 149,38 134,27 153,26" fill="#ffd94a" stroke="#fff6cc" stroke-width="1.5"/>
+    </g>
+   </g>
+   <g>
+    <rect x="76" y="348" width="44" height="38" rx="6" fill="#d9383a"/>
+    <rect x="94" y="348" width="8" height="38" fill="#f7c948"/>
+    <rect x="76" y="362" width="44" height="7" fill="#f7c948"/>
+    <rect x="200" y="352" width="48" height="34" rx="6" fill="#2d6ea3"/>
+    <rect x="220" y="352" width="8" height="34" fill="#ffe58f"/>
+    <rect x="200" y="365" width="48" height="7" fill="#ffe58f"/>
+    <rect x="134" y="360" width="38" height="28" rx="5" fill="#e6a22e"/>
+    <rect x="149" y="360" width="7" height="28" fill="#fff4d6"/>
+   </g>
+  </svg>`;
+ }else if(id==='winter'){
+  svg=`<svg class="lm3d-svg" viewBox="0 0 320 420" fill="none">
+   <defs>
+    <radialGradient id="wiGlow" cx="50%" cy="48%" r="50%"><stop offset="0%" stop-color="#c2e2ff" stop-opacity=".6"/><stop offset="100%" stop-color="#c2e2ff" stop-opacity="0"/></radialGradient>
+    <linearGradient id="wiTree" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#5a82ad"/><stop offset="100%" stop-color="#223a5e"/></linearGradient>
+   </defs>
+   <circle cx="160" cy="210" r="148" fill="url(#wiGlow)"/>
+   <ellipse cx="160" cy="390" rx="122" ry="20" fill="#eef6ff" fill-opacity=".9"/>
+   <g class="lm3d-spin" opacity=".88">
+    <circle cx="160" cy="112" r="46" stroke="#ffffff" stroke-width="2" stroke-dasharray="4 6"/>
+    <path d="M160 56 V168 M104 112 H216 M120 72 L200 152 M200 72 L120 152" stroke="#ffffff" stroke-width="3.2" stroke-linecap="round"/>
+    <circle cx="160" cy="112" r="12" fill="#dff1ff" stroke="#7eb3e6" stroke-width="2"/>
+   </g>
+   <g class="lm3d-sway">
+    <polygon points="88,162 42,356 134,356" fill="url(#wiTree)"/>
+    <polygon points="88,162 66,246 110,246" fill="#ffffff" fill-opacity=".82"/>
+    <polygon points="242,188 200,362 284,362" fill="url(#wiTree)"/>
+    <polygon points="242,188 222,262 262,262" fill="#ffffff" fill-opacity=".82"/>
+   </g>
+   <g>
+    <rect x="114" y="294" width="96" height="86" rx="8" fill="#694836"/>
+    <polygon points="100,298 162,240 224,298" fill="#3a5275"/>
+    <path d="M100 298 L162 240 L224 298 L212 304 L162 256 L112 304 Z" fill="#ffffff"/>
+    <rect x="188" y="246" width="16" height="32" rx="3" fill="#4f372a"/>
+    <circle class="lm3d-steam" cx="196" cy="232" r="8" fill="#ffffff" fill-opacity=".7"/>
+    <circle class="lm3d-steam" cx="204" cy="212" r="11" fill="#ffffff" fill-opacity=".5"/>
+    <rect x="130" y="318" width="24" height="24" rx="4" fill="#ffe184"/>
+    <rect x="170" y="318" width="24" height="24" rx="4" fill="#ffe184"/>
+    <rect class="lm3d-bulb" x="130" y="318" width="24" height="24" rx="4" fill="#fff5cc" fill-opacity=".5"/>
+    <rect x="150" y="348" width="24" height="32" rx="4" fill="#422a1d"/>
+   </g>
+  </svg>`;
+ }else if(id==='spring'){
+  svg=`<svg class="lm3d-svg" viewBox="0 0 320 420" fill="none">
+   <defs>
+    <radialGradient id="spGlow" cx="50%" cy="42%" r="52%"><stop offset="0%" stop-color="#ffd1e3" stop-opacity=".65"/><stop offset="100%" stop-color="#ffd1e3" stop-opacity="0"/></radialGradient>
+    <radialGradient id="spBl" cx="35%" cy="30%" r="70%"><stop offset="0%" stop-color="#fff0f6"/><stop offset="52%" stop-color="#f28cb0"/><stop offset="100%" stop-color="#b84568"/></radialGradient>
+   </defs>
+   <circle cx="160" cy="190" r="148" fill="url(#spGlow)"/>
+   <ellipse cx="160" cy="390" rx="108" ry="18" fill="#f7dce6" fill-opacity=".85"/>
+   <path d="M172 388 C164 316 146 270 166 206 C178 168 206 142 232 126 M162 248 C134 218 106 204 82 184" stroke="#6d3a46" stroke-width="18" stroke-linecap="round"/>
+   <path d="M164 218 C154 176 130 144 114 114" stroke="#7d4654" stroke-width="11" stroke-linecap="round"/>
+   <g class="lm3d-sway">
+    <circle cx="164" cy="120" r="64" fill="url(#spBl)"/>
+    <circle cx="102" cy="162" r="54" fill="url(#spBl)" fill-opacity=".94"/>
+    <circle cx="224" cy="156" r="56" fill="url(#spBl)" fill-opacity=".92"/>
+    <circle cx="144" cy="186" r="48" fill="#f7abc6" fill-opacity=".9"/>
+    <circle cx="204" cy="108" r="44" fill="#ffc4d9" fill-opacity=".92"/>
+    <circle class="lm3d-bulb" cx="132" cy="118" r="5.5" fill="#ffffff"/>
+    <circle class="lm3d-bulb b2" cx="212" cy="144" r="5" fill="#fff5f9"/>
+    <circle class="lm3d-bulb b3" cx="96" cy="156" r="4.5" fill="#ffffff"/>
+    <circle class="lm3d-bulb b4" cx="174" cy="166" r="5.5" fill="#fff0f5"/>
+   </g>
+  </svg>`;
+ }else if(id==='festive'){
+  svg=`<svg class="lm3d-svg" viewBox="0 0 320 420" fill="none">
+   <defs>
+    <radialGradient id="feG" cx="50%" cy="46%" r="52%"><stop offset="0%" stop-color="#ffe184" stop-opacity=".6"/><stop offset="100%" stop-color="#ffe184" stop-opacity="0"/></radialGradient>
+    <radialGradient id="feLan" cx="35%" cy="30%" r="70%"><stop offset="0%" stop-color="#ff8a6b"/><stop offset="55%" stop-color="#d42c24"/><stop offset="100%" stop-color="#7c120d"/></radialGradient>
+   </defs>
+   <circle cx="160" cy="195" r="146" fill="url(#feG)"/>
+   <ellipse cx="160" cy="390" rx="108" ry="18" fill="#faebd0" fill-opacity=".85"/>
+   <path d="M168 386 C162 308 148 258 174 188 C192 142 230 116 266 94 M160 244 C124 214 96 184 68 158" stroke="#633622" stroke-width="15" stroke-linecap="round"/>
+   <g class="lm3d-sway">
+    <g fill="#f5be2e">
+     <circle cx="94" cy="168" r="16"/><circle cx="72" cy="152" r="13"/><circle cx="122" cy="188" r="14"/>
+     <circle cx="182" cy="150" r="18"/><circle cx="218" cy="124" r="16"/><circle cx="250" cy="100" r="15"/>
+     <circle cx="152" cy="130" r="14"/><circle cx="236" cy="154" r="13"/>
+    </g>
+    <g fill="#fff4bd"><circle cx="94" cy="168" r="5"/><circle cx="182" cy="150" r="6"/><circle cx="218" cy="124" r="5"/><circle cx="250" cy="100" r="4.5"/></g>
+    <line x1="126" y1="196" x2="126" y2="236" stroke="#d99b26" stroke-width="3"/>
+    <ellipse cx="126" cy="274" rx="34" ry="40" fill="url(#feLan)"/>
+    <rect x="112" y="232" width="28" height="9" rx="3" fill="#f0b634"/>
+    <rect x="114" y="310" width="24" height="8" rx="3" fill="#f0b634"/>
+    <line x1="126" y1="318" x2="126" y2="352" stroke="#f0b634" stroke-width="4" stroke-linecap="round"/>
+    <line x1="224" y1="142" x2="224" y2="178" stroke="#d99b26" stroke-width="2.6"/>
+    <ellipse cx="224" cy="210" rx="26" ry="32" fill="url(#feLan)"/>
+    <rect x="213" y="176" width="22" height="7" rx="3" fill="#f0b634"/>
+    <rect x="214" y="239" width="20" height="7" rx="3" fill="#f0b634"/>
+    <line x1="224" y1="246" x2="224" y2="274" stroke="#f0b634" stroke-width="3.2" stroke-linecap="round"/>
+    <circle class="lm3d-bulb" cx="126" cy="274" r="12" fill="#ffe68a" fill-opacity=".45"/>
+    <circle class="lm3d-bulb b2" cx="224" cy="210" r="9" fill="#ffe68a" fill-opacity=".45"/>
+   </g>
+  </svg>`;
+ }else if(id==='midautumn'){
+  svg=`<svg class="lm3d-svg" viewBox="0 0 320 420" fill="none">
+   <defs>
+    <radialGradient id="maMoon" cx="38%" cy="34%" r="65%"><stop offset="0%" stop-color="#fffbe0"/><stop offset="55%" stop-color="#ffd96e"/><stop offset="100%" stop-color="#d68a24"/></radialGradient>
+    <radialGradient id="maHalo" cx="50%" cy="38%" r="50%"><stop offset="0%" stop-color="#ffe58f" stop-opacity=".68"/><stop offset="100%" stop-color="#ffe58f" stop-opacity="0"/></radialGradient>
+   </defs>
+   <circle cx="168" cy="158" r="146" fill="url(#maHalo)"/>
+   <circle cx="168" cy="158" r="88" fill="url(#maMoon)"/>
+   <circle cx="140" cy="134" r="14" fill="#e09a2b" fill-opacity=".24"/>
+   <circle cx="198" cy="178" r="20" fill="#e09a2b" fill-opacity=".2"/>
+   <path d="M62 214 Q122 184 188 206 T286 196" stroke="#fff6d6" stroke-width="12" stroke-linecap="round" opacity=".78"/>
+   <g class="lm3d-sway">
+    <path d="M116 252 Q160 228 204 252 L192 344 Q160 358 128 344 Z" fill="url(#maMoon)" stroke="#b55918" stroke-width="3"/>
+    <rect x="132" y="242" width="56" height="10" rx="4" fill="#a84914"/>
+    <rect x="138" y="344" width="44" height="9" rx="4" fill="#a84914"/>
+    <line x1="160" y1="353" x2="160" y2="386" stroke="#e6a532" stroke-width="4" stroke-linecap="round"/>
+    <circle class="lm3d-bulb" cx="160" cy="298" r="22" fill="#fff6c2" fill-opacity=".55"/>
+   </g>
+  </svg>`;
+ }else if(id==='autumn'){
+  svg=`<svg class="lm3d-svg" viewBox="0 0 320 420" fill="none">
+   <defs>
+    <radialGradient id="auCan" cx="35%" cy="30%" r="70%"><stop offset="0%" stop-color="#ffd07a"/><stop offset="50%" stop-color="#d95f26"/><stop offset="100%" stop-color="#872d12"/></radialGradient>
+    <radialGradient id="auGlow" cx="50%" cy="44%" r="50%"><stop offset="0%" stop-color="#ffcf80" stop-opacity=".55"/><stop offset="100%" stop-color="#ffcf80" stop-opacity="0"/></radialGradient>
+   </defs>
+   <circle cx="160" cy="196" r="144" fill="url(#auGlow)"/>
+   <ellipse cx="160" cy="390" rx="112" ry="18" fill="#f5dfd0" fill-opacity=".85"/>
+   <path d="M164 388 C158 312 152 260 166 196 M160 250 C130 222 104 206 86 184 M164 236 C198 208 224 190 242 164" stroke="#61331c" stroke-width="18" stroke-linecap="round"/>
+   <g class="lm3d-sway">
+    <circle cx="164" cy="126" r="66" fill="url(#auCan)"/>
+    <circle cx="100" cy="170" r="54" fill="#e67e2e" fill-opacity=".95"/>
+    <circle cx="226" cy="164" r="56" fill="#c2461f" fill-opacity=".94"/>
+    <circle cx="152" cy="186" r="50" fill="#f0a23a" fill-opacity=".9"/>
+    <circle class="lm3d-bulb" cx="136" cy="134" r="5" fill="#fff1b8"/>
+    <circle class="lm3d-bulb b2" cx="212" cy="156" r="5" fill="#ffe4a1"/>
+   </g>
+  </svg>`;
+ }else if(id==='summer'){
+  svg=`<svg class="lm3d-svg" viewBox="0 0 320 420" fill="none">
+   <defs>
+    <radialGradient id="smBall" cx="35%" cy="30%" r="70%"><stop offset="0%" stop-color="#fff8cc"/><stop offset="55%" stop-color="#ffbe3b"/><stop offset="100%" stop-color="#e37c19"/></radialGradient>
+   </defs>
+   <g class="lm3d-spin">
+    <circle cx="194" cy="116" r="76" stroke="#ffcf5c" stroke-width="4" stroke-dasharray="10 12" opacity=".7"/>
+    <circle cx="194" cy="116" r="54" fill="url(#smBall)"/>
+   </g>
+   <path d="M126 382 C112 310 116 250 142 186" stroke="#85522c" stroke-width="16" stroke-linecap="round"/>
+   <g class="lm3d-sway" fill="#238068">
+    <path d="M142 186 Q82 146 42 182 Q92 174 142 186Z"/>
+    <path d="M142 186 Q102 122 68 124 Q108 152 142 186Z"/>
+    <path d="M142 186 Q196 134 248 158 Q194 166 142 186Z"/>
+    <path d="M142 186 Q206 168 242 216 Q192 192 142 186Z"/>
+   </g>
+   <path d="M36 364 Q106 334 176 362 T296 352 L296 398 L36 398 Z" fill="#2b9bbd" fill-opacity=".68"/>
+   <path d="M24 382 Q108 358 188 380 T304 374 L304 404 L24 404 Z" fill="#166b85" fill-opacity=".78"/>
+  </svg>`;
+ }else if(id==='rainy'){
+  svg=`<svg class="lm3d-svg" viewBox="0 0 320 420" fill="none">
+   <defs>
+    <radialGradient id="rnLamp" cx="50%" cy="32%" r="48%"><stop offset="0%" stop-color="#ffe7a3" stop-opacity=".78"/><stop offset="55%" stop-color="#8ec0e6" stop-opacity=".22"/><stop offset="100%" stop-color="#8ec0e6" stop-opacity="0"/></radialGradient>
+   </defs>
+   <circle cx="160" cy="146" r="134" fill="url(#rnLamp)"/>
+   <ellipse cx="160" cy="390" rx="96" ry="16" fill="#9bc0db" fill-opacity=".5"/>
+   <rect x="152" y="164" width="16" height="222" rx="8" fill="#2d4356"/>
+   <rect x="134" y="372" width="52" height="16" rx="6" fill="#223545"/>
+   <path d="M126 112 L194 112 L182 174 L138 174 Z" fill="#fff0ba" stroke="#2d4356" stroke-width="5"/>
+   <path d="M118 112 L160 80 L202 112 Z" fill="#2d4356"/>
+   <circle class="lm3d-bulb" cx="160" cy="142" r="18" fill="#ffffff" fill-opacity=".75"/>
+   <g stroke="#7db1d9" stroke-width="3" stroke-linecap="round" opacity=".72">
+    <line x1="88" y1="150" x2="72" y2="210"/><line x1="236" y1="138" x2="220" y2="198"/><line x1="106" y1="254" x2="90" y2="314"/><line x1="226" y1="246" x2="210" y2="306"/>
+   </g>
+  </svg>`;
+ }else if(id==='meteor'){
+  svg=`<svg class="lm3d-svg" viewBox="0 0 320 420" fill="none">
+   <defs>
+    <radialGradient id="mtPlanet" cx="34%" cy="28%" r="72%"><stop offset="0%" stop-color="#dfd6ff"/><stop offset="48%" stop-color="#7c5ee0"/><stop offset="100%" stop-color="#2b1e66"/></radialGradient>
+    <radialGradient id="mtGlow" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#b49cff" stop-opacity=".62"/><stop offset="100%" stop-color="#b49cff" stop-opacity="0"/></radialGradient>
+   </defs>
+   <circle cx="164" cy="210" r="146" fill="url(#mtGlow)"/>
+   <ellipse cx="164" cy="210" rx="136" ry="38" transform="rotate(-18 164 210)" stroke="#d9ccff" stroke-width="14" stroke-opacity=".55"/>
+   <circle cx="164" cy="210" r="76" fill="url(#mtPlanet)"/>
+   <path d="M36 254 A136 38 -18 0 0 292 166" stroke="#fff3c4" stroke-width="8" stroke-linecap="round" opacity=".88"/>
+   <circle class="lm3d-bulb" cx="76" cy="118" r="9" fill="#ffe699"/>
+   <circle class="lm3d-bulb b2" cx="258" cy="112" r="6.5" fill="#ffffff"/>
+   <circle class="lm3d-bulb b3" cx="242" cy="306" r="11" fill="#c4b5fd"/>
+   <g class="lm3d-star"><polygon points="88,290 92,302 104,306 92,310 88,322 84,310 72,306 84,302" fill="#fff4c2"/></g>
+  </svg>`;
+ }else if(id==='dandelion'){
+  svg=`<svg class="lm3d-svg" viewBox="0 0 320 420" fill="none">
+   <defs>
+    <radialGradient id="dnGlow" cx="50%" cy="38%" r="50%"><stop offset="0%" stop-color="#fff4c4" stop-opacity=".75"/><stop offset="100%" stop-color="#fff4c4" stop-opacity="0"/></radialGradient>
+   </defs>
+   <circle cx="160" cy="160" r="138" fill="url(#dnGlow)"/>
+   <path d="M150 392 Q146 286 164 176" stroke="#587a38" stroke-width="8" stroke-linecap="round"/>
+   <g class="lm3d-sway">
+    <circle cx="164" cy="160" r="82" fill="#ffffff" fill-opacity=".35" stroke="#ffffff" stroke-width="2" stroke-dasharray="3 7"/>
+    <circle cx="164" cy="160" r="56" stroke="#85a35a" stroke-width="2" stroke-dasharray="2 8"/>
+    <circle cx="164" cy="160" r="22" fill="#d9be6c"/>
+    <circle class="lm3d-bulb" cx="238" cy="108" r="8" fill="#ffffff"/>
+    <circle class="lm3d-bulb b2" cx="268" cy="144" r="6" fill="#ffffff"/>
+    <circle class="lm3d-bulb b3" cx="88" cy="116" r="7" fill="#ffffff"/>
+   </g>
+  </svg>`;
+ }else if(id==='lotus'){
+  svg=`<svg class="lm3d-svg" viewBox="0 0 320 420" fill="none">
+   <defs>
+    <radialGradient id="ltP" cx="40%" cy="25%" r="75%"><stop offset="0%" stop-color="#fff5f9"/><stop offset="55%" stop-color="#ec89af"/><stop offset="100%" stop-color="#a83e69"/></radialGradient>
+   </defs>
+   <ellipse cx="160" cy="350" rx="126" ry="34" fill="#4f9471" fill-opacity=".68"/>
+   <ellipse cx="160" cy="346" rx="94" ry="22" fill="#77ba96" fill-opacity=".55"/>
+   <g class="lm3d-sway">
+    <path d="M160 330 C92 314 54 268 78 214 C118 232 146 276 160 330Z" fill="url(#ltP)"/>
+    <path d="M160 330 C228 314 266 268 242 214 C202 232 174 276 160 330Z" fill="url(#ltP)"/>
+    <path d="M160 330 C112 288 102 222 128 176 C152 210 160 268 160 330Z" fill="#f7adc9"/>
+    <path d="M160 330 C208 288 218 222 192 176 C168 210 160 268 160 330Z" fill="#f7adc9"/>
+    <path d="M160 144 C196 196 196 280 160 330 C124 280 124 196 160 144Z" fill="url(#ltP)"/>
+    <circle class="lm3d-bulb" cx="160" cy="242" r="14" fill="#ffe794"/>
+   </g>
+  </svg>`;
+ }else{
+  svg=`<svg class="lm3d-svg" viewBox="0 0 320 420" fill="none">
+   <defs>
+    <radialGradient id="clG" cx="50%" cy="48%" r="50%"><stop offset="0%" stop-color="#cde8c8" stop-opacity=".65"/><stop offset="100%" stop-color="#cde8c8" stop-opacity="0"/></radialGradient>
+    <linearGradient id="clBk" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#3f855e"/><stop offset="100%" stop-color="#1d4a32"/></linearGradient>
+   </defs>
+   <circle cx="160" cy="204" r="144" fill="url(#clG)"/>
+   <ellipse cx="160" cy="382" rx="102" ry="16" fill="#d4e6cf" fill-opacity=".75"/>
+   <g class="lm3d-sway">
+    <path d="M76 346 C64 230 100 132 160 102 C220 132 256 230 244 346" stroke="#3c7a57" stroke-width="10" stroke-linecap="round" opacity=".55"/>
+    <rect x="106" y="164" width="108" height="148" rx="12" transform="rotate(-7 160 238)" fill="url(#clBk)" stroke="#e6d3a3" stroke-width="3"/>
+    <rect x="122" y="184" width="76" height="106" rx="6" transform="rotate(-7 160 238)" fill="none" stroke="#f0dfb4" stroke-opacity=".6" stroke-width="2"/>
+    <circle class="lm3d-star" cx="160" cy="114" r="12" fill="#f5c95c"/>
+    <circle class="lm3d-bulb" cx="102" cy="144" r="5" fill="#fff2b8"/>
+    <circle class="lm3d-bulb b2" cx="222" cy="152" r="5" fill="#fff2b8"/>
+   </g>
+  </svg>`;
+ }
+ return {svg,label:labels3d[id]||'✨ Không gian 3D Lowf'};
+}
 function activeSeason(settings=mergedSettings()){const id=settings?.decor?.season||defaultDecor.season;return SEASON_THEMES[id]||SEASON_THEMES.classic}
 function loadLocalDecor(){try{return JSON.parse(localStorage.getItem(DECOR_KEY)||'null')}catch{return null}}
 function saveLocalDecor(patch){try{const cur=loadLocalDecor()||{};localStorage.setItem(DECOR_KEY,JSON.stringify({...cur,...patch}));}catch{}}
@@ -525,6 +827,16 @@ function applySettings(){
   root.classList.toggle('has-bg-wallpaper',!!wpUrl);
  }
  const petals=$('#petalsLayer');if(petals)petals.hidden=!(decor.petals!==false&&(decor.fxLevel||'vivid')!=='off');
+ const lm=$('#seasonLandmark3d');
+ if(lm){
+  const showLm=decor.landmark3d!==false&&(decor.fxLevel||'vivid')!=='off';
+  lm.hidden=!showLm;
+  if(showLm&&lm.dataset.renderedSeason!==sea.id){
+   const art=seasonLandmark3D(sea.id);
+   lm.dataset.renderedSeason=sea.id;
+   lm.innerHTML=`<div class="lm3d-rig"><div class="lm3d-floor"></div><div class="lm3d-ring"></div>${art.svg}<span class="lm3d-caption">${esc(art.label)}</span></div>`;
+  }
+ }
  applyReaderPrefs();
 }
 function sectionEnabled(name){const s=mergedSettings();if(Array.isArray(s.sections))return s.sections.includes(name)||s.sections.some(x=>typeof x==='object'&&x.id===name&&x.visible!==false);if(s.sections&&typeof s.sections==='object')return s.sections[name]!==false;return true}
@@ -573,7 +885,7 @@ function categories(){const values=[...new Set(state.books.map(b=>b.category).fi
 function matches(b){const q=state.query.toLocaleLowerCase('vi');const bySort=state.sort==='english'?b.language==='en':state.sort==='print'?['Sách giấy','Combo'].includes(b.format):true;return bySort&&(state.filter==='all'||b.category===state.filter)&&(!q||`${b.title} ${b.author}`.toLocaleLowerCase('vi').includes(q))}
 function sortedBooks(){const list=state.books.filter(matches);if(state.sort==='az')return [...list].sort((a,b)=>String(a.title||'').localeCompare(String(b.title||''),'vi'));return list}
 function shelf(home=false){const list=home?state.books.filter(matches):sortedBooks();return `${categories()}${list.length?`<div id="bookShelf" class="${home?'book-shelf':'book-grid'}">${list.map(card).join('')}</div>`:empty(state.query?'Chưa tìm thấy cuốn sách này':'Thư viện đang được chuẩn bị',state.query?'Thử một tên sách, tác giả hoặc thể loại khác.':'Những cuốn sách được xuất bản sẽ xuất hiện ở đây.',state.query?'<button class="button button-soft" data-action="reset-search">Xóa bộ lọc</button>':isOwner()?'<a class="button button-primary" href="/admin">Thêm sách đầu tiên</a>':'')}`}
-function dashboard(){const settings=mergedSettings(),sea=activeSeason(settings),recent=Object.entries(state.data.progress).sort((a,b)=>String(b[1].updated||'').localeCompare(String(a[1].updated||''))).map(([id])=>book(id)).find(Boolean),b=recent||state.books[0],p=b&&state.data.progress[b.id],total=b?.chapters?.length||b?.chapterCount||1,percent=p?Math.min(100,Math.round(((p.chapter||0)+(p.finished?1:0))/total*100)):0,heroTitle=settings.heroTitle||settings.hero?.title,heroSub=settings.heroSubtitle||settings.hero?.subtitle,heroImg=settings.heroImageAssetId||settings.hero?.imageAssetId;const books=state.books.slice(0,4);return `<div class="season-ribbon"><div class="season-ribbon-left"><span class="pulse-dot" aria-hidden="true"></span><span class="season-pill">${sea.badge}</span><span class="season-ribbon-text">${esc(sea.ribbon)}</span></div><div class="season-ribbon-right"><span class="ribbon-spark" aria-hidden="true">✦</span>${isOwner()?`<button type="button" class="ribbon-owner-btn" data-action="decor-open">${icon('sparkles')} Đổi mùa</button>`:`<span class="ribbon-date">${icon('calendar-days')}${new Intl.DateTimeFormat('vi-VN',{day:'numeric',month:'short',timeZone:'Asia/Ho_Chi_Minh'}).format(new Date())}</span>`}</div></div><div class="intro"><div><div class="eyebrow">${sea.icon} MỘT NGÀY ĐẸP ĐỂ ĐỌC SÁCH</div><h1>${state.user?`Chào ${esc(state.user.name.split(' ').slice(-2).join(' '))}`:'Chào bạn, người yêu sách'} <span class="sun">${sea.icon}</span></h1><p>Chậm lại một chút. Một thế giới mới đang chờ bạn mở ra.</p></div><span class="date-chip">${icon('calendar-days')}${new Intl.DateTimeFormat('vi-VN',{day:'numeric',month:'short',timeZone:'Asia/Ho_Chi_Minh'}).format(new Date())}</span></div>${sectionEnabled('hero')?`<section class="hero">${heroImg?'':seasonArtSVG(sea.id)}<div class="hero-sunbeams" aria-hidden="true"></div><span class="shooting-star" aria-hidden="true"></span><div class="hero-copy"><div class="eyebrow hero-eyebrow-pill">✦ ${sea.label.toUpperCase()}</div><h2>${heroTitle?esc(heroTitle).replace(/\n/g,'<br>'):'Giữa bộn bề,<br>tìm một <em>trang yên.</em>'}</h2><p>${heroSub?esc(heroSub):'Những cuốn sách hay, một bản nhạc dịu.<br>Và khoảng thời gian dành riêng cho bạn.'}</p><div class="hero-cta-row"><button class="uiverse-cta" data-action="nav" data-view="${({membership:'plans',store:'store',library:'library',studio:'studio',pdf:'pdf',community:'community',profile:'profile',reviews:'reviews'})[settings.heroCtaView||settings.hero?.ctaView]||'library'}"><span class="cta-glow" aria-hidden="true"></span><span class="cta-inner"><span>${esc(settings.heroCtaLabel||settings.hero?.ctaLabel||'Khám phá thư viện')}</span> ${icon('arrow-up-right')}</span></button>${isOwner()?`<button class="button button-soft hero-decor-btn" data-action="decor-open">${icon('sparkles')} Đổi mùa &amp; Trang trí</button>`:''}</div><div class="hero-chips"><span>${icon('book-open')} ${state.books.length} đầu sách</span><span>${icon('headphones')} 6 giọng đọc</span><span>${icon('languages')} Từ điển IPA</span></div></div>${heroImg?`<img class="hero-custom" src="${asset(heroImg)}" alt="Không gian Lowf">`:`<div class="hero-art" aria-hidden="true"><div class="hero-glow"></div><div class="orbit"></div><div class="star-field"><span class="star s1">✦</span><span class="star s2">✧</span><span class="star s3">✦</span><span class="star s4">•</span><span class="star s5">•</span><span class="star s6">✧</span></div>${[books[3]||books[0],books[1]||books[0],books[0]].filter(Boolean).map((bk,i)=>`<span class="hero-book-3d ${['one','two','three'][i]}"><img src="${esc(coverURL(bk))}" alt=""></span>`).join('')}<span class="hero-note">${esc(sea.note)}</span></div>`}</section>`:''}${sectionEnabled('stats')?stats():''}${b&&sectionEnabled('continue')?`<div class="section-heading"><h2>${p?'Tiếp nối câu chuyện':'Bắt đầu một trang mới'}</h2><button class="text-button" data-action="nav" data-view="pdf">Kệ sách của tôi ${icon('arrow-right')}</button></div><div class="continue">${coverHTML(b)}<div class="continue-info"><small>${p?'ĐANG ĐỌC DỞ':'LOWF GỢI Ý CHO BẠN'}</small><h3>${esc(b.title)}</h3><p>${esc(b.author)}${(b.chapters?.length||b.chapterCount)?` · Chương ${(p?.chapter||0)+1} / ${total}`:''}</p></div><div class="continue-progress"><small>${percent}% hành trình</small><div class="progress-line"><span style="width:${percent}%"></span></div></div><button class="button button-soft" data-action="read" data-id="${esc(b.id)}">${p?'Đọc tiếp':'Mở sách'} ${icon('arrow-right')}</button></div>`:''}${sectionEnabled('books')?`<div class="section-heading"><div><h2>Dành cho một tâm hồn tò mò</h2><p>Một vài cuốn sách, biết đâu lại thay đổi một ngày.</p></div><div class="shelf-arrows"><button class="icon-button" data-action="shelf-prev" aria-label="Xem sách trước">${icon('chevron-left')}</button><button class="icon-button" data-action="shelf-next" aria-label="Xem sách tiếp">${icon('chevron-right')}</button></div></div>${shelf(true)}`:''}<div class="bento">${sectionEnabled('ambient')?`<section class="bento-card ambient-card"><div class="eyebrow">GÓC NHỎ BÌNH YÊN</div><h3>Để thế giới ngoài kia<br>khẽ lại một chút.</h3><p>Piano, tiếng mưa & những trang sách.</p><div class="card-bottom"><span>${Object.keys(ambientModes).length} bản Studio · ${TREND_PLAYLISTS.length} Playlist Trend</span><button class="icon-button" data-action="nav" data-view="studio" aria-label="Mở thư viện nhạc">${icon('play')}</button></div></section>`:''}${sectionEnabled('deal')?`<section class="bento-card member-card"><div class="eyebrow">MỘT HÀNH TRÌNH DÀI HƠN</div><h3>Một tài khoản.<br>Khoảng trời riêng bạn.</h3><p>Lưu sách yêu thích, nối tiếp hành trình đọc trên mọi thiết bị.</p><div class="card-bottom"><span>Bắt đầu miễn phí</span><button class="icon-button" data-action="nav" data-view="plans" aria-label="Xem gói thành viên">${icon('arrow-up-right')}</button></div></section>`:''}</div>`}
+function dashboard(){const settings=mergedSettings(),sea=activeSeason(settings),recent=Object.entries(state.data.progress).sort((a,b)=>String(b[1].updated||'').localeCompare(String(a[1].updated||''))).map(([id])=>book(id)).find(Boolean),b=recent||state.books[0],p=b&&state.data.progress[b.id],total=b?.chapters?.length||b?.chapterCount||1,percent=p?Math.min(100,Math.round(((p.chapter||0)+(p.finished?1:0))/total*100)):0,heroTitle=settings.heroTitle||settings.hero?.title,heroSub=settings.heroSubtitle||settings.hero?.subtitle,heroImg=settings.heroImageAssetId||settings.hero?.imageAssetId;const books=state.books.slice(0,4);return `<div class="season-ribbon"><div class="season-ribbon-left"><span class="pulse-dot" aria-hidden="true"></span><span class="season-pill">${sea.badge}</span><span class="season-ribbon-text">${esc(sea.ribbon)}</span></div><div class="season-ribbon-right"><span class="ribbon-spark" aria-hidden="true">✦</span>${isOwner()?`<button type="button" class="ribbon-owner-btn" data-action="decor-open">${icon('sparkles')} Đổi mùa</button>`:`<span class="ribbon-date">${icon('calendar-days')}${new Intl.DateTimeFormat('vi-VN',{day:'numeric',month:'short',timeZone:'Asia/Ho_Chi_Minh'}).format(new Date())}</span>`}</div></div><div class="intro"><div><div class="eyebrow">${sea.icon} MỘT NGÀY ĐẸP ĐỂ ĐỌC SÁCH</div><h1>${state.user?`Chào ${esc(state.user.name.split(' ').slice(-2).join(' '))}`:'Chào bạn, người yêu sách'} <span class="sun">${sea.icon}</span></h1><p>Chậm lại một chút. Một thế giới mới đang chờ bạn mở ra.</p></div><span class="date-chip">${icon('calendar-days')}${new Intl.DateTimeFormat('vi-VN',{day:'numeric',month:'short',timeZone:'Asia/Ho_Chi_Minh'}).format(new Date())}</span></div>${sectionEnabled('hero')?`<section class="hero">${heroImg?'':seasonArtSVG(sea.id)}${!heroImg&&(settings.decor?.landmark3d!==false)&&(settings.decor?.fxLevel||'vivid')!=='off'?`<div class="hero-landmark-3d" aria-hidden="true">${seasonLandmark3D(sea.id).svg}</div>`:''}<div class="hero-sunbeams" aria-hidden="true"></div><span class="shooting-star" aria-hidden="true"></span><div class="hero-copy"><div class="eyebrow hero-eyebrow-pill">✦ ${sea.label.toUpperCase()}</div><h2>${heroTitle?esc(heroTitle).replace(/\n/g,'<br>'):'Giữa bộn bề,<br>tìm một <em>trang yên.</em>'}</h2><p>${heroSub?esc(heroSub):'Những cuốn sách hay, một bản nhạc dịu.<br>Và khoảng thời gian dành riêng cho bạn.'}</p><div class="hero-cta-row"><button class="uiverse-cta" data-action="nav" data-view="${({membership:'plans',store:'store',library:'library',studio:'studio',pdf:'pdf',community:'community',profile:'profile',reviews:'reviews'})[settings.heroCtaView||settings.hero?.ctaView]||'library'}"><span class="cta-glow" aria-hidden="true"></span><span class="cta-inner"><span>${esc(settings.heroCtaLabel||settings.hero?.ctaLabel||'Khám phá thư viện')}</span> ${icon('arrow-up-right')}</span></button>${isOwner()?`<button class="button button-soft hero-decor-btn" data-action="decor-open">${icon('sparkles')} Đổi mùa &amp; Trang trí</button>`:''}</div><div class="hero-chips"><span>${icon('book-open')} ${state.books.length} đầu sách</span><span>${icon('headphones')} 6 giọng đọc</span><span>${icon('languages')} Từ điển IPA</span></div></div>${heroImg?`<img class="hero-custom" src="${asset(heroImg)}" alt="Không gian Lowf">`:`<div class="hero-art" aria-hidden="true"><div class="hero-glow"></div><div class="orbit"></div><div class="star-field"><span class="star s1">✦</span><span class="star s2">✧</span><span class="star s3">✦</span><span class="star s4">•</span><span class="star s5">•</span><span class="star s6">✧</span></div>${[books[3]||books[0],books[1]||books[0],books[0]].filter(Boolean).map((bk,i)=>`<span class="hero-book-3d ${['one','two','three'][i]}"><img src="${esc(coverURL(bk))}" alt=""></span>`).join('')}<span class="hero-note">${esc(sea.note)}</span></div>`}</section>`:''}${sectionEnabled('stats')?stats():''}${b&&sectionEnabled('continue')?`<div class="section-heading"><h2>${p?'Tiếp nối câu chuyện':'Bắt đầu một trang mới'}</h2><button class="text-button" data-action="nav" data-view="pdf">Kệ sách của tôi ${icon('arrow-right')}</button></div><div class="continue">${coverHTML(b)}<div class="continue-info"><small>${p?'ĐANG ĐỌC DỞ':'LOWF GỢI Ý CHO BẠN'}</small><h3>${esc(b.title)}</h3><p>${esc(b.author)}${(b.chapters?.length||b.chapterCount)?` · Chương ${(p?.chapter||0)+1} / ${total}`:''}</p></div><div class="continue-progress"><small>${percent}% hành trình</small><div class="progress-line"><span style="width:${percent}%"></span></div></div><button class="button button-soft" data-action="read" data-id="${esc(b.id)}">${p?'Đọc tiếp':'Mở sách'} ${icon('arrow-right')}</button></div>`:''}${sectionEnabled('books')?`<div class="section-heading"><div><h2>Dành cho một tâm hồn tò mò</h2><p>Một vài cuốn sách, biết đâu lại thay đổi một ngày.</p></div><div class="shelf-arrows"><button class="icon-button" data-action="shelf-prev" aria-label="Xem sách trước">${icon('chevron-left')}</button><button class="icon-button" data-action="shelf-next" aria-label="Xem sách tiếp">${icon('chevron-right')}</button></div></div>${shelf(true)}`:''}<div class="bento">${sectionEnabled('ambient')?`<section class="bento-card ambient-card"><div class="eyebrow">GÓC NHỎ BÌNH YÊN</div><h3>Để thế giới ngoài kia<br>khẽ lại một chút.</h3><p>Piano, tiếng mưa & những trang sách.</p><div class="card-bottom"><span>${Object.keys(ambientModes).length} bản Studio · ${TREND_PLAYLISTS.length} Playlist Trend</span><button class="icon-button" data-action="nav" data-view="studio" aria-label="Mở thư viện nhạc">${icon('play')}</button></div></section>`:''}${sectionEnabled('deal')?`<section class="bento-card member-card"><div class="eyebrow">MỘT HÀNH TRÌNH DÀI HƠN</div><h3>Một tài khoản.<br>Khoảng trời riêng bạn.</h3><p>Lưu sách yêu thích, nối tiếp hành trình đọc trên mọi thiết bị.</p><div class="card-bottom"><span>Bắt đầu miễn phí</span><button class="icon-button" data-action="nav" data-view="plans" aria-label="Xem gói thành viên">${icon('arrow-up-right')}</button></div></section>`:''}</div>`}
 function readingWidget(){const t=minutes();return `<section class="widget"><div class="widget-heading"><h2>Mỗi ngày một chút</h2>${icon('sprout')}</div><p class="widget-sub">Hẹn mình 30 phút đọc sách hôm nay nhé.</p><div class="reading-ring"><svg viewBox="0 0 128 128" aria-hidden="true"><circle class="ring-track" cx="64" cy="64" r="56"/><circle class="ring-progress" cx="64" cy="64" r="56" style="stroke-dashoffset:${351.86*(1-Math.min(t/30,1))}"/></svg><div class="ring-center"><strong><b data-today>${t}</b><small> / 30</small></strong><span>phút hôm nay</span></div></div><div class="reading-stats"><div><span>Tháng này</span><strong>${Math.floor((state.stats.monthSeconds||0)/60)} phút</strong></div><div><span>Chuỗi ngày đọc</span><strong>${streak()} ngày</strong></div></div><p class="widget-foot">${state.user?'Thời gian đọc và nhạc tập trung được ghi nhận trên tài khoản.':'Đăng nhập để lưu thời gian đọc và tích lũy XP.'}</p></section>`}
 function rankWidget(full=false){const readers=state.readers.slice(0,full?10:4),soc=full?getSocial():null;return `<section class="widget"><div class="widget-heading"><h2>Những người bạn chăm đọc</h2>${icon('trophy')}</div><p class="widget-sub">Top độc giả tháng ${Number(dateKey().slice(5,7))}</p>${readers.length?`<div class="rank-list">${readers.map((r,i)=>{const pid=peerIdFor(r.name),isSelf=state.user&&r.name===state.user.name,isFr=soc?.friends?.includes(pid),isSent=soc?.sent?.includes(pid);return `<div class="${full?'rank-row-social':'rank-row'}"><span class="rank-num">${String(i+1).padStart(2,'0')}</span><span class="avatar">${esc(r.initials||initials(r.name))}</span><div class="rank-info"><strong>${esc(r.name)}</strong><small>${Number(r.hours??(r.seconds||0)/3600).toFixed(1)} giờ đọc</small></div>${full&&!isSelf?`<div class="rank-mini-acts"><button type="button" class="${isFr?'is-friend':''}" data-action="friend-toggle" data-id="${esc(pid)}" data-name="${esc(r.name)}">${isFr?'✓ Bạn bè':isSent?'Đã gửi':'+ Kết bạn'}</button><button type="button" data-action="comm-dm-open" data-id="${esc(pid)}" data-name="${esc(r.name)}">💬</button></div>`:`<span class="level-badge">Lv. ${Number(r.level)||1}</span>`}</div>`}).join('')}</div>`:`<p class="mini-note">${state.readersError?'Chưa tải được bảng xếp hạng. Hãy thử lại sau.':'Bảng xếp hạng sẽ bắt đầu từ những phút đọc đầu tiên của cộng đồng.'}</p>`}${!full?`<button class="text-button" data-action="nav" data-view="community">Ghé thăm cộng đồng ${icon('arrow-right')}</button>`:''}</section>`}
 function renderRight(){$('#rightPanel').innerHTML=readingWidget()+rankWidget()+`<section class="widget community-callout"><div class="widget-heading"><h2>Trạm dừng chân</h2>${icon('messages-square')}</div><p>Một cuốn sách,<br>nhiều cách cảm nhận.</p><button class="button" data-action="nav" data-view="community">Cùng nhau trò chuyện ${icon('arrow-up-right')}</button></section><div class="quote"><span>“</span><p>Có những chuyến đi,<br>chỉ cần mở một trang sách.</p><small>MỘT CHÚT CẢM HỨNG TỪ LOWF</small></div>`;icons()}
@@ -1111,6 +1423,7 @@ function renderDecorDrawer(){
    <h3>6. Bầu trời sao &amp; Hiệu ứng không gian</h3>
    <div class="decor-seg-label">Hiệu ứng sao lấp lánh</div>
    <div class="decor-seg">${[['off','Tắt'],['soft','Dịu nhẹ'],['bright','Lung linh']].map(([id,lbl])=>`<button type="button" class="${d.stars===id?'active':''}" data-action="decor-stars" data-id="${id}">${lbl}</button>`).join('')}</div>
+   <label class="decor-switch"><span>🎄 Mô hình 3D lớn theo mùa (Cây thông Noel, Anh đào, Trăng…)</span><input type="checkbox" data-decor-toggle="landmark3d" ${d.landmark3d!==false?'checked':''}></label>
    <label class="decor-switch"><span>${curSea.icon} ${curSea.fxName}</span><input type="checkbox" data-decor-toggle="petals" ${d.petals!==false?'checked':''}></label>
    <label class="decor-switch"><span>✨ Vầng sáng Aurora đầu trang</span><input type="checkbox" data-decor-toggle="aurora" ${d.aurora!==false?'checked':''}></label>
    <label class="decor-switch"><span>📄 Vân giấy sách tinh tế</span><input type="checkbox" data-decor-toggle="paperGrain" ${d.paperGrain!==false?'checked':''}></label>
@@ -1192,7 +1505,7 @@ async function handleAction(b){const action=b.dataset.action,id=b.dataset.id;if(
 document.addEventListener('click',e=>{const b=e.target.closest('[data-action]');if(!b)return;handleAction(b).catch(error=>toast(error.message||'Chưa thực hiện được thao tác. Hãy thử lại.'))});
 document.addEventListener('submit',async e=>{if(e.target.id==='checkoutForm'){e.preventDefault();submitCheckout(e.target);return}if(e.target.id==='authForm'){e.preventDefault();submitAuth(e.target);return}if(e.target.matches('[data-reply-form]')){e.preventDefault();if(!state.user){auth();return}const mid=e.target.dataset.replyForm,inp=$('input',e.target),txt=inp.value.trim();if(!txt)return;const soc=getSocial();soc.replies[mid]=[...(soc.replies[mid]||[]),{id:'rep-'+Date.now(),name:state.user.name,text:txt,at:new Date().toISOString()}];saveSocial(soc);state.replyingTo='';renderMain();toast('Đã gửi trả lời bình luận!');return}if(e.target.id==='dmForm'){e.preventDefault();if(!state.user){auth();return}const peerId=e.target.dataset.peer,peerName=e.target.dataset.peerName||'Bạn đọc',inp=$('input',e.target),txt=inp.value.trim();if(!txt||!peerId)return;const soc=getSocial();soc.dms[peerId]=[...(soc.dms[peerId]||[]),{id:'dm-'+Date.now(),from:'me',name:state.user.name,text:txt,at:new Date().toISOString()}];saveSocial(soc);renderMain();requestAnimationFrame(()=>{const box=$('#dmMessages');if(box)box.scrollTop=box.scrollHeight;$('#dmForm input')?.focus()});return}if(e.target.id!=='chatForm')return;e.preventDefault();if(!state.user){auth();return}if(!state.user.emailVerified){toast('Hãy xác minh email để gửi lời nhắn. Bạn có thể gửi lại email trong trang Cá nhân.');return}const form=e.target,input=$('input',form),text=input.value.trim(),button=$('button',form);if(!text)return;button.disabled=true;try{const result=await api('/api/messages',{method:'POST',body:{text}});if(result.message)state.messages.push(result.message);input.value='';$('#chatMessages').innerHTML=state.messages.map((m,i)=>messageHTML(m,i)).join('');$('#chatMessages').scrollTop=$('#chatMessages').scrollHeight;icons()}catch(error){toast(error.message)}finally{button.disabled=false}});
 $('#search').addEventListener('input',e=>{clearTimeout(searchTimer);const value=e.target.value;searchTimer=setTimeout(()=>{if(!['library','store'].includes(state.view)){navigate('library');$('#search').value=value;$('#search').focus()}state.query=value;renderMain()},160)});
-document.addEventListener('change',e=>{if(e.target.id==='librarySort'){state.sort=e.target.value;renderMain()}else if(e.target.dataset.decorToggle){updateDecor({decor:{[e.target.dataset.decorToggle]:e.target.checked}})}else if(e.target.dataset.decorSection){const sec=e.target.dataset.decorSection,s=mergedSettings(),cur=new Set(Array.isArray(s.sections)?s.sections:['hero','stats','continue','books','ambient','deal']);if(e.target.checked)cur.add(sec);else cur.delete(sec);const ordered=['hero','stats','continue','books','ambient','deal'].filter(x=>cur.has(x));updateDecor({sections:ordered.length?ordered:['hero']},{rerender:true})}});
+document.addEventListener('change',e=>{if(e.target.id==='librarySort'){state.sort=e.target.value;renderMain()}else if(e.target.dataset.decorToggle){updateDecor({decor:{[e.target.dataset.decorToggle]:e.target.checked}},{rerender:e.target.dataset.decorToggle==='landmark3d'})}else if(e.target.dataset.decorSection){const sec=e.target.dataset.decorSection,s=mergedSettings(),cur=new Set(Array.isArray(s.sections)?s.sections:['hero','stats','continue','books','ambient','deal']);if(e.target.checked)cur.add(sec);else cur.delete(sec);const ordered=['hero','stats','continue','books','ambient','deal'].filter(x=>cur.has(x));updateDecor({sections:ordered.length?ordered:['hero']},{rerender:true})}});
 document.addEventListener('input',e=>{if(e.target.id==='decorPrimaryColor'){updateDecor({palette:{primary:e.target.value},decor:{preset:'custom'}});return}if(e.target.id==='decorNavColor'){updateDecor({decor:{navSync:false,navColor:e.target.value}});return}if(e.target.id==='friendSearch'){state.friendQuery=e.target.value;renderMain();const el=$('#friendSearch');if(el){el.focus();el.setSelectionRange(el.value.length,el.value.length);}return}if(e.target.id==='decorRadius'){updateDecor({radius:Number(e.target.value)});return}if(e.target.id==='decorBgOpacity'){updateDecor({decor:{bgOpacity:Number(e.target.value)}});return}if(e.target.dataset.decorField){const [group,field]=e.target.dataset.decorField.split('.');const cur=loadLocalDecor()||{};const next={...cur,[group]:{...(cur[group]||{}),[field]:e.target.value}};saveLocalDecor(next);applySettings();if(group==='hero'&&state.view==='dashboard'){const h2=$('.hero h2'),hp=$('.hero p');if(field==='title'&&h2)h2.innerHTML=esc(e.target.value).replace(/\n/g,'<br>');if(field==='subtitle'&&hp)hp.textContent=e.target.value;}return}if(e.target.closest('#authForm')){if(e.target.name==='otp')e.target.value=e.target.value.replace(/[^0-9]/g,'').slice(0,10);if(e.target.name==='email')refreshAuthControls();}if(e.target.id==='volume'){state.volume=Number(e.target.value)/100;audio.volume=state.volume;BookMedia.setVolume(state.volume)}else if(e.target.id==='musicSearch'){const q=e.target.value.toLocaleLowerCase('vi');$$('.music-row').forEach(row=>row.hidden=!row.textContent.toLocaleLowerCase('vi').includes(q))}});
 $('#audioSeek').addEventListener('input',e=>{if(Number.isFinite(audio.duration)&&audio.duration>0)audio.currentTime=audio.duration*Number(e.target.value)/100});
 for(const event of ['play','pause'])audio.addEventListener(event,()=>{renderPlayer();heartbeat()});
@@ -1205,6 +1518,7 @@ $('#chapterSelect').addEventListener('change',e=>{if(state.reader?.type==='chapt
 $('#reader').addEventListener('cancel',e=>{e.preventDefault();closeReader()});
 $('#reader').addEventListener('click',e=>{if(stylePopOpen&&!e.target.closest('.reader-style-wrap')){stylePopOpen=false;renderReaderStylePop()}if(timerOpen&&!e.target.closest('.reader-timer-wrap')){timerOpen=false;renderTimerUI()}});
 let resizeTimer=null;window.addEventListener('resize',()=>{if(state.reader?.type==='chapters'){clearTimeout(resizeTimer);resizeTimer=setTimeout(()=>renderChapter(0),180)}});
+let lmRaf=0;window.addEventListener('pointermove',e=>{if(lmRaf||matchMedia('(prefers-reduced-motion:reduce)').matches)return;const rig=$('#seasonLandmark3d .lm3d-rig');if(!rig||$('#seasonLandmark3d')?.hidden)return;lmRaf=requestAnimationFrame(()=>{lmRaf=0;const nx=(e.clientX/Math.max(1,window.innerWidth)-.5)*2,ny=(e.clientY/Math.max(1,window.innerHeight)-.5)*2;rig.style.setProperty('--lm-ry',`${(-8+nx*14).toFixed(1)}deg`);rig.style.setProperty('--lm-rx',`${(3-ny*10).toFixed(1)}deg`);});},{passive:true});
 $('#modal').addEventListener('cancel',()=>{$$('iframe',$('#modal')).forEach(f=>f.remove());const video=$('video',$('#modal'));if(video){video.pause();video.removeAttribute('src');video.load()}});
 $('#modal').addEventListener('click',e=>{if(e.target===$('#modal')){const r=e.target.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)closeModal()}});
 document.addEventListener('keydown',e=>{if(e.defaultPrevented||e.shiftKey||e.ctrlKey||e.metaKey||e.altKey)return;if(e.target.closest('input,textarea,select,[contenteditable],[data-reader-panel]')||$('#vocabularyDialog')?.open)return;if(e.key==='/'&&!$('#reader').open&&!$('#modal').open){e.preventDefault();$('#search').focus()}if($('#reader').open&&!$('#modal').open&&window.getSelection()?.isCollapsed!==false){if(e.key==='ArrowRight')changePage(1);else if(e.key==='ArrowLeft')changePage(-1)}});

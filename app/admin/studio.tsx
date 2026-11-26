@@ -147,6 +147,7 @@ type DesignDecor = {
   navColor?: string;
   navStyle?: "glass" | "pill-glow" | "floating" | "solid-season" | "minimal-line";
   navEffect?: "magnetic" | "glow-border" | "ripple-slide" | "neon-pulse" | "clean";
+  landmark3d?: boolean;
   fxLevel?: "off" | "gentle" | "vivid";
   stars?: "off" | "soft" | "bright";
   petals?: boolean;
@@ -246,6 +247,7 @@ const defaultDecor: Required<Omit<DesignDecor, "bgImageAssetId">> & { bgImageAss
   navColor: "",
   navStyle: "pill-glow",
   navEffect: "magnetic",
+  landmark3d: true,
   fxLevel: "vivid",
   stars: "bright",
   petals: true,
@@ -2424,6 +2426,23 @@ export default function AdminStudio({environment='production'}:{environment?:'pr
                           )}
                         </div>
                         <div className={styles.decorSwitches}>
+                          <label className={styles.decorSwitchRow}>
+                            <span>🎄 Mô hình 3D lớn theo mùa (Cây thông Noel 3D, Anh đào, Trăng rằm…)</span>
+                            <input
+                              type="checkbox"
+                              checked={design.decor?.landmark3d !== false}
+                              onChange={(e) =>
+                                changeDesign({
+                                  ...design,
+                                  decor: {
+                                    ...defaultDecor,
+                                    ...(design.decor || {}),
+                                    landmark3d: e.target.checked,
+                                  },
+                                })
+                              }
+                            />
+                          </label>
                           <label className={styles.decorSwitchRow}>
                             <span>🍃 Cánh lá / hạt sáng rơi nhẹ trên màn hình</span>
                             <input
