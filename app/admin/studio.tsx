@@ -103,7 +103,26 @@ type Me = { user: User | null };
 type DesignDecor = {
   preset?: string;
   season?: "classic" | "spring" | "summer" | "autumn" | "winter" | "festive";
-  bgPattern?: "clean" | "mesh" | "dots" | "grid" | "waves" | "starry" | "sunset" | "botanical";
+  bgPattern?:
+    | "clean"
+    | "mesh"
+    | "dots"
+    | "grid"
+    | "waves"
+    | "starry"
+    | "sunset"
+    | "botanical"
+    | "grid3d"
+    | "orbs3d"
+    | "aurora3d"
+    | "prism"
+    | "rings3d"
+    | "paperstack"
+    | "bokeh"
+    | "marble";
+  bgWallpaper?: string;
+  bgImageAssetId?: string;
+  bgOpacity?: number;
   fxLevel?: "off" | "gentle" | "vivid";
   stars?: "off" | "soft" | "bright";
   petals?: boolean;
@@ -193,10 +212,12 @@ const sectionLabels: Record<string, string> = {
   ambient: "Không gian âm nhạc",
   deal: "Gói thành viên",
 };
-const defaultDecor: Required<DesignDecor> = {
+const defaultDecor: Required<Omit<DesignDecor, "bgImageAssetId">> & { bgImageAssetId?: string } = {
   preset: "blush",
   season: "spring",
-  bgPattern: "mesh",
+  bgPattern: "orbs3d",
+  bgWallpaper: "none",
+  bgOpacity: 24,
   fxLevel: "vivid",
   stars: "bright",
   petals: true,
@@ -204,6 +225,41 @@ const defaultDecor: Required<DesignDecor> = {
   paperGrain: true,
   cardStyle: "hardcover",
 };
+const bgPatternCatalog: {
+  id: NonNullable<DesignDecor["bgPattern"]>;
+  name: string;
+  desc: string;
+  is3d?: boolean;
+}[] = [
+  { id: "orbs3d", name: "Cầu kính 3D", desc: "Khối cầu nổi chiều sâu", is3d: true },
+  { id: "grid3d", name: "Lưới 3D không gian", desc: "Sàn phối cảnh 3D trượt", is3d: true },
+  { id: "aurora3d", name: "Cực quang 3D", desc: "Dải sáng uốn lượn mượt", is3d: true },
+  { id: "rings3d", name: "Quỹ đạo 3D", desc: "Vòng thiên văn xoay nhẹ", is3d: true },
+  { id: "prism", name: "Lăng kính 3D", desc: "Mặt cắt pha lê hiện đại", is3d: true },
+  { id: "paperstack", name: "Trang sách 3D", desc: "Lớp giấy bay chiều sâu", is3d: true },
+  { id: "bokeh", name: "Bokeh cà phê", desc: "Đèn ấm mờ ảo lung linh", is3d: true },
+  { id: "marble", name: "Đá cẩm thạch", desc: "Vân khoáng nghệ thuật", is3d: true },
+  { id: "mesh", name: "Aurora Mesh", desc: "Lưới màu phát sáng" },
+  { id: "dots", name: "Chấm Studio", desc: "Dot Matrix hiện đại" },
+  { id: "grid", name: "Lưới sổ tay", desc: "Giấy kiến trúc tinh tế" },
+  { id: "waves", name: "Sóng lụa", desc: "Đường sóng mềm mại" },
+  { id: "starry", name: "Ngàn sao", desc: "Bầu trời đêm lấp lánh" },
+  { id: "sunset", name: "Hoàng hôn", desc: "Ánh kính ấm nghệ thuật" },
+  { id: "botanical", name: "Vân lá cổ", desc: "Họa tiết thư viện" },
+  { id: "clean", name: "Giấy mịn", desc: "Sạch sẽ, tối giản" },
+];
+const bgWallpaperCatalog: { id: string; name: string; desc: string; thumb?: string }[] = [
+  { id: "none", name: "Không ảnh nền", desc: "Chỉ dùng màu & nền 3D" },
+  { id: "photo-library", name: "Thư viện cổ điển", desc: "Kệ sách gỗ & ánh nắng", thumb: "https://images.unsplash.com/photo-1507842217343-583bb7270b66?auto=format&fit=crop&w=400&q=60" },
+  { id: "photo-cafe", name: "Quán sách mưa rơi", desc: "Cà phê ấm & cửa kính", thumb: "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=400&q=60" },
+  { id: "photo-sakura", name: "Vườn hoa anh đào", desc: "Sắc xuân dịu dàng", thumb: "https://images.unsplash.com/photo-1522383225653-ed111181a951?auto=format&fit=crop&w=400&q=60" },
+  { id: "photo-forest", name: "Rừng thông sương sớm", desc: "Yên bình & trong lành", thumb: "https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=400&q=60" },
+  { id: "photo-ocean", name: "Biển xanh hoàng hôn", desc: "Chân trời thư thái", thumb: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=400&q=60" },
+  { id: "photo-snow", name: "Rừng tuyết Bắc Âu", desc: "Mùa đông êm đềm", thumb: "https://images.unsplash.com/photo-1483664852095-d6cc6870702d?auto=format&fit=crop&w=400&q=60" },
+  { id: "art-mountains", name: "Tranh núi sương mù", desc: "Thủy mặc nghệ thuật 4K" },
+  { id: "art-nightsky", name: "Tranh đêm trăng sao", desc: "Bầu trời đêm sâu lắng" },
+  { id: "art-botanical", name: "Tranh vườn thực vật", desc: "Lá xanh & nắng vàng 4K" },
+];
 const seasonPresets: {
   id: NonNullable<DesignDecor["season"]>;
   icon: string;
@@ -240,12 +296,22 @@ const initialDesign: Design = {
   decor: defaultDecor,
 };
 const designPresets: {id:string;name:string;description:string;palette:Design['palette'];font:Design['font'];radius:number}[] = [
-  {id:'botanical',name:'Giấy Ấm & Rừng Thông',description:'Êm mắt, thanh lịch — bản sắc Lowf hiện đại.',palette:{primary:'#2c6546',background:'#f6f5f0',surface:'#fdfcf9',text:'#1d2b22'},font:'serif',radius:18},
+  {id:'botanical',name:'Rừng Thông & Giấy Ấm',description:'Êm mắt, thanh lịch — bản sắc Lowf.',palette:{primary:'#2c6546',background:'#f6f5f0',surface:'#fdfcf9',text:'#1d2b22'},font:'serif',radius:18},
+  {id:'blush',name:'Hoa Anh Đào & Lụa Ngà',description:'Dịu dàng, tinh tế và giàu chất thơ.',palette:{primary:'#b84568',background:'#fcf6f7',surface:'#fffdfd',text:'#2c1c23'},font:'serif',radius:20},
   {id:'espresso',name:'Cà Phê & Giấy Kraft',description:'Ấm áp, cổ điển như hiệu sách gỗ.',palette:{primary:'#8a5436',background:'#f7f1e8',surface:'#fffcf7',text:'#2c211a'},font:'serif',radius:20},
-  {id:'nordic',name:'Sương Sớm Bắc Âu',description:'Tươi sáng, gọn gàng và nhiều khoảng thở.',palette:{primary:'#2b5b78',background:'#f2f6f8',surface:'#fcfdfe',text:'#1b2a34'},font:'sans',radius:14},
-  {id:'blush',name:'Lụa Ngà & Hoa Đào',description:'Dịu dàng, tinh tế và giàu chất thơ.',palette:{primary:'#9a4a61',background:'#faf4f3',surface:'#fffcfc',text:'#2e1f24'},font:'serif',radius:20},
+  {id:'nordic',name:'Sương Sớm Bắc Âu',description:'Tươi sáng, gọn gàng nhiều khoảng thở.',palette:{primary:'#2b5b78',background:'#f2f6f8',surface:'#fcfdfe',text:'#1b2a34'},font:'sans',radius:14},
   {id:'twilight',name:'Tím Khói & Mực Cổ',description:'Sáng tạo, sâu lắng cho buổi đọc tối.',palette:{primary:'#5b4785',background:'#f5f3f9',surface:'#fdfcff',text:'#231d30'},font:'serif',radius:18},
   {id:'collector',name:'Vàng Kim & Sách Quý',description:'Sang trọng, tinh tuyển ấn bản sưu tầm.',palette:{primary:'#92692c',background:'#faf7ee',surface:'#fffef9',text:'#292218'},font:'serif',radius:16},
+  {id:'matcha',name:'Matcha Kyoto',description:'Tươi mát, cân bằng và đầy sức sống.',palette:{primary:'#4a7c3f',background:'#f3f7ee',surface:'#fbfdf8',text:'#1e2b1b'},font:'serif',radius:18},
+  {id:'terracotta',name:'Gốm Đất Nung',description:'Nghệ thuật ấm áp phong cách Địa Trung Hải.',palette:{primary:'#b85535',background:'#faf3ed',surface:'#fffcf9',text:'#2e1e18'},font:'serif',radius:20},
+  {id:'ocean',name:'Biển Lam San Hô',description:'Khoáng đạt, trẻ trung và hiện đại.',palette:{primary:'#0f766e',background:'#eef8f7',surface:'#fafefe',text:'#132a28'},font:'sans',radius:16},
+  {id:'lavender',name:'Oải Hương Provence',description:'Mộng mơ, thanh tao và mềm mại.',palette:{primary:'#6d4c9c',background:'#f7f4fc',surface:'#fdfcff',text:'#251c33'},font:'serif',radius:20},
+  {id:'rosewood',name:'Gỗ Hồng Rượu Vang',description:'Quyến rũ, chiều sâu kiểu hiệu sách châu Âu.',palette:{primary:'#8c2f48',background:'#fbf3f5',surface:'#fffcfd',text:'#2e171e'},font:'serif',radius:18},
+  {id:'amber',name:'Mật Ong Nắng Chiều',description:'Rạng rỡ, ấm cúng và gần gũi.',palette:{primary:'#b5741e',background:'#fcf7eb',surface:'#fffdf7',text:'#2d2314'},font:'serif',radius:18},
+  {id:'slate',name:'Xanh Đá Tối Giản',description:'Công nghệ, sắc nét và cực gọn gàng.',palette:{primary:'#334155',background:'#f4f6f9',surface:'#ffffff',text:'#17202c'},font:'sans',radius:12},
+  {id:'jade',name:'Ngọc Bích Hoàng Gia',description:'Quý phái, dịu êm và sang trọng.',palette:{primary:'#1e6b5b',background:'#eff7f5',surface:'#fafefd',text:'#162b26'},font:'serif',radius:18},
+  {id:'sunset',name:'Hoàng Hôn San Hô',description:'Ấm áp, năng lượng tích cực mỗi ngày.',palette:{primary:'#c25442',background:'#fdf4f1',surface:'#fffcfb',text:'#301c18'},font:'serif',radius:20},
+  {id:'indigo',name:'Mực Chàm Nhật Bản',description:'Cổ điển, trầm tĩnh và tập trung sâu.',palette:{primary:'#283d7a',background:'#f2f5fb',surface:'#fcfdff',text:'#172038'},font:'serif',radius:16},
 ];
 const money = (n = 0) =>
   new Intl.NumberFormat("vi-VN", {
@@ -2108,9 +2174,9 @@ export default function AdminStudio({environment='production'}:{environment?:'pr
                               <option value="minimal">Tối giản Editorial</option>
                             </select>
                           </Field>
-                          <Field label="Hình nền sáng tạo kiểu Uiverse">
+                          <Field label="Hình nền 3D &amp; Hoa văn Uiverse (16 kiểu)">
                             <select
-                              value={design.decor?.bgPattern || "mesh"}
+                              value={design.decor?.bgPattern || "orbs3d"}
                               onChange={(e) =>
                                 changeDesign({
                                   ...design,
@@ -2122,16 +2188,105 @@ export default function AdminStudio({environment='production'}:{environment?:'pr
                                 })
                               }
                             >
-                              <option value="clean">Giấy mịn tối giản</option>
-                              <option value="mesh">Aurora Mesh phát sáng</option>
-                              <option value="dots">Chấm Studio (Dot Matrix)</option>
-                              <option value="grid">Lưới sổ tay kiến trúc</option>
-                              <option value="waves">Sóng lụa mềm mại</option>
-                              <option value="starry">Ngàn sao đêm lấp lánh</option>
-                              <option value="sunset">Hoàng hôn thủy tinh ấm</option>
-                              <option value="botanical">Vân lá thư viện cổ</option>
+                              {bgPatternCatalog.map((bp) => (
+                                <option key={bp.id} value={bp.id}>
+                                  {bp.is3d ? "🧊 " : ""}{bp.name} — {bp.desc}
+                                </option>
+                              ))}
                             </select>
                           </Field>
+                        </div>
+                        <div className={styles.bgGalleryBlock}>
+                          <p className={styles.controlHint} style={{ marginBottom: 10 }}>
+                            <strong>Ảnh nền toàn trang nghệ thuật ({bgWallpaperCatalog.length} mẫu)</strong> — hoặc tải ảnh nền riêng của bạn bên dưới:
+                          </p>
+                          <div className={styles.wallpaperGrid}>
+                            {bgWallpaperCatalog.map((wp) => {
+                              const active = (design.decor?.bgWallpaper || "none") === wp.id && !design.decor?.bgImageAssetId;
+                              return (
+                                <button
+                                  key={wp.id}
+                                  type="button"
+                                  className={`${styles.wallpaperCard} ${active ? styles.wallpaperActive : ""}`}
+                                  onClick={() =>
+                                    changeDesign({
+                                      ...design,
+                                      decor: {
+                                        ...defaultDecor,
+                                        ...(design.decor || {}),
+                                        bgWallpaper: wp.id,
+                                        bgImageAssetId: "",
+                                      },
+                                    })
+                                  }
+                                >
+                                  <span
+                                    className={styles.wallpaperThumb}
+                                    style={wp.thumb ? { backgroundImage: `url(${wp.thumb})` } : undefined}
+                                  />
+                                  <strong>{wp.name}</strong>
+                                  <small>{wp.desc}</small>
+                                </button>
+                              );
+                            })}
+                          </div>
+                          <div className={styles.formGrid} style={{ marginTop: 12 }}>
+                            <Field label={`Độ nổi bật ảnh nền · ${design.decor?.bgOpacity ?? 24}%`}>
+                              <input
+                                type="range"
+                                min="8"
+                                max="60"
+                                step="2"
+                                value={design.decor?.bgOpacity ?? 24}
+                                onChange={(e) =>
+                                  changeDesign({
+                                    ...design,
+                                    decor: {
+                                      ...defaultDecor,
+                                      ...(design.decor || {}),
+                                      bgOpacity: Number(e.target.value),
+                                    },
+                                  })
+                                }
+                              />
+                            </Field>
+                          </div>
+                          <UploadField
+                            label="Hoặc tải ảnh nền toàn trang riêng từ máy của bạn"
+                            kind="image"
+                            userId={user.id}
+                            value={design.decor?.bgImageAssetId}
+                            onChange={(id) =>
+                              changeDesign({
+                                ...design,
+                                decor: {
+                                  ...defaultDecor,
+                                  ...(design.decor || {}),
+                                  bgImageAssetId: id,
+                                  bgWallpaper: "custom",
+                                },
+                              })
+                            }
+                          />
+                          {design.decor?.bgImageAssetId && (
+                            <button
+                              type="button"
+                              className={styles.textButton}
+                              onClick={() =>
+                                changeDesign({
+                                  ...design,
+                                  decor: {
+                                    ...defaultDecor,
+                                    ...(design.decor || {}),
+                                    bgImageAssetId: "",
+                                    bgWallpaper: "none",
+                                  },
+                                })
+                              }
+                            >
+                              Bỏ ảnh nền tự tải lên
+                            </button>
+                          )}
                         </div>
                         <div className={styles.decorSwitches}>
                           <label className={styles.decorSwitchRow}>
