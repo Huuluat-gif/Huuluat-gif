@@ -1285,6 +1285,24 @@ body.is-scrolled .sticky-brand-mark{background:rgba(255,255,255,.22);color:#fff}
 /* Crisp circular public avatars across Community, Leaderboard, Replies & DMs */
 .avatar{overflow:hidden;position:relative}
 .avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%;display:block}
+
+/* Custom Brand Logo & Favicon Styling */
+.brand-mark svg{width:22px;height:22px;display:block}
+.sticky-brand-mark svg{width:15px;height:15px;display:block}
+.brand-mark.has-img,.sticky-brand-mark.has-img{padding:0!important;overflow:hidden;background:var(--surface)!important;border:1px solid var(--nav-border)}
+.brand-mark.has-img img,.sticky-brand-mark.has-img img{width:100%;height:100%;object-fit:cover;display:block}
+.decor-logo-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:8px 0 10px}
+.decor-logo-card{display:flex;flex-direction:column;align-items:center;gap:5px;padding:9px 6px;border-radius:11px;border:1.5px solid var(--line);background:var(--bg);font-size:9.5px;font-weight:600;color:var(--ink);transition:all .16s}
+.decor-logo-card:hover{border-color:var(--nav-accent,var(--green));transform:translateY(-1px)}
+.decor-logo-card.active{border-color:var(--nav-accent,var(--green));background:var(--nav-soft,var(--mint));color:var(--nav-accent,var(--green))}
+.decor-logo-ico{width:32px;height:32px;border-radius:10px;display:grid;place-items:center;background:var(--nav-accent,var(--green));color:#fff}
+.decor-logo-ico svg{width:19px;height:19px}
+.decor-brand-preview{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:var(--bg);border:1px solid var(--line);margin-bottom:10px}
+.decor-tab-pill{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:8px;background:var(--surface);border:1px solid var(--line);font-size:10px;font-weight:600;color:var(--ink);max-width:100%;overflow:hidden}
+.decor-tab-pill img{width:16px;height:16px;border-radius:4px;object-fit:cover;flex-shrink:0}
+.decor-upload-row{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}
+.decor-upload-row button{flex:1;min-height:32px;padding:6px 9px;font-size:10px}
+
 @media(max-width:767px){
   .sticky-brand{padding:5px 10px 5px 6px;gap:6px}
   .sticky-brand-mark{width:22px;height:22px}
