@@ -7,12 +7,14 @@ import { defaultDesign } from '@/lib/validation';
 import { getCommerceStatus,getPurchasedBookIds } from '@/lib/commerce';
 import { ensureCuratedCatalog } from '@/lib/curated-books';
 export const dynamic='force-dynamic';
+let curatedReady:Promise<void>|null=null;
 export const GET=route(async(request)=>{
  const user=await getUser();
  const draftRequested=new URL(request.url).searchParams.get('designPreview')==='1';
  if(draftRequested&&!user?.isAdmin)throw new HttpError(user?403:401,'Chỉ chủ website được xem bản nháp giao diện.');
  const sql=getSQL();
- await ensureCuratedCatalog(sql);
+ if(!curatedReady)curatedReady=ensureCuratedCatalog(sql).catch(err=>{curatedReady=null;throw err;});
+ await curatedReady;
  const entitled=!!user&&(user.isAdmin||await hasMembership(user.id));
  const designQuery=draftRequested?sql`SELECT settings,status FROM lowf_design_versions WHERE status IN ('draft','published') ORDER BY CASE WHEN status='draft' THEN 0 ELSE 1 END,created_at DESC LIMIT 1`:sql`SELECT settings,status FROM lowf_design_versions WHERE status='published' LIMIT 1`;
  const [rows,design,commerce,purchases]=await Promise.all([sql`SELECT kind,id,data-'chapters' AS data,status,CASE WHEN kind='books' THEN jsonb_array_length(COALESCE(data->'chapters','[]'::jsonb)) ELSE 0 END AS chapter_count FROM lowf_content WHERE status='published' ORDER BY created_at,id`,designQuery,getCommerceStatus(!!user?.isAdmin),user?getPurchasedBookIds(user.id):Promise.resolve([])]);
