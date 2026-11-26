@@ -3300,6 +3300,63 @@ export default function AdminStudio({environment='production'}:{environment?:'pr
                       )
                     }
                   />}
+                  {editor.kind === "books" && (
+                    <div className={styles.inlineNotice} style={{ flexDirection: "column", alignItems: "flex-start", gap: 10 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <Sparkles size={17} />
+                        <strong>Tự động tối ưu sách Scan PDF &amp; nhập nhanh Ebook (.txt / .md)</strong>
+                      </div>
+                      <span style={{ fontSize: 12.5, lineHeight: 1.6 }}>
+                        • <strong>Với file PDF Scan:</strong> Chỉ cần tải file PDF ở ô trên — Lowf sẽ tự động nhận diện trang scan, lọc sạch nền xám, nâng độ nét Retina và hòa màu theo 8 nền giấy đọc (kể cả chế độ Đêm).<br />
+                        • <strong>Với file Ebook chữ (.txt / .md):</strong> Chọn tệp bên dưới để tự động chuẩn hóa đoạn văn &amp; tách thành các chương đọc mượt 2 trang:
+                      </span>
+                      <input
+                        type="file"
+                        accept=".txt,.md,text/plain,text/markdown"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          e.target.value = "";
+                          if (!file) return;
+                          const raw = (await file.text()).replace(/\r\n?/g, "\n").trim();
+                          if (!raw) return;
+                          const cleanParas = (txt: string) =>
+                            txt
+                              .replace(/-\n(?=[a-zà-ỹ])/gi, "")
+                              .split(/\n\s*\n/)
+                              .map((p) => p.replace(/\s+/g, " ").trim())
+                              .filter((p) => p.length > 1);
+                          const headingRe = /^(?:#{1,3}\s+|(?:chương|phần|chapter|part)\s+\d+[^\n]*)/gim;
+                          const matches = [...raw.matchAll(headingRe)];
+                          let chapters: { title: string; paragraphs: string[] }[] = [];
+                          if (matches.length >= 2) {
+                            for (let i = 0; i < matches.length; i++) {
+                              const start = matches[i].index ?? 0;
+                              const end = i + 1 < matches.length ? (matches[i + 1].index ?? raw.length) : raw.length;
+                              const lines = raw.slice(start, end).trim().split("\n");
+                              const title = (lines.shift() || "").replace(/^#+\s*/, "").trim().slice(0, 140) || `Chương ${i + 1}`;
+                              const paragraphs = cleanParas(lines.join("\n"));
+                              if (paragraphs.length) chapters.push({ title, paragraphs });
+                            }
+                          }
+                          if (!chapters.length) {
+                            const all = cleanParas(raw);
+                            const baseTitle = file.name.replace(/\.(?:txt|md)$/i, "").trim() || "Chương 1";
+                            for (let i = 0; i < all.length; i += 18) {
+                              chapters.push({
+                                title: all.length > 18 ? `${baseTitle} · Phần ${Math.floor(i / 18) + 1}` : baseTitle,
+                                paragraphs: all.slice(i, i + 18),
+                              });
+                            }
+                          }
+                          patchItem({
+                            title: editor.item.title || file.name.replace(/\.(?:txt|md)$/i, "").trim(),
+                            chapters: chapters.slice(0, 200),
+                          });
+                          inform(`✨ Đã tự động chuẩn hóa và tách ${chapters.length} chương từ tệp "${file.name}"!`);
+                        }}
+                      />
+                    </div>
+                  )}
                   {editor.kind === "books" &&
                     chapterCount(editor.item) > 0 && (
                       <div className={styles.inlineNotice}>

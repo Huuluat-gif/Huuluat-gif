@@ -192,16 +192,163 @@
       tx.onerror = tx.onabort = () => reject(new Error(tx.error && tx.error.name === 'QuotaExceededError' ? 'Bộ nhớ trình duyệt đã đầy. Hãy xóa bớt PDF hoặc giải phóng dung lượng.' : 'Không thể lưu hoặc đọc tệp PDF trong trình duyệt.'));
     });
   }
-  function metadata(record) { return { id: record.id, name: record.name, size: record.size, added: record.added }; }
+  function metadata(record) { return { id: record.id, name: record.name, size: record.size, added: record.added, kind: record.kind || 'pdf', chapterCount: Array.isArray(record.chapters) ? record.chapters.length : 0 }; }
+  function cleanParagraphs(rawText) {
+    const normalized = String(rawText || '')
+      .replace(/\r\n?/g, '\n')
+      .replace(/-\n(?=[a-zà-ỹ])/gi, '')
+      .replace(/[ \t]+\n/g, '\n')
+      .replace(/\n{3,}/g, '\n\n');
+    const blocks = normalized.split(/\n\s*\n/).map(b => b.replace(/\s+/g, ' ').trim()).filter(b => b.length > 1 && !/^(?:trang\s*)?\d{1,4}$/i.test(b));
+    return blocks.length ? blocks : ['Nội dung đang được chuẩn hóa.'];
+  }
+  function splitTextIntoChapters(rawText, fallbackTitle = 'Chương 1') {
+    const clean = String(rawText || '').replace(/\r\n?/g, '\n').trim();
+    if (!clean) return [{ title: fallbackTitle, paragraphs: ['Chưa có nội dung văn bản.'] }];
+    const headingRe = /^(?:#{1,3}\s+|(?:chương|phần|chapter|part)\s+\d+[^\n]*)/gim;
+    const matches = [...clean.matchAll(headingRe)];
+    if (matches.length >= 2) {
+      const chapters = [];
+      for (let i = 0; i < matches.length; i++) {
+        const start = matches[i].index;
+        const end = i + 1 < matches.length ? matches[i + 1].index : clean.length;
+        const block = clean.slice(start, end).trim();
+        const lines = block.split('\n');
+        const title = lines.shift().replace(/^#+\s*/, '').trim().slice(0, 140) || `Chương ${i + 1}`;
+        const paragraphs = cleanParagraphs(lines.join('\n'));
+        if (paragraphs.length) chapters.push({ title, paragraphs });
+      }
+      if (chapters.length) return chapters;
+    }
+    const allParas = cleanParagraphs(clean);
+    const chapters = [];
+    const perChapter = 18;
+    for (let i = 0; i < allParas.length; i += perChapter) {
+      chapters.push({
+        title: allParas.length > perChapter ? `${fallbackTitle} · Phần ${Math.floor(i / perChapter) + 1}` : fallbackTitle,
+        paragraphs: allParas.slice(i, i + perChapter)
+      });
+    }
+    return chapters;
+  }
+  async function inflateRawBytes(bytes) {
+    if (typeof DecompressionStream === 'undefined') throw new Error('Trình duyệt hiện tại chưa hỗ trợ giải nén EPUB tự động.');
+    const ds = new DecompressionStream('deflate-raw');
+    const writer = ds.writable.getWriter();
+    writer.write(bytes); writer.close();
+    const out = await new Response(ds.readable).arrayBuffer();
+    return new Uint8Array(out);
+  }
+  async function extractEpubEntries(buffer) {
+    const u8 = new Uint8Array(buffer), dv = new DataView(buffer);
+    let eocd = -1;
+    for (let i = u8.length - 22; i >= Math.max(0, u8.length - 65557); i--) {
+      if (dv.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+    }
+    if (eocd < 0) throw new Error('Tệp EPUB không đúng cấu trúc nén ZIP.');
+    const cdOffset = dv.getUint32(eocd + 16, true), cdCount = dv.getUint16(eocd + 10, true);
+    const entries = new Map();
+    const td = new TextDecoder('utf-8');
+    let p = cdOffset;
+    for (let i = 0; i < cdCount && p + 46 <= u8.length; i++) {
+      if (dv.getUint32(p, true) !== 0x02014b50) break;
+      const method = dv.getUint16(p + 10, true);
+      const compSize = dv.getUint32(p + 20, true);
+      const nameLen = dv.getUint16(p + 28, true), extraLen = dv.getUint16(p + 30, true), commentLen = dv.getUint16(p + 32, true);
+      const localOff = dv.getUint32(p + 42, true);
+      const name = td.decode(u8.subarray(p + 46, p + 46 + nameLen));
+      p += 46 + nameLen + extraLen + commentLen;
+      if (/\.(?:xhtml|html|htm|opf|ncx)$/i.test(name)) {
+        const lhName = dv.getUint16(localOff + 26, true), lhExtra = dv.getUint16(localOff + 28, true);
+        const dataStart = localOff + 30 + lhName + lhExtra;
+        const slice = u8.subarray(dataStart, dataStart + compSize);
+        let raw = slice;
+        if (method === 8) raw = await inflateRawBytes(slice);
+        else if (method !== 0) continue;
+        entries.set(name, td.decode(raw));
+      }
+    }
+    return entries;
+  }
+  async function parseEbookFile(file) {
+    const name = String(file.name || 'Ebook').replace(/\.(?:epub|txt|md|pdf)$/i, '').trim() || 'Sách mới';
+    const lower = String(file.name || '').toLowerCase();
+    if (lower.endsWith('.txt') || lower.endsWith('.md') || file.type === 'text/plain' || file.type === 'text/markdown') {
+      const txt = await file.text();
+      return { kind: 'ebook', title: name, chapters: splitTextIntoChapters(txt, name) };
+    }
+    if (lower.endsWith('.epub') || file.type === 'application/epub+zip') {
+      const entries = await extractEpubEntries(await file.arrayBuffer());
+      const opfKey = [...entries.keys()].find(k => /\.opf$/i.test(k));
+      let orderedKeys = [...entries.keys()].filter(k => /\.(?:xhtml|html|htm)$/i.test(k)).sort();
+      if (opfKey) {
+        const opf = entries.get(opfKey) || '';
+        const baseDir = opfKey.includes('/') ? opfKey.slice(0, opfKey.lastIndexOf('/') + 1) : '';
+        const idMap = {};
+        for (const m of opf.matchAll(/<item[^>]+id=["']([^"']+)["'][^>]+href=["']([^"']+)["']/gi)) idMap[m[1]] = decodeURIComponent(baseDir + m[2]);
+        for (const m of opf.matchAll(/<item[^>]+href=["']([^"']+)["'][^>]+id=["']([^"']+)["']/gi)) idMap[m[2]] = decodeURIComponent(baseDir + m[1]);
+        const spine = [...opf.matchAll(/<itemref[^>]+idref=["']([^"']+)["']/gi)].map(m => idMap[m[1]]).filter(k => k && entries.has(k));
+        if (spine.length) orderedKeys = spine;
+      }
+      const parser = new DOMParser();
+      const chapters = [];
+      for (const k of orderedKeys) {
+        const doc = parser.parseFromString(entries.get(k) || '', 'text/html');
+        doc.querySelectorAll('script,style,nav').forEach(el => el.remove());
+        const h = doc.querySelector('h1,h2,h3,title')?.textContent?.trim();
+        const pEls = [...doc.querySelectorAll('p,div,blockquote,li')].filter(el => !el.querySelector('p,div')).map(el => el.textContent.replace(/\s+/g, ' ').trim()).filter(t => t.length > 1);
+        const paras = pEls.length ? pEls : cleanParagraphs(doc.body?.textContent || '');
+        if (paras.length && paras.join('').length > 25) {
+          chapters.push({ title: (h && h.length < 120 ? h : `Chương ${chapters.length + 1}`), paragraphs: paras });
+        }
+      }
+      if (!chapters.length) throw new Error('Không trích xuất được chữ từ tệp EPUB này.');
+      return { kind: 'ebook', title: name, chapters: chapters.slice(0, 300) };
+    }
+    if (lower.endsWith('.pdf') || file.type === 'application/pdf') {
+      const library = await loadPDFJS();
+      const doc = await library.getDocument({ data: new Uint8Array(await file.arrayBuffer()), isEvalSupported: false, cMapUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/', cMapPacked: true }).promise;
+      const maxPages = Math.min(doc.numPages, 120);
+      let fullText = '', textPages = 0;
+      for (let i = 1; i <= maxPages; i++) {
+        const pg = await doc.getPage(i);
+        const content = await pg.getTextContent();
+        const pageStr = content.items.map(it => (it.str || '') + (it.hasEOL ? '\n' : ' ')).join('');
+        if (pageStr.trim().length > 30) textPages++;
+        fullText += '\n\n' + pageStr;
+      }
+      doc.destroy?.();
+      if (textPages === 0 || fullText.trim().length < 80) {
+        return { kind: 'scan-pdf', title: name, pages: doc.numPages, chapters: [] };
+      }
+      return { kind: 'text-pdf', title: name, pages: doc.numPages, chapters: splitTextIntoChapters(fullText, name) };
+    }
+    throw new Error('Hỗ trợ tự động tối ưu tệp .pdf, .epub, .txt và .md.');
+  }
   async function savePDF(file) {
-    if (!file || typeof file.arrayBuffer !== 'function') throw new Error('Vui lòng chọn một tệp PDF.');
-    if (!file.size || file.size > MAX_PDF_BYTES) throw new Error('Chọn tệp PDF có dung lượng từ 1 byte đến 30 MB.');
-    if (file.type && file.type !== 'application/pdf' && file.type !== 'application/octet-stream') throw new Error('Tệp này không phải PDF. Hãy chọn tệp có đuôi .pdf.');
+    if (!file || typeof file.arrayBuffer !== 'function') throw new Error('Vui lòng chọn một tệp sách.');
+    if (!file.size || file.size > MAX_PDF_BYTES) throw new Error('Chọn tệp sách có dung lượng từ 1 byte đến 30 MB.');
+    const lower = String(file.name || '').toLowerCase();
+    const isEbookText = lower.endsWith('.epub') || lower.endsWith('.txt') || lower.endsWith('.md') || file.type === 'application/epub+zip' || file.type === 'text/plain' || file.type === 'text/markdown';
+    if (isEbookText) {
+      const parsed = await parseEbookFile(file);
+      const record = {
+        id: 'ebk-' + (window.crypto && crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2)),
+        name: parsed.title.slice(0, 240),
+        kind: 'ebook',
+        chapters: parsed.chapters,
+        size: file.size, added: new Date().toISOString(), blob: file
+      };
+      await transaction('readwrite', store => store.put(record));
+      return metadata(record);
+    }
+    if (file.type && file.type !== 'application/pdf' && file.type !== 'application/octet-stream') throw new Error('Hãy chọn tệp .pdf, .epub, .txt hoặc .md.');
     const header = new TextDecoder('latin1').decode(await file.slice(0, 1024).arrayBuffer());
     if (!header.includes('%PDF-')) throw new Error('Tệp không có định dạng PDF hợp lệ.');
     const record = {
       id: 'pdf-' + (window.crypto && crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2)),
       name: String(file.name || 'Sách của tôi.pdf').slice(0, 240),
+      kind: 'pdf',
       size: file.size, added: new Date().toISOString(), blob: file
     };
     await transaction('readwrite', store => store.put(record));
@@ -266,13 +413,33 @@
     if (renderTask) { try { renderTask.cancel(); } catch (_) {} renderTask = null; }
     releaseCache(pdfCache); pdfCache = null;
   }
+  function enhanceScanCanvas(context, width, height) {
+    try {
+      const imgData = context.getImageData(0, 0, width, height);
+      const d = imgData.data;
+      // Fast 1-pass scanned paper cleanup: whiten gray scan margins (>214 -> 255) and deepen faint ink (<150)
+      for (let i = 0; i < d.length; i += 4) {
+        const lum = (d[i] * 77 + d[i + 1] * 150 + d[i + 2] * 29) >> 8;
+        if (lum > 214) {
+          d[i] = 255; d[i + 1] = 255; d[i + 2] = 255;
+        } else if (lum < 155) {
+          d[i] = Math.max(0, (d[i] * 0.84) | 0);
+          d[i + 1] = Math.max(0, (d[i + 1] * 0.84) | 0);
+          d[i + 2] = Math.max(0, (d[i + 2] * 0.84) | 0);
+        }
+      }
+      context.putImageData(imgData, 0, 0);
+    } catch (_) {
+      // Cross-origin canvas taint fallback handled gracefully by CSS blend filters.
+    }
+  }
   const remoteSources = new Map();
-  function renderRemotePDF(id, title, canvas, page = 1, textLayer = null) {
+  function renderRemotePDF(id, title, canvas, page = 1, textLayer = null, options = {}) {
     const key='remote:'+id;
     remoteSources.set(key,{name:title,url:'/api/assets/'+encodeURIComponent(id)});
-    return renderPDF(key,canvas,page,textLayer);
+    return renderPDF(key,canvas,page,textLayer,options);
   }
-  async function renderPDF(id, canvas, page = 1, textLayer = null) {
+  async function renderPDF(id, canvas, page = 1, textLayer = null, options = {}) {
     if (!canvas || typeof canvas.getContext !== 'function') throw new Error('Không tìm thấy vùng hiển thị PDF.');
     const epoch = ++renderEpoch;
     if (renderTask) {
@@ -306,26 +473,29 @@
       const pdfPage = await documentPDF.getPage(pageNumber);
       if (epoch !== renderEpoch) throw cancelled();
       const baseViewport = pdfPage.getViewport({ scale: 1 });
-      const parentWidth = canvas.parentElement ? canvas.parentElement.clientWidth : 800;
-      const cssWidth = Math.max(200, Math.min(900, parentWidth || window.innerWidth - 32));
-      const pixelWidth = Math.min(1400, Math.round(cssWidth * Math.min(window.devicePixelRatio || 1, 1.5)));
-      const viewport = pdfPage.getViewport({ scale: Math.min(pixelWidth / baseViewport.width, 1400 / baseViewport.height) });
+      const zoom = Math.max(0.85, Math.min(1.6, Number(options.zoom) || 1));
+      const parentWidth = canvas.parentElement ? canvas.parentElement.clientWidth : 920;
+      const cssWidth = Math.max(240, Math.min(1120, Math.round((parentWidth || window.innerWidth - 36) * zoom)));
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const pixelWidth = Math.min(2200, Math.round(cssWidth * dpr));
+      const viewport = pdfPage.getViewport({ scale: Math.min(pixelWidth / baseViewport.width, 2600 / baseViewport.height) });
       canvas.width = Math.ceil(viewport.width); canvas.height = Math.ceil(viewport.height);
       canvas.style.width = '100%'; canvas.style.maxWidth = cssWidth + 'px'; canvas.style.height = 'auto';
-      const context = canvas.getContext('2d', { alpha: false });
+      const context = canvas.getContext('2d', { alpha: false, willReadFrequently: true });
       if (!context) throw new Error('Trình duyệt không thể vẽ trang PDF.');
       const task = documentPDF.numPages && pdfPage.render({ canvasContext: context, viewport, background: 'rgb(255,255,255)' });
       renderTask = task;
       await task.promise;
       if (renderTask === task) renderTask = null;
       if (epoch !== renderEpoch) throw cancelled();
-      let text = '';
-      if (textLayer) {
-        try {
-          const content = await pdfPage.getTextContent();
-          if (epoch !== renderEpoch) throw cancelled();
-          text = content.items.map(item => item.str || '').join(' ');
-          // Render off-DOM so a late previous page can never replace the active page.
+      let text = '', paragraphs = [];
+      try {
+        const content = await pdfPage.getTextContent();
+        if (epoch !== renderEpoch) throw cancelled();
+        const rawJoined = content.items.map(item => (item.str || '') + (item.hasEOL ? '\n' : ' ')).join('');
+        text = rawJoined.replace(/\s+/g, ' ').trim();
+        paragraphs = cleanParagraphs(rawJoined);
+        if (textLayer) {
           const detached = document.createElement('div');
           const cssViewport = pdfPage.getViewport({scale: cssWidth / baseViewport.width});
           detached.style.setProperty('--scale-factor', String(cssViewport.scale));
@@ -340,13 +510,20 @@
           textLayer.style.setProperty('--scale-factor', String(cssViewport.scale));
           textLayer.dataset.renderWidth = String(cssViewport.width);
           canvas.parentElement.style.width = cssWidth + 'px';
-        } catch (error) {
-          if (epoch !== renderEpoch || error.name === 'AbortError') throw cancelled();
-          textLayer.replaceChildren();
-          // Scanned or unsupported text layers still retain the rendered PDF and pen tools.
         }
+      } catch (error) {
+        if (epoch !== renderEpoch || error.name === 'AbortError') throw cancelled();
+        if (textLayer) textLayer.replaceChildren();
       }
-      return { page: pageNumber, pages: documentPDF.numPages, title: cache.name, text };
+      const isScan = text.length < 28;
+      if (options.enhanceScan !== false && (isScan || options.forceEnhance)) {
+        enhanceScanCanvas(context, canvas.width, canvas.height);
+      }
+      // Quietly pre-warm next page in PDF.js cache for instant page turns
+      if (pageNumber < documentPDF.numPages) {
+        documentPDF.getPage(pageNumber + 1).catch(() => {});
+      }
+      return { page: pageNumber, pages: documentPDF.numPages, title: cache.name, text, paragraphs, isScan };
     } catch (error) {
       if (epoch !== renderEpoch || error.name === 'RenderingCancelledException' || error.name === 'AbortError') throw cancelled();
       releaseCache(pdfCache); pdfCache = null;
@@ -358,7 +535,7 @@
   }
   window.addEventListener('pagehide', () => { pause(); cancelPDF(); });
   window.BookMedia = Object.freeze({
-    play, pause, chime, setVolume, savePDF, listPDFs, deletePDF, renderPDF, renderRemotePDF, cancelPDF, exportPDF,
+    play, pause, chime, setVolume, savePDF, listPDFs, getPDF, deletePDF, renderPDF, renderRemotePDF, cancelPDF, exportPDF, parseEbookFile, cleanParagraphs,
     get playing() { return isPlaying; }, get mode() { return currentMode; },
     get volume() { return volume; }, maxPDFBytes: MAX_PDF_BYTES
   });
