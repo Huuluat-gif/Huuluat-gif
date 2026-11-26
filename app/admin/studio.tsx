@@ -102,7 +102,19 @@ type User = {
 type Me = { user: User | null };
 type DesignDecor = {
   preset?: string;
-  season?: "classic" | "spring" | "summer" | "autumn" | "winter" | "festive";
+  season?:
+    | "classic"
+    | "spring"
+    | "summer"
+    | "autumn"
+    | "winter"
+    | "festive"
+    | "rainy"
+    | "midautumn"
+    | "christmas"
+    | "meteor"
+    | "dandelion"
+    | "lotus";
   bgPattern?:
     | "clean"
     | "mesh"
@@ -119,10 +131,23 @@ type DesignDecor = {
     | "rings3d"
     | "paperstack"
     | "bokeh"
-    | "marble";
+    | "marble"
+    | "cubes3d"
+    | "tunnel3d"
+    | "ribbon3d"
+    | "nebula3d"
+    | "hex3d"
+    | "spotlight3d"
+    | "bubbles3d"
+    | "constellation3d";
   bgWallpaper?: string;
   bgImageAssetId?: string;
   bgOpacity?: number;
+  navSync?: boolean;
+  navColor?: string;
+  navStyle?: "glass" | "pill-glow" | "floating" | "solid-season" | "minimal-line";
+  navEffect?: "magnetic" | "glow-border" | "ripple-slide" | "neon-pulse" | "clean";
+  landmark3d?: boolean;
   fxLevel?: "off" | "gentle" | "vivid";
   stars?: "off" | "soft" | "bright";
   petals?: boolean;
@@ -218,6 +243,11 @@ const defaultDecor: Required<Omit<DesignDecor, "bgImageAssetId">> & { bgImageAss
   bgPattern: "orbs3d",
   bgWallpaper: "none",
   bgOpacity: 24,
+  navSync: true,
+  navColor: "",
+  navStyle: "pill-glow",
+  navEffect: "magnetic",
+  landmark3d: true,
   fxLevel: "vivid",
   stars: "bright",
   petals: true,
@@ -232,6 +262,14 @@ const bgPatternCatalog: {
   is3d?: boolean;
 }[] = [
   { id: "orbs3d", name: "Cầu kính 3D", desc: "Khối cầu nổi chiều sâu", is3d: true },
+  { id: "cubes3d", name: "Lập phương 3D", desc: "Khối pha lê xoay nổi", is3d: true },
+  { id: "tunnel3d", name: "Đường hầm 3D", desc: "Khung chiều sâu không gian", is3d: true },
+  { id: "ribbon3d", name: "Dải lụa 3D", desc: "Sóng lụa ánh sáng chéo", is3d: true },
+  { id: "nebula3d", name: "Tinh vân 3D", desc: "Đám mây vũ trụ đa sắc", is3d: true },
+  { id: "hex3d", name: "Tổ ong 3D", desc: "Lưới lục giác nghiêng 3D", is3d: true },
+  { id: "spotlight3d", name: "Ánh đèn 3D", desc: "Luồng sáng sân khấu dịu", is3d: true },
+  { id: "bubbles3d", name: "Bong bóng 3D", desc: "Bóng kính ngũ sắc bay lên", is3d: true },
+  { id: "constellation3d", name: "Chòm sao 3D", desc: "Mạng sao thiên văn xoay", is3d: true },
   { id: "grid3d", name: "Lưới 3D không gian", desc: "Sàn phối cảnh 3D trượt", is3d: true },
   { id: "aurora3d", name: "Cực quang 3D", desc: "Dải sáng uốn lượn mượt", is3d: true },
   { id: "rings3d", name: "Quỹ đạo 3D", desc: "Vòng thiên văn xoay nhẹ", is3d: true },
@@ -251,14 +289,24 @@ const bgPatternCatalog: {
 const bgWallpaperCatalog: { id: string; name: string; desc: string; thumb?: string }[] = [
   { id: "none", name: "Không ảnh nền", desc: "Chỉ dùng màu & nền 3D" },
   { id: "photo-library", name: "Thư viện cổ điển", desc: "Kệ sách gỗ & ánh nắng", thumb: "https://images.unsplash.com/photo-1507842217343-583bb7270b66?auto=format&fit=crop&w=400&q=60" },
+  { id: "photo-bookshop", name: "Hiệu sách châu Âu", desc: "Không gian sách cổ kính", thumb: "https://images.unsplash.com/photo-1521587760476-6c12a4b040da?auto=format&fit=crop&w=400&q=60" },
   { id: "photo-cafe", name: "Quán sách mưa rơi", desc: "Cà phê ấm & cửa kính", thumb: "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=400&q=60" },
+  { id: "photo-rainwindow", name: "Cửa kính ngày mưa", desc: "Giọt mưa êm dịu chill", thumb: "https://images.unsplash.com/photo-1515694346937-94d85e41e6f0?auto=format&fit=crop&w=400&q=60" },
   { id: "photo-sakura", name: "Vườn hoa anh đào", desc: "Sắc xuân dịu dàng", thumb: "https://images.unsplash.com/photo-1522383225653-ed111181a951?auto=format&fit=crop&w=400&q=60" },
+  { id: "photo-autumn", name: "Đường lá phong đỏ", desc: "Sắc thu lãng mạn", thumb: "https://images.unsplash.com/photo-1507041957456-9c397ce39c97?auto=format&fit=crop&w=400&q=60" },
+  { id: "photo-kyoto", name: "Phố cổ Kyoto chiều", desc: "Đèn lồng ấm áp Á Đông", thumb: "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=400&q=60" },
   { id: "photo-forest", name: "Rừng thông sương sớm", desc: "Yên bình & trong lành", thumb: "https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=400&q=60" },
   { id: "photo-ocean", name: "Biển xanh hoàng hôn", desc: "Chân trời thư thái", thumb: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=400&q=60" },
   { id: "photo-snow", name: "Rừng tuyết Bắc Âu", desc: "Mùa đông êm đềm", thumb: "https://images.unsplash.com/photo-1483664852095-d6cc6870702d?auto=format&fit=crop&w=400&q=60" },
+  { id: "photo-aurora", name: "Cực quang Bắc Cực", desc: "Bầu trời đêm huyền ảo", thumb: "https://images.unsplash.com/photo-1531366936337-7c912a4589a7?auto=format&fit=crop&w=400&q=60" },
+  { id: "photo-lavender", name: "Cánh đồng Oải Hương", desc: "Tím mộng mơ hoàng hôn", thumb: "https://images.unsplash.com/photo-1499002238440-d264edd596ec?auto=format&fit=crop&w=400&q=60" },
   { id: "art-mountains", name: "Tranh núi sương mù", desc: "Thủy mặc nghệ thuật 4K" },
   { id: "art-nightsky", name: "Tranh đêm trăng sao", desc: "Bầu trời đêm sâu lắng" },
   { id: "art-botanical", name: "Tranh vườn thực vật", desc: "Lá xanh & nắng vàng 4K" },
+  { id: "art-sakura-lake", name: "Tranh hồ anh đào", desc: "Sắc hồng pastel 4K" },
+  { id: "art-autumn-moon", name: "Tranh trăng thu", desc: "Trăng tròn đồi phong 4K" },
+  { id: "art-winter-cabin", name: "Tranh rừng tuyết 4K", desc: "Mùa đông trong trẻo" },
+  { id: "art-sunset-sea", name: "Tranh biển hoàng hôn", desc: "Nắng chiều lãng mạn 4K" },
 ];
 const seasonPresets: {
   id: NonNullable<DesignDecor["season"]>;
@@ -273,6 +321,12 @@ const seasonPresets: {
   { id: "winter", icon: "❄️", name: "Mùa Đông · Tuyết Pha Lê", desc: "Xanh tuyết & bông tuyết rơi", palette: { primary: "#2c4e82", background: "#f2f5fa", surface: "#fbfdff", text: "#182336" } },
   { id: "festive", icon: "🏮", name: "Tết & Lễ Hội", desc: "Đỏ son vàng kim & đèn hoa đăng", palette: { primary: "#b3322a", background: "#fdf8ee", surface: "#fffdf8", text: "#301c17" } },
   { id: "classic", icon: "🌿", name: "Vườn Lowf Mặc Định", desc: "Xanh rừng dịu mắt & bụi sao", palette: { primary: "#2c6546", background: "#f6f5f0", surface: "#fdfcf9", text: "#1d2b22" } },
+  { id: "rainy", icon: "🌧️", name: "Mùa Mưa · Phố Mưa Chill", desc: "Xanh xám dịu & vệt mưa bạc rơi", palette: { primary: "#365b78", background: "#eff4f8", surface: "#fafdff", text: "#192734" } },
+  { id: "midautumn", icon: "🌕", name: "Trung Thu · Trăng Rằm", desc: "Vàng hổ phách & đèn trời bay lên", palette: { primary: "#9e511c", background: "#fdf6ea", surface: "#fffdf7", text: "#2e1f14" } },
+  { id: "christmas", icon: "🎄", name: "Giáng Sinh · Thông Noel", desc: "Xanh thông đỏ Noel & tuyết lấp lánh", palette: { primary: "#1f5c43", background: "#f3f7f4", surface: "#fcfefd", text: "#172920" } },
+  { id: "meteor", icon: "🌠", name: "Đêm Sao Băng · Ngân Hà", desc: "Tím thiên hà & mưa sao băng chéo", palette: { primary: "#4d3d91", background: "#f3f2fa", surface: "#fcfbff", text: "#1f1a36" } },
+  { id: "dandelion", icon: "🌬️", name: "Bồ Công Anh · Gió Chiều", desc: "Xanh đồng cỏ & cánh hoa bay ngang", palette: { primary: "#587a38", background: "#f7f9f0", surface: "#fdfef9", text: "#212b18" } },
+  { id: "lotus", icon: "🪷", name: "Mùa Sen · Sớm Mai", desc: "Hồng sen thanh tịnh & sương rơi", palette: { primary: "#a8456d", background: "#fbf4f7", surface: "#fffcfd", text: "#2d1a23" } },
 ];
 const initialDesign: Design = {
   brand: { name: "Lowf", tagline: "Book & beyond" },
@@ -1788,7 +1842,7 @@ export default function AdminStudio({environment='production'}:{environment?:'pr
                   <div className={styles.panel} style={{ marginBottom: 18 }}>
                     <div className={styles.panelTitle}>
                       <div>
-                        <h2>Chủ đề 4 Mùa &amp; Lễ hội (1 chạm đổi Màu + Tranh + Hiệu ứng rơi)</h2>
+                        <h2>Chủ đề 12 Mùa &amp; Cảnh rơi (1 chạm đổi Màu + Tranh + Hiệu ứng rơi)</h2>
                         <p>Chỉ chủ website có quyền đổi giao diện; sau khi bấm Xuất bản, mọi độc giả sẽ thấy ngay mùa bạn chọn.</p>
                       </div>
                     </div>
@@ -2067,7 +2121,7 @@ export default function AdminStudio({environment='production'}:{environment?:'pr
                       </section>
                       <section className={styles.controlPanel}>
                         <h2>
-                          <Sparkles size={18} /> Chủ đề 4 Mùa &amp; Trang trí không gian
+                          <Sparkles size={18} /> Chủ đề 12 Mùa &amp; Cảnh rơi không gian
                         </h2>
                         <p className={styles.controlHint}>
                           Chọn mùa để đổi đồng bộ cả bảng màu, tranh minh họa đầu trang và hiệu ứng rơi (chỉ Chủ website thay đổi; mọi độc giả sẽ thấy sau khi bạn Xuất bản).
@@ -2155,6 +2209,89 @@ export default function AdminStudio({environment='production'}:{environment?:'pr
                           </Field>
                         </div>
                         <div className={styles.formGrid}>
+                          <Field label="Đồng bộ màu thanh công cụ (Khám phá / Đọc / Mua sách)">
+                            <select
+                              value={design.decor?.navSync === false ? "custom" : "season"}
+                              onChange={(e) => {
+                                const sync = e.target.value === "season";
+                                changeDesign({
+                                  ...design,
+                                  decor: {
+                                    ...defaultDecor,
+                                    ...(design.decor || {}),
+                                    navSync: sync,
+                                    ...(sync ? { navColor: "" } : { navColor: design.decor?.navColor || design.palette.primary }),
+                                  },
+                                });
+                              }}
+                            >
+                              <option value="season">🔄 Đồng bộ tự động theo mùa &amp; màu web</option>
+                              <option value="custom">🎨 Dùng màu thanh công cụ riêng tôi chọn</option>
+                            </select>
+                          </Field>
+                          <Field label="Màu thanh công cụ riêng">
+                            <input
+                              type="color"
+                              value={design.decor?.navColor || design.palette.primary}
+                              onChange={(e) =>
+                                changeDesign({
+                                  ...design,
+                                  decor: {
+                                    ...defaultDecor,
+                                    ...(design.decor || {}),
+                                    navSync: false,
+                                    navColor: e.target.value,
+                                  },
+                                })
+                              }
+                            />
+                          </Field>
+                        </div>
+                        <div className={styles.formGrid}>
+                          <Field label="Kiểu thanh công cụ Uiverse (5 mẫu)">
+                            <select
+                              value={design.decor?.navStyle || "pill-glow"}
+                              onChange={(e) =>
+                                changeDesign({
+                                  ...design,
+                                  decor: {
+                                    ...defaultDecor,
+                                    ...(design.decor || {}),
+                                    navStyle: e.target.value as NonNullable<DesignDecor["navStyle"]>,
+                                  },
+                                })
+                              }
+                            >
+                              <option value="pill-glow">✨ Viên nang Glow — Nổi sáng theo mùa</option>
+                              <option value="glass">🪟 Kính mờ Glass — Trong suốt phản chiếu</option>
+                              <option value="floating">🧊 Thẻ nổi 3D — Soft-UI hiện đại</option>
+                              <option value="solid-season">🎨 Phủ màu đậm — Thanh bên nổi bật</option>
+                              <option value="minimal-line">〰️ Vạch sáng tối giản — Thanh trượt tinh tế</option>
+                            </select>
+                          </Field>
+                          <Field label="Hiệu ứng di chuột thanh công cụ Uiverse (5 kiểu)">
+                            <select
+                              value={design.decor?.navEffect || "magnetic"}
+                              onChange={(e) =>
+                                changeDesign({
+                                  ...design,
+                                  decor: {
+                                    ...defaultDecor,
+                                    ...(design.decor || {}),
+                                    navEffect: e.target.value as NonNullable<DesignDecor["navEffect"]>,
+                                  },
+                                })
+                              }
+                            >
+                              <option value="magnetic">⚡ Quét sáng 3D — Vệt sáng lướt + nảy nhẹ</option>
+                              <option value="glow-border">🌟 Viền phát sáng — Hào quang quanh nút</option>
+                              <option value="ripple-slide">🌊 Trượt sóng màu — Nền trượt ngang + icon nảy</option>
+                              <option value="neon-pulse">💫 Nhịp thở Neon — Tỏa sáng nhịp nhàng</option>
+                              <option value="clean">🍃 Chuyển mượt nhẹ — Tối giản êm mắt</option>
+                            </select>
+                          </Field>
+                        </div>
+                        <div className={styles.formGrid}>
                           <Field label="Kiểu thẻ bìa sách">
                             <select
                               value={design.decor?.cardStyle || "hardcover"}
@@ -2174,7 +2311,7 @@ export default function AdminStudio({environment='production'}:{environment?:'pr
                               <option value="minimal">Tối giản Editorial</option>
                             </select>
                           </Field>
-                          <Field label="Hình nền 3D &amp; Hoa văn Uiverse (16 kiểu)">
+                          <Field label="Hình nền 3D &amp; Hoa văn Uiverse (24 kiểu)">
                             <select
                               value={design.decor?.bgPattern || "orbs3d"}
                               onChange={(e) =>
@@ -2289,6 +2426,23 @@ export default function AdminStudio({environment='production'}:{environment?:'pr
                           )}
                         </div>
                         <div className={styles.decorSwitches}>
+                          <label className={styles.decorSwitchRow}>
+                            <span>🎄 Mô hình 3D lớn theo mùa (Cây thông Noel 3D, Anh đào, Trăng rằm…)</span>
+                            <input
+                              type="checkbox"
+                              checked={design.decor?.landmark3d !== false}
+                              onChange={(e) =>
+                                changeDesign({
+                                  ...design,
+                                  decor: {
+                                    ...defaultDecor,
+                                    ...(design.decor || {}),
+                                    landmark3d: e.target.checked,
+                                  },
+                                })
+                              }
+                            />
+                          </label>
                           <label className={styles.decorSwitchRow}>
                             <span>🍃 Cánh lá / hạt sáng rơi nhẹ trên màn hình</span>
                             <input
