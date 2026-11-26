@@ -102,6 +102,8 @@ type User = {
 type Me = { user: User | null };
 type DesignDecor = {
   preset?: string;
+  season?: "classic" | "spring" | "summer" | "autumn" | "winter" | "festive";
+  fxLevel?: "off" | "gentle" | "vivid";
   stars?: "off" | "soft" | "bright";
   petals?: boolean;
   aurora?: boolean;
@@ -190,13 +192,29 @@ const sectionLabels: Record<string, string> = {
   deal: "Gói thành viên",
 };
 const defaultDecor: Required<DesignDecor> = {
-  preset: "botanical",
-  stars: "soft",
-  petals: false,
+  preset: "blush",
+  season: "spring",
+  fxLevel: "vivid",
+  stars: "bright",
+  petals: true,
   aurora: true,
   paperGrain: true,
   cardStyle: "hardcover",
 };
+const seasonPresets: {
+  id: NonNullable<DesignDecor["season"]>;
+  icon: string;
+  name: string;
+  desc: string;
+  palette: Design["palette"];
+}[] = [
+  { id: "spring", icon: "🌸", name: "Mùa Xuân · Hoa Anh Đào", desc: "Sắc hồng đào & cánh hoa rơi", palette: { primary: "#b84568", background: "#fcf6f7", surface: "#fffdfd", text: "#2c1c23" } },
+  { id: "summer", icon: "☀️", name: "Mùa Hạ · Biển Xanh", desc: "Xanh biển sáng & hạt nắng bay", palette: { primary: "#166b85", background: "#f1f8fb", surface: "#fcfefe", text: "#152a34" } },
+  { id: "autumn", icon: "🍁", name: "Mùa Thu · Lá Phong", desc: "Cam đất ấm & lá phong rơi", palette: { primary: "#a84b28", background: "#fbf4eb", surface: "#fffcf7", text: "#2e1e15" } },
+  { id: "winter", icon: "❄️", name: "Mùa Đông · Tuyết Pha Lê", desc: "Xanh tuyết & bông tuyết rơi", palette: { primary: "#2c4e82", background: "#f2f5fa", surface: "#fbfdff", text: "#182336" } },
+  { id: "festive", icon: "🏮", name: "Tết & Lễ Hội", desc: "Đỏ son vàng kim & đèn hoa đăng", palette: { primary: "#b3322a", background: "#fdf8ee", surface: "#fffdf8", text: "#301c17" } },
+  { id: "classic", icon: "🌿", name: "Vườn Lowf Mặc Định", desc: "Xanh rừng dịu mắt & bụi sao", palette: { primary: "#2c6546", background: "#f6f5f0", surface: "#fdfcf9", text: "#1d2b22" } },
+];
 const initialDesign: Design = {
   brand: { name: "Lowf", tagline: "Book & beyond" },
   palette: {
@@ -1916,15 +1934,76 @@ export default function AdminStudio({environment='production'}:{environment?:'pr
                       </section>
                       <section className={styles.controlPanel}>
                         <h2>
-                          <Sparkles size={18} /> Trang trí &amp; Hiệu ứng không gian
+                          <Sparkles size={18} /> Chủ đề 4 Mùa &amp; Trang trí không gian
                         </h2>
                         <p className={styles.controlHint}>
-                          Đồng bộ trực tiếp với nút “✨ Trang trí” ngoài trang chủ. Bật tắt hiệu ứng nhẹ nhàng, giữ website mượt 60fps.
+                          Chọn mùa để đổi đồng bộ cả bảng màu, tranh minh họa đầu trang và hiệu ứng rơi (chỉ Chủ website thay đổi; mọi độc giả sẽ thấy sau khi bạn Xuất bản).
                         </p>
+                        <div className={styles.presetGrid} aria-label="Chủ đề theo mùa">
+                          {seasonPresets.map((sp) => (
+                            <button
+                              key={sp.id}
+                              type="button"
+                              className={styles.presetCard}
+                              style={
+                                (design.decor?.season || "spring") === sp.id
+                                  ? { borderColor: "var(--green)", background: "var(--mint)" }
+                                  : undefined
+                              }
+                              onClick={() => {
+                                changeDesign({
+                                  ...design,
+                                  palette: { ...sp.palette },
+                                  decor: {
+                                    ...defaultDecor,
+                                    ...(design.decor || {}),
+                                    season: sp.id,
+                                    preset: sp.id,
+                                    petals: true,
+                                    fxLevel: "vivid",
+                                    stars: "bright",
+                                    aurora: true,
+                                  },
+                                });
+                                inform(`Đã chọn chủ đề ${sp.icon} ${sp.name}.`);
+                              }}
+                            >
+                              <span className={styles.presetSwatches}>
+                                <span style={{ background: sp.palette.background }} />
+                                <span style={{ background: sp.palette.primary }} />
+                                <span style={{ background: sp.palette.text }} />
+                              </span>
+                              <strong>
+                                {sp.icon} {sp.name}
+                              </strong>
+                              <small>{sp.desc}</small>
+                            </button>
+                          ))}
+                        </div>
                         <div className={styles.formGrid}>
+                          <Field label="Mức độ hiệu ứng rơi theo mùa">
+                            <select
+                              value={design.decor?.fxLevel || "vivid"}
+                              onChange={(e) =>
+                                changeDesign({
+                                  ...design,
+                                  decor: {
+                                    ...defaultDecor,
+                                    ...(design.decor || {}),
+                                    fxLevel: e.target.value as "off" | "gentle" | "vivid",
+                                    petals: e.target.value !== "off",
+                                  },
+                                })
+                              }
+                            >
+                              <option value="vivid">Rực rỡ rõ nét (Khuyên dùng)</option>
+                              <option value="gentle">Dịu nhẹ tinh tế</option>
+                              <option value="off">Tắt hiệu ứng rơi</option>
+                            </select>
+                          </Field>
                           <Field label="Hiệu ứng sao lấp lánh">
                             <select
-                              value={design.decor?.stars || "soft"}
+                              value={design.decor?.stars || "bright"}
                               onChange={(e) =>
                                 changeDesign({
                                   ...design,
@@ -1937,10 +2016,12 @@ export default function AdminStudio({environment='production'}:{environment?:'pr
                               }
                             >
                               <option value="off">Tắt sao</option>
-                              <option value="soft">Dịu nhẹ (Khuyên dùng)</option>
+                              <option value="soft">Dịu nhẹ</option>
                               <option value="bright">Lung linh nổi bật</option>
                             </select>
                           </Field>
+                        </div>
+                        <div className={styles.formGrid}>
                           <Field label="Kiểu thẻ bìa sách">
                             <select
                               value={design.decor?.cardStyle || "hardcover"}
