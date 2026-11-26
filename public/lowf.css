@@ -1211,5 +1211,83 @@ body:has(#player:not([hidden])) .workspace{padding-bottom:96px}
 /* Hide ambient corner landmark while reader modal is open so reading stays distraction-free */
 body:has(dialog.reader[open]) .season-landmark-3d{opacity:0;visibility:hidden}
 [data-fx-level=off] .season-landmark-3d,[data-fx-level=off] .hero-landmark-3d{display:none!important}
-@media(max-width:1180px){.season-landmark-3d{width:220px;height:300px;right:4px;opacity:.82}}
-@media(max-width:767px){.season-landmark-3d{width:150px;height:210px;right:-6px;bottom:76px;opacity:.72}.lm3d-caption{display:none}.hero-landmark-3d{width:190px;height:220px;right:-14px;bottom:-10px}}
+@media(max-width:1180px){.season-landmark-3d{width:220px;height:300px;right:4px;opacity:.45}.hero:has(.hero-landmark-3d) .hero-copy{width:54%}.hero:has(.hero-landmark-3d) .hero-art{right:118px;width:28%}.hero-landmark-3d{width:175px;height:225px}}
+@media(max-width:767px){
+  .season-landmark-3d{display:none!important}
+  .hero{display:flex;flex-direction:column;gap:14px;min-height:auto!important;padding:22px 18px 18px!important}
+  .hero-copy,.hero:has(.hero-landmark-3d) .hero-copy{width:100%!important;max-width:100%;z-index:3}
+  .hero h2{font-size:27px;line-height:1.25}
+  .hero p{max-width:100%!important;font-size:11px}
+  .hero-cta-row{display:flex;flex-wrap:wrap;gap:8px}
+  .hero-art,.hero:has(.hero-landmark-3d) .hero-art{
+    position:relative!important;inset:auto!important;right:auto!important;top:auto!important;bottom:auto!important;
+    width:100%!important;height:178px;margin-top:4px;z-index:2;
+  }
+  .hero-art .orbit{width:155px;height:155px;left:18px;top:10px}
+  .hero-art .hero-book-3d{width:76px;height:108px}
+  .hero-art .hero-book-3d.one{left:10px;top:24px}
+  .hero-art .hero-book-3d.two{left:112px;top:30px}
+  .hero-art .hero-book-3d.three{left:58px;top:40px;width:86px;height:122px}
+  .hero-art .hero-note{left:12px;right:auto;bottom:0;font-size:8.5px}
+  .hero-landmark-3d{width:144px;height:184px;right:-4px;bottom:-10px;z-index:2;opacity:.96}
+}
+
+/* ==========================================================================
+   18. Sticky Follow-Along Lowf Brand Logo & Public Community Avatars
+   ========================================================================== */
+.workspace{padding-top:84px}
+.topbar,.decor-aurora .workspace>.topbar{
+  position:fixed!important;top:0;left:238px;right:0;z-index:50!important;height:84px;
+  background:color-mix(in srgb,var(--bg) 92%,var(--surface));
+  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  transition:box-shadow .25s ease,background-color .25s ease,border-color .25s ease;
+}
+body.is-scrolled .topbar,body.is-scrolled .decor-aurora .workspace>.topbar{
+  background:color-mix(in srgb,var(--surface) 95%,transparent);
+  box-shadow:0 10px 28px -12px rgba(18,32,24,.18);
+}
+@media(max-width:1279px){.topbar,.decor-aurora .workspace>.topbar{left:206px}}
+@media(max-width:1050px){.workspace{padding-top:78px}.topbar,.decor-aurora .workspace>.topbar{height:78px}}
+@media(max-width:767px){.workspace{padding-top:70px}.topbar,.decor-aurora .workspace>.topbar{left:0;right:0;height:70px}}
+.sticky-brand{
+  display:inline-flex;align-items:center;gap:8px;flex-shrink:0;
+  padding:6px 12px 6px 7px;border-radius:999px;
+  background:color-mix(in srgb,var(--nav-accent,var(--green)) 10%,var(--surface));
+  border:1px solid color-mix(in srgb,var(--nav-accent,var(--green)) 26%,var(--line));
+  color:var(--ink);text-decoration:none;
+  transition:transform .22s cubic-bezier(.34,1.56,.64,1),box-shadow .22s ease,border-color .22s ease,background .22s ease;
+}
+.sticky-brand:hover{
+  transform:translateY(-1px) scale(1.03);
+  border-color:var(--nav-accent,var(--green));
+  box-shadow:0 8px 20px -8px var(--nav-glow,rgba(44,101,70,.35));
+}
+.sticky-brand-mark{
+  width:24px;height:24px;border-radius:8px 8px 8px 3px;
+  display:grid;place-items:center;flex-shrink:0;
+  background:linear-gradient(135deg,var(--nav-accent,var(--green)),color-mix(in srgb,var(--nav-accent,var(--green)) 68%,var(--season-accent,#e88aa5)));
+  color:#fff;transform:rotate(-6deg);
+  transition:transform .22s ease;
+}
+.sticky-brand-mark svg{width:14px;height:14px}
+.sticky-brand:hover .sticky-brand-mark{transform:rotate(0deg) scale(1.08)}
+.sticky-brand b{
+  font-family:Lora,serif;font-size:19px;font-weight:700;line-height:1;letter-spacing:-.8px;color:var(--ink);
+}
+body.is-scrolled .sticky-brand{
+  background:linear-gradient(135deg,var(--nav-accent,var(--green)),color-mix(in srgb,var(--nav-accent,var(--green)) 72%,var(--season-accent,#e88aa5)));
+  border-color:transparent;
+  box-shadow:0 10px 24px -8px var(--nav-glow,rgba(44,101,70,.42));
+}
+body.is-scrolled .sticky-brand b{color:#fff}
+body.is-scrolled .sticky-brand-mark{background:rgba(255,255,255,.22);color:#fff}
+
+/* Crisp circular public avatars across Community, Leaderboard, Replies & DMs */
+.avatar{overflow:hidden;position:relative}
+.avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%;display:block}
+@media(max-width:767px){
+  .sticky-brand{padding:5px 10px 5px 6px;gap:6px}
+  .sticky-brand-mark{width:22px;height:22px}
+  .sticky-brand-mark svg{width:13px;height:13px}
+  .sticky-brand b{font-size:17px}
+}
