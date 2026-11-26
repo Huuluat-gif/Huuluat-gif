@@ -26,7 +26,7 @@ export function getAuth() {
   if (!instance) {
     const baseUrl = process.env.NEON_AUTH_BASE_URL, secret = process.env.VERCEL_ENV==='preview'?process.env.LOWF_PREVIEW_AUTH_COOKIE_SECRET:process.env.NEON_AUTH_COOKIE_SECRET;
     if (!baseUrl || !secret || secret.length < 32) throw new Error('Authentication is not configured');
-    instance = createNeonAuth({ baseUrl, cookies: { secret, sessionDataTtl: 60 }, logLevel: 'silent' });
+    instance = createNeonAuth({ baseUrl, cookies: { secret, sessionDataTtl: 300 }, logLevel: 'silent' });
   }
   return instance;
 }
@@ -44,7 +44,14 @@ export async function requireUser(): Promise<User> {
 export async function requireAdmin(): Promise<User> {
   const user = await requireUser(); if (!user.isAdmin) throw new HttpError(403, 'Chỉ chủ website đã xác minh email được quản trị.', 'ADMIN_REQUIRED'); return user;
 }
+const profileSyncedAt = new Map<string, number>();
 export async function syncProfile(user: User) {
   const sql = getSQL();
   await sql`INSERT INTO lowf_profiles (user_id, display_name) VALUES (${user.id},${user.name.slice(0,100)}) ON CONFLICT(user_id) DO UPDATE SET display_name=EXCLUDED.display_name,updated_at=now()`;
+  profileSyncedAt.set(user.id, Date.now());
+}
+export async function syncProfileIfNeeded(user: User) {
+  const last = profileSyncedAt.get(user.id) || 0;
+  if (Date.now() - last < 10 * 60 * 1000) return;
+  await syncProfile(user);
 }
