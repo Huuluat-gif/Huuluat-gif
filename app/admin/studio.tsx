@@ -103,6 +103,7 @@ type Me = { user: User | null };
 type DesignDecor = {
   preset?: string;
   season?: "classic" | "spring" | "summer" | "autumn" | "winter" | "festive";
+  bgPattern?: "clean" | "mesh" | "dots" | "grid" | "waves" | "starry" | "sunset" | "botanical";
   fxLevel?: "off" | "gentle" | "vivid";
   stars?: "off" | "soft" | "bright";
   petals?: boolean;
@@ -195,6 +196,7 @@ const sectionLabels: Record<string, string> = {
 const defaultDecor: Required<DesignDecor> = {
   preset: "blush",
   season: "spring",
+  bgPattern: "mesh",
   fxLevel: "vivid",
   stars: "bright",
   petals: true,
@@ -2104,6 +2106,30 @@ export default function AdminStudio({environment='production'}:{environment?:'pr
                               <option value="hardcover">Bìa cứng 3D hiện đại</option>
                               <option value="glass">Kính mờ (Glassmorphism)</option>
                               <option value="minimal">Tối giản Editorial</option>
+                            </select>
+                          </Field>
+                          <Field label="Hình nền sáng tạo kiểu Uiverse">
+                            <select
+                              value={design.decor?.bgPattern || "mesh"}
+                              onChange={(e) =>
+                                changeDesign({
+                                  ...design,
+                                  decor: {
+                                    ...defaultDecor,
+                                    ...(design.decor || {}),
+                                    bgPattern: e.target.value as NonNullable<DesignDecor["bgPattern"]>,
+                                  },
+                                })
+                              }
+                            >
+                              <option value="clean">Giấy mịn tối giản</option>
+                              <option value="mesh">Aurora Mesh phát sáng</option>
+                              <option value="dots">Chấm Studio (Dot Matrix)</option>
+                              <option value="grid">Lưới sổ tay kiến trúc</option>
+                              <option value="waves">Sóng lụa mềm mại</option>
+                              <option value="starry">Ngàn sao đêm lấp lánh</option>
+                              <option value="sunset">Hoàng hôn thủy tinh ấm</option>
+                              <option value="botanical">Vân lá thư viện cổ</option>
                             </select>
                           </Field>
                         </div>
