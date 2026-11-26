@@ -156,7 +156,15 @@ type DesignDecor = {
   cardStyle?: "hardcover" | "glass" | "minimal";
 };
 type Design = {
-  brand: { name: string; tagline: string };
+  brand: {
+    name: string;
+    tagline: string;
+    logoPreset?: "sprout" | "open-book" | "monogram" | "moon-book" | "feather" | "lotus";
+    logoAssetId?: string;
+    faviconAssetId?: string;
+    logoDataUrl?: string;
+    faviconDataUrl?: string;
+  };
   palette: {
     primary: string;
     background: string;
@@ -2003,6 +2011,99 @@ export default function AdminStudio({environment='production'}:{environment?:'pr
                             />
                           </Field>
                         </div>
+                        <div className={styles.formGrid}>
+                          <Field label="Mẫu Logo &amp; Favicon có sẵn (6 kiểu)">
+                            <select
+                              value={design.brand.logoPreset || "sprout"}
+                              onChange={(e) =>
+                                changeDesign({
+                                  ...design,
+                                  brand: {
+                                    ...design.brand,
+                                    logoPreset: e.target.value as NonNullable<Design["brand"]["logoPreset"]>,
+                                    logoAssetId: "",
+                                    logoDataUrl: "",
+                                  },
+                                })
+                              }
+                            >
+                              <option value="sprout">🌿 Mầm Xanh Lowf (Mặc định)</option>
+                              <option value="open-book">📖 Trang Sách Mở</option>
+                              <option value="monogram">🔤 Chữ L Tạp Chí (Serif)</option>
+                              <option value="moon-book">🌙 Trăng &amp; Sách Đêm</option>
+                              <option value="feather">🪶 Bút Lông Vũ Văn Học</option>
+                              <option value="lotus">🪷 Đóa Sen Tĩnh Tại</option>
+                            </select>
+                          </Field>
+                        </div>
+                        <UploadField
+                          label="Hoặc tải ảnh Logo thương hiệu riêng (PNG / SVG / WebP)"
+                          kind="image"
+                          userId={user.id}
+                          value={design.brand.logoAssetId}
+                          onChange={(id) =>
+                            changeDesign({
+                              ...design,
+                              brand: {
+                                ...design.brand,
+                                logoAssetId: id,
+                                logoDataUrl: "",
+                              },
+                            })
+                          }
+                        />
+                        {(design.brand.logoAssetId || design.brand.logoDataUrl) && (
+                          <button
+                            type="button"
+                            className={styles.textButton}
+                            onClick={() =>
+                              changeDesign({
+                                ...design,
+                                brand: {
+                                  ...design.brand,
+                                  logoAssetId: "",
+                                  logoDataUrl: "",
+                                },
+                              })
+                            }
+                          >
+                            Bỏ ảnh Logo riêng (dùng mẫu biểu tượng)
+                          </button>
+                        )}
+                        <UploadField
+                          label="Tải ảnh Favicon riêng (biểu tượng tab trình duyệt — bỏ trống sẽ tự dùng theo Logo)"
+                          kind="image"
+                          userId={user.id}
+                          value={design.brand.faviconAssetId}
+                          onChange={(id) =>
+                            changeDesign({
+                              ...design,
+                              brand: {
+                                ...design.brand,
+                                faviconAssetId: id,
+                                faviconDataUrl: "",
+                              },
+                            })
+                          }
+                        />
+                        {(design.brand.faviconAssetId || design.brand.faviconDataUrl) && (
+                          <button
+                            type="button"
+                            className={styles.textButton}
+                            onClick={() =>
+                              changeDesign({
+                                ...design,
+                                brand: {
+                                  ...design.brand,
+                                  faviconAssetId: "",
+                                  faviconDataUrl: "",
+                                },
+                              })
+                            }
+                          >
+                            Bỏ Favicon riêng (tự đồng bộ theo Logo)
+                          </button>
+                        )}
                       </section>
                       <section className={styles.controlPanel}>
                         <h2>
