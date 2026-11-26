@@ -1635,6 +1635,20 @@ export default function AdminStudio({environment='production'}:{environment?:'pr
                       <Plus size={17} /> Thêm {labels[tab].single}
                     </button>
                   </div>
+                  {tab === "books" && (
+                    <BulkPdfImporter
+                      userId={user.id}
+                      onDone={(created) => {
+                        if (created.length) {
+                          setItems((prev) => ({
+                            ...prev,
+                            books: [...created, ...prev.books],
+                          }));
+                          setToast(`✨ Đã nhập thành công ${created.length} cuốn sách vào thư viện!`);
+                        }
+                      }}
+                    />
+                  )}
                   {tab === "plans" && (
                     <div className={styles.notice}>
                       <CreditCard size={20} />
@@ -3829,5 +3843,143 @@ function AuthOverviewPanel() {
         </>
       )}
     </section>
+  );
+}
+
+function makeBulkCoverSvg(title: string, author: string, idx: number): string {
+  const palettes: Array<[string, string, string]> = [
+    ["#18362a", "#f7f3e8", "#d9b45c"],
+    ["#1b2845", "#f5f7fb", "#e6b95c"],
+    ["#2d2236", "#faf4f8", "#e5a672"],
+    ["#33221d", "#fbf5ee", "#e2b262"],
+    ["#1a343b", "#f2f8f9", "#7fd1b9"],
+    ["#2c3325", "#f6f7f0", "#c9b36b"],
+  ];
+  const [bg, fg, accent] = palettes[idx % palettes.length];
+  const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const words = title.split(/\s+/);
+  const lines: string[] = [];
+  let cur = "";
+  for (const w of words) {
+    if (cur && cur.length + w.length + 1 > 20) { lines.push(cur); cur = w; }
+    else cur = cur ? `${cur} ${w}` : w;
+  }
+  if (cur) lines.push(cur);
+  const shown = lines.slice(0, 4);
+  const y0 = 192 - (shown.length - 1) * 14;
+  const titleSvg = shown.map((l, i) => `<text x="150" y="${y0 + i * 28}" text-anchor="middle" fill="${fg}" font-family="Georgia,serif" font-size="19" font-weight="600">${esc(l)}</text>`).join("");
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 420"><rect width="300" height="420" rx="12" fill="${bg}"/><rect x="16" y="16" width="268" height="388" rx="6" fill="none" stroke="${accent}" stroke-opacity=".42"/><text x="150" y="64" text-anchor="middle" fill="${accent}" font-family="sans-serif" font-size="9.5" font-weight="700" letter-spacing="2.4">LOWF LIBRARY</text><line x1="115" y1="80" x2="185" y2="80" stroke="${accent}" stroke-opacity=".45"/>${titleSvg}<text x="150" y="366" text-anchor="middle" fill="${fg}" fill-opacity=".78" font-family="sans-serif" font-size="11.5">${esc(author.slice(0, 30))}</text></svg>`;
+  return "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(svg);
+}
+
+function cleanBulkTitle(filename: string): { title: string; author: string } {
+  const stem = filename.replace(/\.pdf$/i, "").replace(/[_]+/g, " ").replace(/\s*√?PDF\s*PDFDrive\s*com/gi, "").replace(/\s+/g, " ").trim();
+  const dash = stem.split(/\s+-\s+/);
+  if (dash.length === 2 && dash[1].length >= 3 && dash[1].length <= 42) {
+    return { title: dash[0].trim().slice(0, 150), author: dash[1].trim().slice(0, 110) };
+  }
+  return { title: (stem.replace(/-/g, " ").replace(/\s+/g, " ").trim() || "Sách PDF mới").slice(0, 150), author: "Lowf Tuyển Chọn" };
+}
+
+function BulkPdfImporter({ userId, onDone }: { userId: string; onDone: (items: RecordItem[]) => void }) {
+  const [category, setCategory] = useState<"kinhte" | "vanhocvn" | "vanhocqt" | "dacbiet">("kinhte");
+  const [status, setStatus] = useState<"published" | "draft">("published");
+  const [access, setAccess] = useState<"free" | "member">("free");
+  const [busy, setBusy] = useState(false);
+  const [progress, setProgress] = useState("");
+  const [errors, setErrors] = useState<string[]>([]);
+
+  async function handleFiles(event: ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(event.target.files || []).filter((f) => /\.pdf$/i.test(f.name) || f.type === "application/pdf");
+    event.target.value = "";
+    if (!files.length) return;
+    setBusy(true);
+    setErrors([]);
+    const created: RecordItem[] = [];
+    const failed: string[] = [];
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      setProgress(`Đang tải & tối ưu (${i + 1}/${files.length}): ${file.name}`);
+      if (file.size > 50 * 1024 * 1024) {
+        failed.push(`${file.name}: vượt quá 50 MB`);
+        continue;
+      }
+      try {
+        const blob = await upload(`lowf/${userId}/pdf/${crypto.randomUUID()}.pdf`, file, {
+          access: "private",
+          handleUploadUrl: "/api/uploads",
+          clientPayload: JSON.stringify({ kind: "pdf", title: file.name }),
+          contentType: "application/pdf",
+          multipart: file.size > 10 * 1024 * 1024,
+        });
+        const fin = await request<{ asset: { id: string } }>("/api/uploads/finalize", {
+          method: "POST",
+          body: JSON.stringify({ url: blob.url, kind: "pdf", originalName: file.name }),
+        });
+        const { title, author } = cleanBulkTitle(file.name);
+        const bookRes = await request<{ item: RecordItem }>("/api/admin/content/books", {
+          method: "POST",
+          body: JSON.stringify({
+            title,
+            author,
+            category,
+            format: "Ebook Free",
+            price: 0,
+            saleEnabled: false,
+            description: `Ấn phẩm PDF tuyển chọn (${(file.size / 1048576).toFixed(1)} MB) — tự động tối ưu đọc vừa 1 trang, 2 trang và lọc nền scan trên Lowf.`,
+            cover: makeBulkCoverSvg(title, author, i),
+            pdfAssetId: fin.asset.id,
+            access,
+            status,
+            language: "vi",
+          }),
+        });
+        if (bookRes.item) created.push(bookRes.item);
+      } catch (e) {
+        failed.push(`${file.name}: ${e instanceof Error ? e.message : "Lỗi tải lên"}`);
+      }
+    }
+    setBusy(false);
+    setProgress(created.length ? `Hoàn tất nhập ${created.length}/${files.length} sách PDF!` : "");
+    setErrors(failed);
+    if (created.length) onDone(created);
+  }
+
+  return (
+    <div className={styles.notice} style={{ alignItems: "flex-start", gap: 14, flexWrap: "wrap" }}>
+      <BookOpen size={20} />
+      <div style={{ flex: 1, minWidth: 240 }}>
+        <strong>📚 Nhập hàng loạt nhiều sách PDF cùng lúc (tối đa 50 MB / file)</strong>
+        <p style={{ marginTop: 4 }}>
+          Chọn cùng lúc 10–50 file PDF từ máy tính (ví dụ bộ 40+ Ebook Đầu tư) — Lowf Studio tự đặt tên sách gọn đẹp, tạo bìa bìa cứng, tải lên kho Vercel Blob an toàn và tự động tối ưu trình đọc 1 trang / 2 trang cho mọi độc giả.
+        </p>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10, alignItems: "center" }}>
+          <select className={styles.categorySelect} value={category} onChange={(e) => setCategory(e.target.value as typeof category)} disabled={busy}>
+            <option value="kinhte">Kinh tế &amp; Đầu tư</option>
+            <option value="vanhocvn">Văn học Việt Nam</option>
+            <option value="vanhocqt">Văn học nước ngoài</option>
+            <option value="dacbiet">Tuyển chọn</option>
+          </select>
+          <select className={styles.categorySelect} value={status} onChange={(e) => setStatus(e.target.value as typeof status)} disabled={busy}>
+            <option value="published">Xuất bản ngay</option>
+            <option value="draft">Lưu bản nháp để duyệt</option>
+          </select>
+          <select className={styles.categorySelect} value={access} onChange={(e) => setAccess(e.target.value as typeof access)} disabled={busy}>
+            <option value="free">Miễn phí</option>
+            <option value="member">Dành cho thành viên</option>
+          </select>
+          <label className={styles.primary} style={{ cursor: busy ? "wait" : "pointer", opacity: busy ? 0.65 : 1 }}>
+            <CloudUpload size={15} /> {busy ? "Đang nhập hàng loạt…" : "Chọn nhiều file PDF"}
+            <input type="file" accept="application/pdf,.pdf" multiple hidden disabled={busy} onChange={handleFiles} />
+          </label>
+        </div>
+        {progress && <p style={{ marginTop: 8, fontWeight: 600, fontSize: 12 }}>{progress}</p>}
+        {errors.length > 0 && (
+          <p className={styles.error} style={{ marginTop: 6, fontSize: 11.5 }}>
+            Một số tệp chưa tải được ({errors.length}): {errors.slice(0, 3).join(" · ")}
+          </p>
+        )}
+      </div>
+    </div>
   );
 }
