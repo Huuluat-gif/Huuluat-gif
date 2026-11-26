@@ -1435,30 +1435,47 @@ body:has(dialog.reader[open]) .hero-sunbeams{animation-play-state:paused!importa
   animation:turnFadeIn .36s ease reverse forwards;
 }
 
-/* Smart PDF & Scanned Book Paper-Blend & Night-Mode Adaptation */
+/* Smart PDF & Scanned Book Paper-Blend, Fit-Page, 2-Page Spread & Zero-Crop Layout */
+.reader-scroll{justify-content:safe center}
 .pdf-smart-bar{
-  display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;
-  padding:7px 16px;background:color-mix(in srgb,var(--nav-accent,var(--green)) 7%,var(--surface));
+  display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;
+  padding:5px 12px;background:color-mix(in srgb,var(--nav-accent,var(--green)) 7%,var(--surface));
   border-bottom:1px solid var(--line);font-size:10.5px;flex-shrink:0;
 }
+.pdf-fit-group{display:inline-flex;gap:3px;padding:2px;border-radius:9px;background:var(--soft);border:1px solid var(--line)}
+.pdf-fit-group .pdf-smart-btn{border:0;background:transparent;padding:4px 9px}
+.pdf-fit-group .pdf-smart-btn.active{background:var(--surface);color:var(--green);box-shadow:0 1px 4px rgba(0,0,0,.08)}
 .pdf-smart-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 9px;border-radius:999px;background:var(--mint);color:var(--green);font-weight:700;font-size:10px}
-.pdf-smart-btn{display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-size:10.5px;font-weight:600;transition:all .16s}
+.pdf-smart-btn{display:inline-flex;align-items:center;gap:4px;padding:5px 9px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-size:10px;font-weight:600;white-space:nowrap;transition:all .16s}
 .pdf-smart-btn:hover,.pdf-smart-btn.active{border-color:var(--green);background:var(--mint);color:var(--green)}
 .pdf-page-stage{
+  width:fit-content!important;max-width:none!important;margin:0 auto!important;flex:0 0 auto;
+  display:inline-flex!important;align-items:stretch;justify-content:center;
   background:var(--r-paper,#faf6ed)!important;
-  border-radius:14px;overflow:hidden;
-  box-shadow:0 20px 54px rgba(15,24,18,.16);
+  border-radius:14px;overflow:visible;
+  box-shadow:0 20px 54px rgba(15,24,18,.18),-6px 6px 0 -2px var(--r-edge,#ece3cf),6px 6px 0 -2px var(--r-edge,#ece3cf);
   border:1px solid var(--r-border,#e2d8c3);
   transition:background-color .25s ease;
 }
+.pdf-page-stage[hidden]{display:none!important}
+.pdf-leaf-wrap{position:relative;display:block;flex:0 0 auto;border-radius:13px;overflow:hidden;background:var(--r-paper,#faf6ed)}
+.pdf-page-stage.pdf-spread-active .pdf-leaf-wrap:first-child{border-radius:13px 0 0 13px}
+.pdf-page-stage.pdf-spread-active .pdf-leaf-wrap:last-child{border-radius:0 13px 13px 0}
+.pdf-spine{width:18px!important;flex:0 0 18px;align-self:stretch;min-height:180px}
+.pdf-leaf-wrap canvas{display:block;margin:0!important;max-width:none!important;box-shadow:none!important}
 .pdf-page-stage.pdf-scan-blend canvas{
   mix-blend-mode:multiply;
-  filter:contrast(1.16) brightness(1.03);
+  filter:contrast(1.12) brightness(1.02);
 }
 .reader[data-paper=dusk] .pdf-page-stage.pdf-scan-blend canvas,
 .reader[data-paper=midnight] .pdf-page-stage.pdf-scan-blend canvas{
   mix-blend-mode:normal;
   filter:invert(.88) hue-rotate(180deg) contrast(1.08) brightness(.94);
+}
+@media(max-width:760px){
+  .pdf-smart-bar{justify-content:flex-start;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding:6px 10px}
+  .pdf-smart-bar::-webkit-scrollbar{display:none}
+  .pdf-smart-badge{display:none}
 }
 .rs-papers-4{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
 .rs-dim-row{display:flex;align-items:center;gap:10px;font-size:10px;color:var(--muted)}

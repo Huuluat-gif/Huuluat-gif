@@ -413,25 +413,145 @@
     if (renderTask) { try { renderTask.cancel(); } catch (_) {} renderTask = null; }
     releaseCache(pdfCache); pdfCache = null;
   }
-  function enhanceScanCanvas(context, width, height) {
+  function enhanceScanCanvas(canvas, context, trimMargins = true) {
     try {
+      const width = canvas.width, height = canvas.height;
       const imgData = context.getImageData(0, 0, width, height);
       const d = imgData.data;
-      // Fast 1-pass scanned paper cleanup: whiten gray scan margins (>214 -> 255) and deepen faint ink (<150)
-      for (let i = 0; i < d.length; i += 4) {
-        const lum = (d[i] * 77 + d[i + 1] * 150 + d[i + 2] * 29) >> 8;
-        if (lum > 214) {
-          d[i] = 255; d[i + 1] = 255; d[i + 2] = 255;
-        } else if (lum < 155) {
-          d[i] = Math.max(0, (d[i] * 0.84) | 0);
-          d[i + 1] = Math.max(0, (d[i + 1] * 0.84) | 0);
-          d[i + 2] = Math.max(0, (d[i + 2] * 0.84) | 0);
+      // 1. Adaptive paper-white calibration + automatic cover/photo detection
+      const hist = new Uint32Array(256);
+      const step = Math.max(1, Math.floor((width * height) / 60000));
+      let samples = 0, colorful = 0, midtones = 0;
+      for (let p = 0; p < width * height; p += step) {
+        const idx = p * 4;
+        const r = d[idx], g = d[idx + 1], b = d[idx + 2];
+        const lum = (r * 77 + g * 150 + b * 29) >> 8;
+        hist[lum]++; samples++;
+        if (Math.max(r, g, b) - Math.min(r, g, b) > 30) colorful++;
+        if (lum > 45 && lum < 195) midtones++;
+      }
+      // Preserve rich color covers, illustrations, and photo pages without harsh B&W thresholding
+      const isPhotoOrCover = (colorful / Math.max(1, samples) > 0.16) || (midtones / Math.max(1, samples) > 0.36);
+      if (isPhotoOrCover) return null;
+
+      let acc = 0, p90 = 230;
+      for (let v = 0; v < 256; v++) {
+        acc += hist[v];
+        if (acc >= samples * 0.88) { p90 = v; break; }
+      }
+      const whiteCut = Math.max(176, Math.min(234, p90 - 12));
+      const darkCut = Math.max(60, whiteCut - 72);
+      const rowHit = trimMargins && width >= 160 && height >= 160 ? new Uint32Array(height) : null;
+      const colHit = rowHit ? new Uint32Array(width) : null;
+      // 2. Clean gray scan noise -> pure white (blends seamlessly into any Lowf paper tone), sharpen ink & measure exact ink bounds in 1 exact pass
+      for (let y = 0; y < height; y++) {
+        const rowOff = y * width * 4;
+        for (let x = 0; x < width; x++) {
+          const i = rowOff + x * 4;
+          const lum = (d[i] * 77 + d[i + 1] * 150 + d[i + 2] * 29) >> 8;
+          if (lum >= whiteCut) {
+            d[i] = 255; d[i + 1] = 255; d[i + 2] = 255;
+          } else {
+            if (rowHit && lum < whiteCut - 12) { rowHit[y]++; colHit[x]++; }
+            if (lum <= darkCut) {
+              d[i] = (d[i] * 0.78) | 0;
+              d[i + 1] = (d[i + 1] * 0.78) | 0;
+              d[i + 2] = (d[i + 2] * 0.78) | 0;
+            } else {
+              const t = (lum - darkCut) / Math.max(1, whiteCut - darkCut);
+              const s = t * t * (3 - 2 * t);
+              const target = Math.round(darkCut * 0.78 + s * (255 - darkCut * 0.78));
+              const ratio = target / Math.max(1, lum);
+              d[i] = Math.min(255, (d[i] * ratio) | 0);
+              d[i + 1] = Math.min(255, (d[i + 1] * ratio) | 0);
+              d[i + 2] = Math.min(255, (d[i + 2] * ratio) | 0);
+            }
+          }
         }
       }
       context.putImageData(imgData, 0, 0);
+      if (!rowHit) return null;
+      // 3. Exact 1-pixel-accurate safe auto-trim of empty outer scan borders (never clips any character or page number!)
+      const minInk = 2;
+      let top = 0, bottom = height - 1, left = 0, right = width - 1;
+      while (top < height - 1 && rowHit[top] < minInk) top++;
+      while (bottom > top && rowHit[bottom] < minInk) bottom--;
+      while (left < width - 1 && colHit[left] < minInk) left++;
+      while (right > left && colHit[right] < minInk) right--;
+      const contentW = right - left + 1, contentH = bottom - top + 1;
+      if (contentW < width * 0.35 || contentH < height * 0.25) return null;
+      const padX = Math.max(18, Math.round(contentW * 0.065));
+      const padY = Math.max(18, Math.round(contentH * 0.055));
+      const cx = Math.max(0, left - padX), cy = Math.max(0, top - padY);
+      const cw = Math.min(width - cx, contentW + padX * 2), ch = Math.min(height - cy, contentH + padY * 2);
+      const savedRatio = 1 - (cw * ch) / (width * height);
+      if (savedRatio < 0.06 || savedRatio > 0.65) return null;
+      const tmp = document.createElement('canvas');
+      tmp.width = cw; tmp.height = ch;
+      const tctx = tmp.getContext('2d', { alpha: false });
+      if (!tctx) return null;
+      tctx.fillStyle = '#ffffff'; tctx.fillRect(0, 0, cw, ch);
+      tctx.drawImage(canvas, cx, cy, cw, ch, 0, 0, cw, ch);
+      canvas.width = cw; canvas.height = ch;
+      const nctx = canvas.getContext('2d', { alpha: false });
+      nctx.drawImage(tmp, 0, 0);
+      return { width: cw, height: ch, trimmed: true };
     } catch (_) {
-      // Cross-origin canvas taint fallback handled gracefully by CSS blend filters.
+      return null;
     }
+  }
+  function findPdfEofOffsets(u8) {
+    const offs = [];
+    const n = u8.length;
+    for (let i = 0; i <= n - 5; i++) {
+      if (u8[i] === 37 && u8[i + 1] === 37 && u8[i + 2] === 69 && u8[i + 3] === 79 && u8[i + 4] === 70) {
+        let end = i + 5;
+        if (end < n && u8[end] === 13) end++;
+        if (end < n && u8[end] === 10) end++;
+        offs.push(end);
+      }
+    }
+    return offs;
+  }
+  function normalizePdfGenerationsInPlace(u8) {
+    // Byte-offset-preserving repair: sets generation 1..9 -> 0 in xref entries, obj headers, and R refs
+    // without shifting a single byte offset in the entire PDF!
+    const out = new Uint8Array(u8);
+    const n = out.length;
+    const isDigit = c => c >= 48 && c <= 57;
+    const isSpace = c => c === 32 || c === 9 || c === 10 || c === 13;
+    for (let i = 0; i < n - 18; i++) {
+      // Match 20-byte xref entry: "dddddddddd 0000[1-9] n"
+      if (out[i + 10] === 32 && out[i + 11] === 48 && out[i + 12] === 48 && out[i + 13] === 48 && out[i + 14] === 48 && out[i + 15] >= 49 && out[i + 15] <= 57 && out[i + 16] === 32 && out[i + 17] === 110) {
+        let ok = true;
+        for (let k = 0; k < 10; k++) { if (!isDigit(out[i + k])) { ok = false; break; } }
+        if (ok) { out[i + 15] = 48; i += 17; continue; }
+      }
+      // Match "<digits> [1-9] obj" or "<digits> [1-9] R"
+      if (out[i] >= 49 && out[i] <= 57 && i > 1 && isSpace(out[i - 1]) && isDigit(out[i - 2]) && isSpace(out[i + 1])) {
+        const isObj = i + 4 < n && out[i + 2] === 111 && out[i + 3] === 98 && out[i + 4] === 106;
+        const isRef = i + 2 < n && out[i + 2] === 82 && (i + 3 >= n || isSpace(out[i + 3]) || out[i + 3] === 47 || out[i + 3] === 62 || out[i + 3] === 93);
+        if (isObj || isRef) out[i] = 48;
+      }
+    }
+    return out;
+  }
+  function repairCorruptPdfBytes(rawBytes, level = 1) {
+    const u8 = rawBytes instanceof Uint8Array ? rawBytes : new Uint8Array(rawBytes);
+    if (level === 1) {
+      // Layer 1: Clean original revision before a broken incremental watermark update (common in VN scanned ebooks)
+      const eofs = findPdfEofOffsets(u8);
+      if (eofs.length >= 2) {
+        const prevEnd = eofs[eofs.length - 2];
+        if (prevEnd > u8.length * 0.25) return u8.slice(0, prevEnd);
+      }
+    }
+    // Layer 2: Universal byte-exact XRef generation normalizer
+    return normalizePdfGenerationsInPlace(u8);
+  }
+  function isRepairablePdfError(err) {
+    const msg = String(err?.message || err || '');
+    return /Inconsistent generation|XRef|Invalid XRef|FormatError|Bad FCHECK/i.test(msg);
   }
   const remoteSources = new Map();
   function renderRemotePDF(id, title, canvas, page = 1, textLayer = null, options = {}) {
@@ -439,65 +559,41 @@
     remoteSources.set(key,{name:title,url:'/api/assets/'+encodeURIComponent(id)});
     return renderPDF(key,canvas,page,textLayer,options);
   }
-  async function renderPDF(id, canvas, page = 1, textLayer = null, options = {}) {
-    if (!canvas || typeof canvas.getContext !== 'function') throw new Error('Không tìm thấy vùng hiển thị PDF.');
-    const epoch = ++renderEpoch;
-    if (renderTask) {
-      const oldTask = renderTask; renderTask = null;
-      try { oldTask.cancel(); await oldTask.promise; } catch (_) {}
-    }
+  function computeAvailableBox(canvas) {
+    const scroller = canvas.closest('.reader-scroll');
+    const zen = !!document.querySelector('#reader.reader-zen-mode');
+    const isMobile = window.innerWidth < 768;
+    const padX = isMobile ? 20 : (zen ? 48 : 132);
+    const padY = isMobile ? 22 : (zen ? 54 : 36);
+    const rawW = scroller && scroller.clientWidth > 120 ? scroller.clientWidth : window.innerWidth;
+    const rawH = scroller && scroller.clientHeight > 120 ? scroller.clientHeight : Math.max(360, window.innerHeight - (zen ? 64 : 215));
+    return { availW: Math.max(240, rawW - padX), availH: Math.max(280, rawH - padY) };
+  }
+  async function renderSinglePdfPage(pdfPage, canvas, targetW, targetH, textLayer, options, epoch, isSpread) {
+    const baseViewport = pdfPage.getViewport({ scale: 1 });
+    const dpr = Math.min(Math.max(window.devicePixelRatio || 1, 2), 2.5);
+    const pixelScale = Math.min((targetW * dpr) / baseViewport.width, 2400 / baseViewport.width, 3000 / baseViewport.height);
+    const viewport = pdfPage.getViewport({ scale: Math.max(1.2, pixelScale) });
+    canvas.width = Math.ceil(viewport.width); canvas.height = Math.ceil(viewport.height);
+    const context = canvas.getContext('2d', { alpha: false, willReadFrequently: true });
+    if (!context) throw new Error('Trình duyệt không thể vẽ trang PDF.');
+    const task = pdfPage.render({ canvasContext: context, viewport, background: 'rgb(255,255,255)' });
+    renderTask = task;
+    await task.promise;
+    if (renderTask === task) renderTask = null;
     if (epoch !== renderEpoch) throw cancelled();
+    let text = '', paragraphs = [];
     try {
-      if (!pdfCache || pdfCache.id !== id) {
-        releaseCache(pdfCache);
-        const cache = { id, task: null, promise: null, name: '' }; pdfCache = cache;
-        cache.promise = (async () => {
-          const [library, record] = await Promise.all([loadPDFJS(), remoteSources.has(id)?Promise.resolve(remoteSources.get(id)):getPDF(id)]);
-          if (pdfCache !== cache) throw cancelled();
-          cache.name = record.name;
-          const buffer = record.url ? null : await record.blob.arrayBuffer();
-          if (pdfCache !== cache) throw cancelled();
-          cache.task = library.getDocument({
-            ...(record.url ? {url:record.url,withCredentials:false} : {data:new Uint8Array(buffer)}), isEvalSupported: false,
-            cMapUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/',
-            standardFontDataUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/standard_fonts/',
-            cMapPacked: true, disableAutoFetch: true, disableStream: true
-          });
-          return cache.task.promise;
-        })();
-      }
-      const cache = pdfCache;
-      const documentPDF = await cache.promise;
+      const content = await pdfPage.getTextContent();
       if (epoch !== renderEpoch) throw cancelled();
-      const pageNumber = Math.min(documentPDF.numPages, Math.max(1, Math.floor(Number(page) || 1)));
-      const pdfPage = await documentPDF.getPage(pageNumber);
-      if (epoch !== renderEpoch) throw cancelled();
-      const baseViewport = pdfPage.getViewport({ scale: 1 });
-      const zoom = Math.max(0.85, Math.min(1.6, Number(options.zoom) || 1));
-      const parentWidth = canvas.parentElement ? canvas.parentElement.clientWidth : 920;
-      const cssWidth = Math.max(240, Math.min(1120, Math.round((parentWidth || window.innerWidth - 36) * zoom)));
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
-      const pixelWidth = Math.min(2200, Math.round(cssWidth * dpr));
-      const viewport = pdfPage.getViewport({ scale: Math.min(pixelWidth / baseViewport.width, 2600 / baseViewport.height) });
-      canvas.width = Math.ceil(viewport.width); canvas.height = Math.ceil(viewport.height);
-      canvas.style.width = '100%'; canvas.style.maxWidth = cssWidth + 'px'; canvas.style.height = 'auto';
-      const context = canvas.getContext('2d', { alpha: false, willReadFrequently: true });
-      if (!context) throw new Error('Trình duyệt không thể vẽ trang PDF.');
-      const task = documentPDF.numPages && pdfPage.render({ canvasContext: context, viewport, background: 'rgb(255,255,255)' });
-      renderTask = task;
-      await task.promise;
-      if (renderTask === task) renderTask = null;
-      if (epoch !== renderEpoch) throw cancelled();
-      let text = '', paragraphs = [];
-      try {
-        const content = await pdfPage.getTextContent();
-        if (epoch !== renderEpoch) throw cancelled();
-        const rawJoined = content.items.map(item => (item.str || '') + (item.hasEOL ? '\n' : ' ')).join('');
-        text = rawJoined.replace(/\s+/g, ' ').trim();
-        paragraphs = cleanParagraphs(rawJoined);
-        if (textLayer) {
+      const rawJoined = content.items.map(item => (item.str || '') + (item.hasEOL ? '\n' : ' ')).join('');
+      text = rawJoined.replace(/\s+/g, ' ').trim();
+      paragraphs = cleanParagraphs(rawJoined);
+      if (textLayer) {
+        textLayer.replaceChildren();
+        if (text.length >= 28 && !isSpread) {
           const detached = document.createElement('div');
-          const cssViewport = pdfPage.getViewport({scale: cssWidth / baseViewport.width});
+          const cssViewport = pdfPage.getViewport({ scale: targetW / baseViewport.width });
           detached.style.setProperty('--scale-factor', String(cssViewport.scale));
           const textTask = window.pdfjsLib.renderTextLayer({
             textContentSource: content, container: detached, viewport: cssViewport, textDivs: []
@@ -509,28 +605,162 @@
           textLayer.style.height = cssViewport.height + 'px';
           textLayer.style.setProperty('--scale-factor', String(cssViewport.scale));
           textLayer.dataset.renderWidth = String(cssViewport.width);
-          canvas.parentElement.style.width = cssWidth + 'px';
         }
-      } catch (error) {
-        if (epoch !== renderEpoch || error.name === 'AbortError') throw cancelled();
-        if (textLayer) textLayer.replaceChildren();
       }
-      const isScan = text.length < 28;
-      if (options.enhanceScan !== false && (isScan || options.forceEnhance)) {
-        enhanceScanCanvas(context, canvas.width, canvas.height);
-      }
-      // Quietly pre-warm next page in PDF.js cache for instant page turns
-      if (pageNumber < documentPDF.numPages) {
-        documentPDF.getPage(pageNumber + 1).catch(() => {});
-      }
-      return { page: pageNumber, pages: documentPDF.numPages, title: cache.name, text, paragraphs, isScan };
     } catch (error) {
-      if (epoch !== renderEpoch || error.name === 'RenderingCancelledException' || error.name === 'AbortError') throw cancelled();
-      releaseCache(pdfCache); pdfCache = null;
-      if (error.name === 'PasswordException') throw new Error('PDF này có mật khẩu. Hãy tải bản đã mở khóa để đọc tại đây.');
-      if (error.name === 'InvalidPDFException') throw new Error('PDF bị lỗi hoặc không được hỗ trợ. Hãy kiểm tra tệp gốc.');
-      if (/worker|fetch|network/i.test(error.message || '')) throw new Error('Không tải được trình đọc PDF. Hãy kiểm tra Internet; tệp của bạn vẫn được lưu trên thiết bị.');
-      throw error;
+      if (epoch !== renderEpoch || error.name === 'AbortError') throw cancelled();
+      if (textLayer) textLayer.replaceChildren();
+    }
+    const isScan = text.length < 28;
+    let trimmed = false;
+    if (options.enhanceScan !== false && (isScan || options.forceEnhance)) {
+      const res = enhanceScanCanvas(canvas, context, options.trimMargins !== false && isScan);
+      if (res && res.trimmed) trimmed = true;
+    }
+    // Fit final (possibly trimmed) canvas cleanly into the target box without ANY cropping!
+    const aspect = canvas.width / Math.max(1, canvas.height);
+    let finalW = targetW, finalH = Math.round(targetW / aspect);
+    if (options.fitMode !== 'width' && finalH > targetH) {
+      finalH = targetH;
+      finalW = Math.round(targetH * aspect);
+    }
+    canvas.style.setProperty('width', finalW + 'px', 'important');
+    canvas.style.setProperty('height', finalH + 'px', 'important');
+    canvas.style.setProperty('max-width', 'none', 'important');
+    return { text, paragraphs, isScan, trimmed, cssWidth: finalW, cssHeight: finalH };
+  }
+  async function loadPdfCache(id, repairLevel = 0) {
+    releaseCache(pdfCache);
+    const cache = { id, task: null, promise: null, name: '', repairLevel }; pdfCache = cache;
+    cache.promise = (async () => {
+      const [library, record] = await Promise.all([loadPDFJS(), remoteSources.has(id) ? Promise.resolve(remoteSources.get(id)) : getPDF(id)]);
+      if (pdfCache !== cache) throw cancelled();
+      cache.name = record.name;
+      let docOpts;
+      if (repairLevel > 0) {
+        const rawBuf = record.url
+          ? await fetch(record.url, { credentials: 'same-origin' }).then(r => { if (!r.ok) throw new Error('Không tải được tệp PDF gốc để sửa lỗi XRef.'); return r.arrayBuffer(); })
+          : await record.blob.arrayBuffer();
+        if (pdfCache !== cache) throw cancelled();
+        docOpts = { data: repairCorruptPdfBytes(rawBuf, repairLevel) };
+      } else {
+        const buffer = record.url ? null : await record.blob.arrayBuffer();
+        if (pdfCache !== cache) throw cancelled();
+        docOpts = record.url ? { url: record.url, withCredentials: false } : { data: new Uint8Array(buffer) };
+      }
+      cache.task = library.getDocument({
+        ...docOpts, isEvalSupported: false,
+        cMapUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/',
+        standardFontDataUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/standard_fonts/',
+        cMapPacked: true, disableAutoFetch: true, disableStream: true
+      });
+      return cache.task.promise;
+    })();
+    return cache;
+  }
+  async function renderPDF(id, canvas, page = 1, textLayer = null, options = {}) {
+    if (!canvas || typeof canvas.getContext !== 'function') throw new Error('Không tìm thấy vùng hiển thị PDF.');
+    const epoch = ++renderEpoch;
+    if (renderTask) {
+      const oldTask = renderTask; renderTask = null;
+      try { oldTask.cancel(); await oldTask.promise; } catch (_) {}
+    }
+    if (epoch !== renderEpoch) throw cancelled();
+    let repairLevel = (pdfCache && pdfCache.id === id) ? (pdfCache.repairLevel || 0) : 0;
+    while (true) {
+      try {
+        if (!pdfCache || pdfCache.id !== id || (pdfCache.repairLevel || 0) !== repairLevel) {
+          await loadPdfCache(id, repairLevel);
+        }
+        const cache = pdfCache;
+        const documentPDF = await cache.promise;
+        if (epoch !== renderEpoch) throw cancelled();
+        const pageNumber = Math.min(documentPDF.numPages, Math.max(1, Math.floor(Number(page) || 1)));
+        const fitMode = ['page', 'spread', 'width'].includes(options.fitMode) ? options.fitMode : 'page';
+        const zoom = Math.max(0.7, Math.min(2.0, Number(options.zoom) || 1));
+        const { availW, availH } = computeAvailableBox(canvas);
+        const canSpread = fitMode === 'spread' && options.canvas2 && window.innerWidth >= 920 && pageNumber < documentPDF.numPages;
+
+        const pdfPage1 = await documentPDF.getPage(pageNumber);
+        if (epoch !== renderEpoch) throw cancelled();
+        const vp1 = pdfPage1.getViewport({ scale: 1 });
+
+        let secondRendered = false;
+        let combinedText = '', combinedParas = [], isScan = false, anyTrimmed = false;
+
+        if (canSpread) {
+          const pdfPage2 = await documentPDF.getPage(pageNumber + 1);
+          if (epoch !== renderEpoch) throw cancelled();
+          const vp2 = pdfPage2.getViewport({ scale: 1 });
+          const spineW = 18;
+          const maxPerPageW = Math.max(200, Math.floor((availW - spineW) / 2));
+          const fitScale = Math.min((availW - spineW) / (vp1.width + vp2.width), availH / Math.max(vp1.height, vp2.height));
+          const w1 = Math.round(vp1.width * fitScale * zoom);
+          const w2 = Math.round(vp2.width * fitScale * zoom);
+          const r1 = await renderSinglePdfPage(pdfPage1, canvas, Math.min(maxPerPageW * zoom, w1), Math.round(availH * zoom), textLayer, { ...options, fitMode: 'spread' }, epoch, true);
+          const r2 = await renderSinglePdfPage(pdfPage2, options.canvas2, Math.min(maxPerPageW * zoom, w2), Math.round(availH * zoom), null, { ...options, fitMode: 'spread' }, epoch, true);
+          const matchH = Math.min(r1.cssHeight, r2.cssHeight);
+          if (matchH > 120) {
+            canvas.style.setProperty('height', matchH + 'px', 'important');
+            canvas.style.setProperty('width', Math.round(matchH * (canvas.width / Math.max(1, canvas.height))) + 'px', 'important');
+            options.canvas2.style.setProperty('height', matchH + 'px', 'important');
+            options.canvas2.style.setProperty('width', Math.round(matchH * (options.canvas2.width / Math.max(1, options.canvas2.height))) + 'px', 'important');
+          }
+          secondRendered = true;
+          combinedText = [r1.text, r2.text].filter(Boolean).join('\n\n');
+          combinedParas = [...r1.paragraphs, ...r2.paragraphs];
+          isScan = r1.isScan && r2.isScan;
+          anyTrimmed = r1.trimmed || r2.trimmed;
+        } else {
+          let targetW, targetH;
+          if (fitMode === 'width') {
+            targetW = Math.max(260, Math.min(980, Math.round(availW * zoom)));
+            targetH = Math.round(targetW * (vp1.height / Math.max(1, vp1.width)));
+          } else {
+            const fitScale = Math.min(availW / vp1.width, availH / vp1.height);
+            targetW = Math.max(220, Math.round(vp1.width * fitScale * zoom));
+            targetH = Math.max(260, Math.round(vp1.height * fitScale * zoom));
+          }
+          const r1 = await renderSinglePdfPage(pdfPage1, canvas, targetW, targetH, textLayer, { ...options, fitMode }, epoch, false);
+          combinedText = r1.text;
+          combinedParas = r1.paragraphs;
+          isScan = r1.isScan;
+          anyTrimmed = r1.trimmed;
+        }
+
+        if (canvas.parentElement) canvas.parentElement.style.width = '';
+        if (canvas.closest('.pdf-page-stage')) canvas.closest('.pdf-page-stage').style.width = '';
+
+        const nextP = pageNumber + (secondRendered ? 2 : 1);
+        if (nextP <= documentPDF.numPages) documentPDF.getPage(nextP).catch(() => {});
+        if (secondRendered && nextP + 1 <= documentPDF.numPages) documentPDF.getPage(nextP + 1).catch(() => {});
+
+        return {
+          page: pageNumber,
+          pageEnd: secondRendered ? pageNumber + 1 : pageNumber,
+          pageStep: secondRendered ? 2 : 1,
+          pages: documentPDF.numPages,
+          title: cache.name,
+          text: combinedText,
+          paragraphs: combinedParas,
+          isScan,
+          trimmed: anyTrimmed,
+          spread: secondRendered,
+          repaired: repairLevel > 0
+        };
+      } catch (error) {
+        if (epoch !== renderEpoch || error.name === 'RenderingCancelledException' || error.name === 'AbortError') throw cancelled();
+        if (isRepairablePdfError(error) && repairLevel < 2) {
+          repairLevel++;
+          releaseCache(pdfCache); pdfCache = null;
+          continue;
+        }
+        releaseCache(pdfCache); pdfCache = null;
+        if (error.name === 'PasswordException') throw new Error('PDF này có mật khẩu. Hãy tải bản đã mở khóa để đọc tại đây.');
+        if (error.name === 'InvalidPDFException') throw new Error('PDF bị lỗi hoặc không được hỗ trợ. Hãy kiểm tra tệp gốc.');
+        if (/worker|fetch|network/i.test(error.message || '')) throw new Error('Không tải được trình đọc PDF. Hãy kiểm tra Internet; tệp của bạn vẫn được lưu trên thiết bị.');
+        throw error;
+      }
     }
   }
   window.addEventListener('pagehide', () => { pause(); cancelPDF(); });
