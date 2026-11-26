@@ -600,3 +600,99 @@ body:has(#player:not([hidden])) .workspace{padding-bottom:96px}
 .wallet-tx small{display:block;font-size:9px;color:var(--muted);margin-top:2px}
 .wallet-tx b.pos{color:#2c7a4b;font-weight:700}
 .wallet-tx b.neg{color:#b64e36;font-weight:700}
+
+/* ==========================================================================
+   12. Immersive Full-Size Book Reader (2-Page Spread, Wide Sheet, 6 Papers,
+       4 Personal Flip Animations & Personal Reader Customizer)
+   ========================================================================== */
+.reader-toolbar{max-width:1280px!important;padding:9px 24px!important;flex-wrap:wrap}
+.reader-toolbar-left{display:flex;align-items:center;gap:10px;min-width:0;flex:1}
+.reader-layout-pills{display:inline-flex;gap:3px;padding:3px;border-radius:10px;background:var(--soft);border:1px solid var(--line)}
+.reader-layout-pills button{padding:5px 10px;border-radius:7px;font-size:10px;font-weight:600;color:var(--muted);white-space:nowrap;transition:background-color .16s,color .16s,box-shadow .16s}
+.reader-layout-pills button.active{background:var(--surface);color:var(--green);box-shadow:0 2px 6px rgba(0,0,0,.09)}
+@media(max-width:860px){.reader-layout-pills{display:none}}
+
+/* 6 Paper Tone Dots + Reader Style Popover */
+.paper-pure{background:#ffffff;border-color:#d4d8d2!important}.paper-warm{background:#f7e4da}.paper-midnight{background:#18231e;border-color:#4b6154!important}
+.reader-style-wrap{position:relative}
+.reader-style-btn{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 11px;border-radius:999px;border:1px solid color-mix(in srgb,var(--green) 30%,var(--line));background:var(--mint);color:var(--green);font-size:10px;font-weight:700;white-space:nowrap;transition:transform .16s,border-color .16s}
+.reader-style-btn:hover{border-color:var(--green);transform:translateY(-1px)}
+.reader-style-pop{position:absolute;top:40px;right:0;z-index:70;width:308px;max-width:calc(100vw - 24px);padding:16px;border-radius:18px;border:1px solid var(--line);background:var(--surface);color:var(--ink);box-shadow:0 24px 64px rgba(12,24,18,.28);display:grid;gap:13px}
+.rs-head strong{display:block;font-size:12.5px}
+.rs-head small{display:block;font-size:9.5px;color:var(--muted);margin-top:2px}
+.rs-section>label{display:block;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);margin-bottom:6px}
+.rs-grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.rs-grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}
+.rs-grid-3 button,.rs-grid-2 button,.rs-row-inline button{padding:7px 6px;border-radius:9px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font-size:10px;font-weight:600;transition:border-color .15s,background-color .15s}
+.rs-grid-3 button.active,.rs-grid-2 button.active,.rs-row-inline button.active,.rs-grid-3 button:hover,.rs-grid-2 button:hover{border-color:var(--green);background:var(--mint);color:var(--green)}
+.rs-papers{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.rs-paper{display:flex;flex-direction:column;align-items:center;gap:4px;padding:7px 5px;border-radius:11px;border:1.5px solid var(--line);background:var(--bg);transition:border-color .15s,transform .15s}
+.rs-paper:hover{transform:translateY(-1px);border-color:var(--green)}
+.rs-paper.active{border-color:var(--green);background:var(--mint)}
+.rs-paper span{width:100%;height:28px;border-radius:7px;display:grid;place-items:center;font-family:var(--font-display,Lora,serif);font-size:13px;font-weight:600;border:1px solid rgba(0,0,0,.09)}
+.rs-paper small{font-size:8.5px;font-weight:600;color:var(--ink)}
+.rs-row-inline{display:grid;grid-template-columns:auto auto 1fr 1fr 1fr;gap:5px}
+.rs-step{padding:7px 11px!important;font-weight:700!important}
+
+/* Generous Full-Viewport Reading Desk & Edge Navigation Arrows */
+.reader-scroll{position:relative;display:flex;flex-direction:column;align-items:center;padding:18px 54px 26px!important}
+@media(max-width:767px){.reader-scroll{padding:14px 12px 22px!important}}
+.reader-page-stage{width:100%;max-width:1240px;margin:auto;position:relative}
+.reader-edge-nav{position:fixed;top:54%;transform:translateY(-50%);z-index:20;width:44px;height:78px;border-radius:14px;display:grid;place-items:center;background:color-mix(in srgb,var(--surface) 78%,transparent);border:1px solid color-mix(in srgb,var(--line) 85%,transparent);color:var(--ink);box-shadow:0 8px 24px rgba(0,0,0,.1);backdrop-filter:blur(8px);opacity:.65;transition:opacity .18s,transform .18s,background-color .18s,color .18s}
+.reader-edge-nav:hover:not(:disabled){opacity:1;background:var(--green);color:#fff;border-color:var(--green);transform:translateY(-50%) scale(1.06)}
+.reader-edge-nav:disabled{opacity:.14;pointer-events:none}
+.reader-edge-nav.prev{left:14px}
+.reader-edge-nav.next{right:14px}
+@media(max-width:860px){.reader-edge-nav{display:none}}
+
+/* Open 2-Page Physical Hardcover Spread & Wide Single Sheet */
+.reader-scroll article.book-spread{max-width:1220px!important;width:100%;min-height:calc(100dvh - 210px);padding:0!important;display:grid;grid-template-columns:1fr 22px 1fr;border-radius:18px!important;overflow:hidden;background:var(--r-paper,#faf6ed)!important;color:var(--r-ink,#241f18)!important;border:1px solid var(--r-border,#e4dac5)!important;box-shadow:0 24px 64px rgba(18,22,16,.16),-7px 6px 0 -2px var(--r-edge,#ece3cf),7px 6px 0 -2px var(--r-edge,#ece3cf)!important}
+.book-leaf{display:flex;flex-direction:column;padding:34px 46px 26px;min-width:0;position:relative}
+.left-leaf{background:linear-gradient(90deg,transparent 84%,rgba(0,0,0,.055) 100%)}
+.right-leaf{background:linear-gradient(270deg,transparent 84%,rgba(0,0,0,.045) 100%)}
+.book-spine{background:linear-gradient(90deg,rgba(0,0,0,.09),rgba(0,0,0,.02) 45%,rgba(255,255,255,.18) 50%,rgba(0,0,0,.07));pointer-events:none}
+.leaf-running{display:flex;justify-content:space-between;gap:12px;font-family:'Be Vietnam Pro',sans-serif;font-size:9.5px;letter-spacing:.7px;text-transform:uppercase;opacity:.52;padding-bottom:14px;margin-bottom:20px;border-bottom:1px solid color-mix(in srgb,currentColor 12%,transparent)}
+.leaf-content{flex:1}
+.leaf-num{font-family:'Be Vietnam Pro',sans-serif;font-size:10px;opacity:.5;text-align:center;padding-top:16px;margin-top:auto;letter-spacing:.8px}
+.leaf-end-ornament{height:100%;min-height:260px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;opacity:.62;gap:8px}
+.leaf-end-ornament span{font-size:28px;color:var(--green)}
+.leaf-end-ornament p{font-size:16px;font-style:italic;margin:0!important}
+.leaf-end-ornament small{font-family:'Be Vietnam Pro',sans-serif;font-size:11px}
+
+.reader-scroll article.book-sheet{max-width:940px!important;width:100%;min-height:calc(100dvh - 210px);padding:42px 60px 34px!important;border-radius:18px!important;background:var(--r-paper,#faf6ed)!important;color:var(--r-ink,#241f18)!important;border:1px solid var(--r-border,#e4dac5)!important;box-shadow:0 22px 58px rgba(18,22,16,.13),0 8px 0 -3px var(--r-edge,#ece3cf)!important;display:flex;flex-direction:column}
+@media(max-width:767px){.reader-scroll article.book-sheet{padding:24px 20px!important;min-height:calc(100dvh - 195px)}}
+
+/* Personal Font Family & Line Height Tokens */
+.reader[data-rfont=newsreader] .reader-scroll article{font-family:'Newsreader',Georgia,serif!important}
+.reader[data-rfont=lora] .reader-scroll article{font-family:'Lora',Georgia,serif!important}
+.reader[data-rfont=sans] .reader-scroll article{font-family:'Be Vietnam Pro',system-ui,sans-serif!important}
+.reader[data-rline=cozy] .reader-scroll article{line-height:1.78!important}
+.reader[data-rline=balanced] .reader-scroll article{line-height:2.02!important}
+.reader[data-rline=airy] .reader-scroll article{line-height:2.28!important}
+
+/* 6 Complete Personal Paper Themes (Independent of Global App Light/Dark) */
+.reader[data-paper=ivory]{--r-desk:#ece7dc;--r-paper:#faf6ed;--r-ink:#241f18;--r-border:#e2d8c3;--r-edge:#ece3ce}
+.reader[data-paper=sepia]{--r-desk:#dfd0b4;--r-paper:#f2e4c7;--r-ink:#312214;--r-border:#d7c199;--r-edge:#e3d0ab}
+.reader[data-paper=sage]{--r-desk:#dae5d8;--r-paper:#eaf2e8;--r-ink:#1a2d21;--r-border:#c9dac6;--r-edge:#d7e5d4}
+.reader[data-paper=pure]{--r-desk:#edf0ed;--r-paper:#ffffff;--r-ink:#141916;--r-border:#dfe3df;--r-edge:#eef0ee}
+.reader[data-paper=warm]{--r-desk:#ebdcd4;--r-paper:#fbf0ea;--r-ink:#2e1f1c;--r-border:#e5cfc4;--r-edge:#f0ddd3}
+.reader[data-paper=midnight]{--r-desk:#0d1310;--r-paper:#17211c;--r-ink:#e3e8dc;--r-border:#2c3d34;--r-edge:#121a16}
+.reader[data-paper] .reader-scroll{background:var(--r-desk)!important}
+.reader[data-paper=midnight] .book-spine{background:linear-gradient(90deg,rgba(0,0,0,.45),rgba(0,0,0,.15) 45%,rgba(255,255,255,.06) 50%,rgba(0,0,0,.4))}
+.reader[data-paper=midnight] .chapter-label{color:#9cc294}
+
+/* 4 Personal Page-Turn Motion Effects (60fps GPU-Accelerated) */
+@keyframes turnFlipNext{0%{opacity:.22;transform:perspective(1600px) rotateY(14deg) translate3d(44px,0,0) scale(.985)}100%{opacity:1;transform:perspective(1600px) rotateY(0deg) translate3d(0,0,0) scale(1)}}
+@keyframes turnFlipPrev{0%{opacity:.22;transform:perspective(1600px) rotateY(-14deg) translate3d(-44px,0,0) scale(.985)}100%{opacity:1;transform:perspective(1600px) rotateY(0deg) translate3d(0,0,0) scale(1)}}
+@keyframes turnSlideNext{0%{opacity:0;transform:translate3d(60px,0,0)}100%{opacity:1;transform:translate3d(0,0,0)}}
+@keyframes turnSlidePrev{0%{opacity:0;transform:translate3d(-60px,0,0)}100%{opacity:1;transform:translate3d(0,0,0)}}
+@keyframes turnFadeIn{0%{opacity:0;transform:scale(.992)}100%{opacity:1;transform:scale(1)}}
+.reader-page-stage.turn-flip-next{animation:turnFlipNext .42s cubic-bezier(.22,1,.36,1)}
+.reader-page-stage.turn-flip-prev{animation:turnFlipPrev .42s cubic-bezier(.22,1,.36,1)}
+.reader-page-stage.turn-slide-next{animation:turnSlideNext .32s cubic-bezier(.22,1,.36,1)}
+.reader-page-stage.turn-slide-prev{animation:turnSlidePrev .32s cubic-bezier(.22,1,.36,1)}
+.reader-page-stage.turn-fade-next,.reader-page-stage.turn-fade-prev{animation:turnFadeIn .34s ease}
+
+/* Slim Book Reading Progress Bar above Footer */
+.reader-progress-track{height:3px;width:100%;background:color-mix(in srgb,var(--line) 80%,transparent);flex-shrink:0}
+.reader-progress-track span{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--green),var(--season-accent));transition:width .35s cubic-bezier(.22,1,.36,1)}

@@ -144,14 +144,93 @@ function playBookOpenFx(b){
  fx.classList.add('opening');
  return new Promise(resolve=>setTimeout(()=>{fx.classList.remove('opening');fx.hidden=true;fx.replaceChildren();resolve()},370));
 }
+const READER_PAPERS=[
+ {id:'ivory',name:'Ngà sách in',bg:'#faf6ed',ink:'#241f18'},
+ {id:'sepia',name:'Cổ điển Sepia',bg:'#efe1c4',ink:'#312214'},
+ {id:'sage',name:'Lá dịu mắt',bg:'#e7f0e5',ink:'#1a2d21'},
+ {id:'pure',name:'Tuyết trắng',bg:'#ffffff',ink:'#141916'},
+ {id:'warm',name:'Hoàng hôn ấm',bg:'#f9ede6',ink:'#2e1f1c'},
+ {id:'midnight',name:'Đêm êm dịu',bg:'#161f1b',ink:'#e4e8dc'}
+];
+const READER_FLIPS=[
+ {id:'flip',name:'📖 Lật 3D'},
+ {id:'slide',name:'✨ Trượt mượt'},
+ {id:'fade',name:'🌫️ Tan dịu'},
+ {id:'none',name:'⚡ Tức thì'}
+];
+const READER_FONTS=[
+ {id:'newsreader',name:'Newsreader'},
+ {id:'lora',name:'Lora cổ điển'},
+ {id:'sans',name:'Hiện đại'}
+];
+let stylePopOpen=false;
+function readerPrefs(){
+ const p=preferences();
+ return {
+  layout:['spread','single','scroll'].includes(p.readerLayout)?p.readerLayout:'spread',
+  paper:READER_PAPERS.some(x=>x.id===p.paperTone)?p.paperTone:'ivory',
+  flip:READER_FLIPS.some(x=>x.id===p.readerFlip)?p.readerFlip:'flip',
+  fontFamily:READER_FONTS.some(x=>x.id===p.readerFont)?p.readerFont:'newsreader',
+  lineHeight:['cozy','balanced','airy'].includes(p.readerLine)?p.readerLine:'balanced',
+  fontSize:Math.min(30,Math.max(16,Number(p.font)||20))
+ };
+}
+function applyReaderPrefs(){
+ const rp=readerPrefs(),rd=$('#reader');
+ if(!rd)return;
+ rd.setAttribute('data-paper',rp.paper);
+ rd.setAttribute('data-layout',rp.layout);
+ rd.setAttribute('data-flip',rp.flip);
+ rd.setAttribute('data-rfont',rp.fontFamily);
+ rd.setAttribute('data-rline',rp.lineHeight);
+ state.font=rp.fontSize;
+ $('#readerBody')?.style.setProperty('--reader-font',rp.fontSize+'px');
+ $$('.paper-dot').forEach(d=>d.classList.toggle('active',d.dataset.id===rp.paper));
+ $$('[data-action="reader-layout"]').forEach(b=>b.classList.toggle('active',b.dataset.id===rp.layout));
+ renderReaderStylePop();
+}
+function renderReaderStylePop(){
+ const pop=$('#readerStylePop'),btn=$('#readerStyleBtn');
+ if(btn)btn.setAttribute('aria-expanded',String(stylePopOpen));
+ if(!pop)return;
+ pop.hidden=!stylePopOpen;
+ if(!stylePopOpen)return;
+ const rp=readerPrefs();
+ pop.innerHTML=`<div class="rs-head"><strong>🎨 Không gian đọc của riêng bạn</strong><small>Chỉ áp dụng trên thiết bị của bạn</small></div>
+  <div class="rs-section"><label>Kiểu trang sách</label><div class="rs-grid-3">${[['spread','📖 2 trang lớn'],['single','📄 1 trang rộng'],['scroll','📜 Cuộn dài']].map(([id,lbl])=>`<button type="button" class="${rp.layout===id?'active':''}" data-action="reader-layout" data-id="${id}">${lbl}</button>`).join('')}</div></div>
+  <div class="rs-section"><label>6 chất liệu giấy sách</label><div class="rs-papers">${READER_PAPERS.map(p=>`<button type="button" class="rs-paper ${rp.paper===p.id?'active':''}" data-action="paper-tone" data-id="${p.id}"><span style="background:${p.bg};color:${p.ink}">Aa</span><small>${p.name}</small></button>`).join('')}</div></div>
+  <div class="rs-section"><label>Hiệu ứng lật trang</label><div class="rs-grid-2">${READER_FLIPS.map(f=>`<button type="button" class="${rp.flip===f.id?'active':''}" data-action="reader-flip" data-id="${f.id}">${f.name}</button>`).join('')}</div></div>
+  <div class="rs-section"><label>Phông chữ đọc</label><div class="rs-grid-3">${READER_FONTS.map(f=>`<button type="button" class="${rp.fontFamily===f.id?'active':''}" data-action="reader-font" data-id="${f.id}">${f.name}</button>`).join('')}</div></div>
+  <div class="rs-section"><label>Cỡ chữ (${rp.fontSize}px) &amp; Giãn dòng</label><div class="rs-row-inline"><button type="button" class="rs-step" data-action="font" data-delta="-1">A−</button><button type="button" class="rs-step" data-action="font" data-delta="1">A+</button>${[['cozy','Gọn'],['balanced','Chuẩn'],['airy','Thoáng']].map(([id,lbl])=>`<button type="button" class="${rp.lineHeight===id?'active':''}" data-action="reader-line" data-id="${id}">${lbl}</button>`).join('')}</div></div>`;
+}
+function splitChapterPages(chapter,layout){
+ const paras=(chapter?.paragraphs||[]).map(p=>String(p||'').trim()).filter(Boolean);
+ if(!paras.length)return [[]];
+ if(layout==='scroll')return [paras];
+ const target=layout==='spread'?540:980;
+ const pages=[];let cur=[],chars=0;
+ for(const p of paras){
+  if(cur.length&&chars+p.length>target){pages.push(cur);cur=[];chars=0;}
+  cur.push(p);chars+=p.length;
+ }
+ if(cur.length)pages.push(cur);
+ // In 2-page spread mode on desktop, if a chapter fits in 1 leaf but has >= 2 paragraphs, balance cleanly across Left & Right pages!
+ if(layout==='spread'&&pages.length===1&&paras.length>=2){
+  const mid=Math.ceil(paras.length/2);
+  return [paras.slice(0,mid),paras.slice(mid)];
+ }
+ return pages;
+}
 function triggerPageTurn(dir=1){
- if(matchMedia('(prefers-reduced-motion:reduce)').matches)return;
+ const rp=readerPrefs();
+ if(rp.flip==='none'||matchMedia('(prefers-reduced-motion:reduce)').matches)return;
  const stage=state.reader?.type==='chapters'?$('#readerTextStage'):$('#pdfPageStage');
  if(!stage)return;
- stage.classList.remove('page-turn-next','page-turn-prev');
+ const cls=`turn-${rp.flip}-${dir<0?'prev':'next'}`;
+ stage.classList.remove('turn-flip-next','turn-flip-prev','turn-slide-next','turn-slide-prev','turn-fade-next','turn-fade-prev');
  void stage.offsetWidth;
- stage.classList.add(dir<0?'page-turn-prev':'page-turn-next');
- setTimeout(()=>stage.classList.remove('page-turn-next','page-turn-prev'),420);
+ stage.classList.add(cls);
+ setTimeout(()=>stage.classList.remove(cls),440);
 }
 function playTrendPlaylist(id){
  const p=TREND_PLAYLISTS.find(x=>x.id===id);if(!p)return;
@@ -286,9 +365,7 @@ function applySettings(){
  root.classList.toggle('decor-aurora',decor.aurora!==false);
  root.classList.toggle('decor-grain',decor.paperGrain!==false);
  const petals=$('#petalsLayer');if(petals)petals.hidden=!(decor.petals!==false&&(decor.fxLevel||'vivid')!=='off');
- const tone=preferences().paperTone||'ivory';
- $('#reader')?.setAttribute('data-paper',tone);
- $$('.paper-dot').forEach(d=>d.classList.toggle('active',d.dataset.id===tone));
+ applyReaderPrefs();
 }
 function sectionEnabled(name){const s=mergedSettings();if(Array.isArray(s.sections))return s.sections.includes(name)||s.sections.some(x=>typeof x==='object'&&x.id===name&&x.visible!==false);if(s.sections&&typeof s.sections==='object')return s.sections[name]!==false;return true}
 function renderOwnerControls(){
@@ -603,11 +680,70 @@ function startReaderClock(){
  },1000);
 }
 async function openBook(id){let b=book(id);if(!b)return;const fxDone=playBookOpenFx(b);let fresh;try{fresh=await api('/api/books/'+encodeURIComponent(id))}catch(e){await fxDone;if(e.status===401||e.status===403){if(!state.user){auth();return}modal('Mở quyền đọc sách',`<p class="auth-subtitle">${esc(e.message)}</p>${b.saleEnabled&&state.commerce.enabled?`<button class="button button-primary button-block" data-action="cart-add" data-kind="book" data-id="${esc(id)}">Thêm sách vào giỏ · ${money(b.price)}</button>`:''}<button class="button button-soft button-block" data-action="nav" data-view="plans">Xem gói thành viên</button>`);return}throw e}await fxDone;if(!fresh.book)throw new Error('Không tìm thấy nội dung sách.');b=fresh.book;state.books=state.books.map(x=>x.id===id?b:x);BookMedia.cancelPDF();const saved=state.data.progress[id],chapter=Math.max(0,Math.min((b.chapters?.length||1)-1,Number(saved?.chapter)||0));state.reader={type:b.pdfAssetId?'remote':'chapters',bookId:id,id:b.pdfAssetId||id,title:b.title,chapter,page:1,pages:1,ready:false};$('#readerTitle').textContent=b.title;$('#readerSubtitle').textContent=b.author||'Lowf';const credit=$('#readerSource'),sourceURL=typeof b.sourceUrl==='string'&&/^https:\/\//.test(b.sourceUrl)?b.sourceUrl:'';credit.hidden=!(b.licenseLabel||sourceURL);credit.innerHTML=`${esc(b.licenseLabel||'')}${sourceURL?` · <a href="${esc(sourceURL)}" target="_blank" rel="noopener noreferrer">Nguồn bản sách ↗</a>`:''}`;$('#reader').showModal();startReaderClock();renderPlayer();updateThemeButtons();if(b.pdfAssetId){$('#chapterSelect').disabled=true;$('#chapterSelect').innerHTML='<option>Đang mở PDF…</option>';await renderPDF()}else if(b.chapters?.length){$('#chapterSelect').disabled=false;$('#chapterSelect').innerHTML=b.chapters.map((c,i)=>`<option value="${i}">${i+1}. ${esc(c.title)}</option>`).join('');renderChapter()}else{$('#readerTextStage').hidden=false;$('#pdfPageStage').hidden=true;$('#readerBody').hidden=false;$('#pdfCanvas').hidden=true;$('#readerBody').innerHTML=empty('Sách đang được hoàn thiện','Nội dung đọc chưa được xuất bản. Hãy quay lại sau.');$('#readerProgress').textContent='Chưa có nội dung';$('#chapterSelect').innerHTML='<option>Chưa có chương</option>';$('#chapterSelect').disabled=true;$$('[data-action="prev-page"],[data-action="next-page"]').forEach(e=>e.disabled=true);icons()}if(state.user){state.data.progress[id]={chapter,finished:!!saved?.finished,updated:dateKey()};saveUserData()}heartbeat()}
-function renderChapter(turnDir=0){window.LowfSpeech?.stop();const r=state.reader,b=book(r.bookId),c=b.chapters[r.chapter];$('#readerTextStage').hidden=false;$('#pdfPageStage').hidden=true;$('#pdfCanvas').hidden=true;$('#readerBody').hidden=false;$('#readerBody').style.setProperty('--reader-font',state.font+'px');$('#readerBody').innerHTML=`<div class="chapter-label">CHƯƠNG ${String(r.chapter+1).padStart(2,'0')} / ${String(b.chapters.length).padStart(2,'0')}</div><h2>${esc(c.title)}</h2>${(c.paragraphs||[]).map(p=>`<p>${esc(p)}</p>`).join('')}`;$('#chapterSelect').value=r.chapter;$('#readerProgress').textContent=`Chương ${r.chapter+1} / ${b.chapters.length}`;$('#readerScroll').scrollTop=0;$('[data-action="prev-page"]').disabled=r.chapter===0;$('[data-action="next-page"]').disabled=false;$('[data-action="next-page"]').innerHTML=r.chapter===b.chapters.length-1?`Hoàn tất ${icon('check')}`:`Lật tiếp ${icon('arrow-right')}`;r.ready=true;if(turnDir)triggerPageTurn(turnDir);if(state.user){state.data.progress[b.id]={chapter:r.chapter,finished:state.data.progress[b.id]?.finished||false,updated:dateKey()};saveUserData()}icons();window.dispatchEvent(new Event('lowf:readerchange'))}
+function renderChapter(turnDir=0){
+ window.LowfSpeech?.stop();
+ const r=state.reader,b=book(r.bookId),c=b.chapters[r.chapter],rp=readerPrefs();
+ const isNarrow=window.innerWidth<900;
+ const effectiveLayout=rp.layout==='spread'&&isNarrow?'single':rp.layout;
+ const leaves=splitChapterPages(c,effectiveLayout);
+ const step=effectiveLayout==='spread'?2:1;
+ const totalViews=Math.max(1,Math.ceil(leaves.length/step));
+ r.subPage=Math.max(0,Math.min(totalViews-1,Number(r.subPage)||0));
+ r.subTotal=totalViews;
+ r.leafStep=step;
+ r.totalLeaves=leaves.length;
+ $('#readerTextStage').hidden=false;$('#pdfPageStage').hidden=true;$('#pdfCanvas').hidden=true;$('#readerBody').hidden=false;
+ applyReaderPrefs();
+ const chHead=`<div class="chapter-label">CHƯƠNG ${String(r.chapter+1).padStart(2,'0')} / ${String(b.chapters.length).padStart(2,'0')}</div><h2>${esc(c.title)}</h2>`;
+ if(effectiveLayout==='spread'){
+  const li=r.subPage*2,ri=li+1;
+  const leftParas=leaves[li]||[],rightParas=leaves[ri]||[];
+  $('#readerBody').className='book-spread';
+  $('#readerBody').innerHTML=`<div class="book-leaf left-leaf"><div class="leaf-running"><span>${esc(b.title)}</span><span>Chương ${r.chapter+1}</span></div><div class="leaf-content">${li===0?chHead:''}${leftParas.map(p=>`<p>${esc(p)}</p>`).join('')}</div><div class="leaf-num">Trang ${li+1}</div></div><div class="book-spine" aria-hidden="true"></div><div class="book-leaf right-leaf"><div class="leaf-running"><span>${esc(c.title)}</span><span>Lowf Edition</span></div><div class="leaf-content">${rightParas.length?rightParas.map(p=>`<p>${esc(p)}</p>`).join(''):`<div class="leaf-end-ornament"><span>✦</span><p>Hết chương ${r.chapter+1}</p><small>${r.chapter<b.chapters.length-1?'Bấm Lật tiếp để sang chương mới':'Bạn đã đi tới trang cuối cùng của cuốn sách'}</small></div>`}</div><div class="leaf-num">${rightParas.length?`Trang ${ri+1}`:'✦'}</div></div>`;
+ }else{
+  const curParas=leaves[r.subPage]||[];
+  $('#readerBody').className=effectiveLayout==='scroll'?'book-sheet book-scroll':'book-sheet';
+  $('#readerBody').innerHTML=`<div class="leaf-running"><span>${esc(b.title)}</span><span>${esc(c.title)}</span></div>${r.subPage===0?chHead:''}${curParas.map(p=>`<p>${esc(p)}</p>`).join('')}${effectiveLayout==='single'?`<div class="leaf-num">Trang ${r.subPage+1} / ${leaves.length}</div>`:''}`;
+ }
+ $('#chapterSelect').value=r.chapter;
+ const pageInfo=effectiveLayout==='spread'?`Trang ${r.subPage*2+1}${r.subPage*2+2<=leaves.length?'–'+(r.subPage*2+2):''} / ${leaves.length}`:effectiveLayout==='single'?`Trang ${r.subPage+1} / ${leaves.length}`:'Cuộn trọn chương';
+ const pct=Math.min(100,Math.round(((r.chapter+(r.subPage+1)/totalViews)/Math.max(1,b.chapters.length))*100));
+ $('#readerProgress').textContent=`Chương ${r.chapter+1}/${b.chapters.length} · ${pageInfo} · ${pct}%`;
+ const fill=$('#readerProgressFill');if(fill)fill.style.width=pct+'%';
+ $('#readerScroll').scrollTop=0;
+ const atStart=r.chapter===0&&r.subPage===0;
+ const atEnd=r.chapter===b.chapters.length-1&&r.subPage>=totalViews-1;
+ $$('[data-action="prev-page"]').forEach(btn=>btn.disabled=atStart);
+ $$('[data-action="next-page"]').forEach(btn=>btn.disabled=false);
+ const footNext=$('.reader-footer [data-action="next-page"]');
+ if(footNext)footNext.innerHTML=atEnd?`Hoàn tất ${icon('check')}`:`Lật tiếp ${icon('arrow-right')}`;
+ r.ready=true;
+ if(turnDir)triggerPageTurn(turnDir);
+ if(state.user){state.data.progress[b.id]={chapter:r.chapter,finished:state.data.progress[b.id]?.finished||false,updated:dateKey()};saveUserData()}
+ icons();window.dispatchEvent(new Event('lowf:readerchange'))
+}
 async function openLocalPDF(id){const file=state.pdfs.find(p=>p.id===id);if(!file)return;BookMedia.cancelPDF();state.reader={type:'local',id,title:file.name,page:1,pages:1,ready:false};$('#readerTitle').textContent=file.name;$('#readerSubtitle').textContent='PDF cá nhân · chỉ trên thiết bị này';$('#readerSource').hidden=true;$('#chapterSelect').disabled=true;$('#chapterSelect').innerHTML='<option>Đang mở PDF…</option>';$('#reader').showModal();startReaderClock();renderPlayer();updateThemeButtons();await renderPDF();heartbeat()}
 async function renderPDF(turnDir=0){const r=state.reader;if(!r||state.pdfBusy)return;state.pdfBusy=true;r.ready=false;window.LowfSpeech?.stop();window.dispatchEvent(new Event('lowf:readerloading'));$('#readerTextStage').hidden=false;$('#pdfPageStage').hidden=true;$('#pdfTextLayer').replaceChildren();$('#readerBody').hidden=false;$('#readerBody').innerHTML='<p class="notice">Đang mở trang PDF…</p>';$('#pdfCanvas').hidden=true;$$('[data-action="prev-page"],[data-action="next-page"]').forEach(e=>e.disabled=true);try{const result=r.type==='remote'?await BookMedia.renderRemotePDF(r.id,r.title,$('#pdfCanvas'),r.page,$('#pdfTextLayer')):await BookMedia.renderPDF(r.id,$('#pdfCanvas'),r.page,$('#pdfTextLayer'));if(state.reader!==r)return;r.page=result.page;r.pages=result.pages;r.pdfText=result.text||'';r.ready=true;$('#readerTextStage').hidden=true;$('#pdfPageStage').hidden=false;$('#readerBody').hidden=true;$('#pdfCanvas').hidden=false;$('#chapterSelect').innerHTML=`<option>Trang ${r.page} / ${r.pages}</option>`;$('#readerProgress').textContent=`Trang ${r.page} / ${r.pages}`;$('[data-action="prev-page"]').disabled=r.page===1;$('[data-action="next-page"]').disabled=r.page===r.pages;$('[data-action="next-page"]').innerHTML=`Lật tiếp ${icon('arrow-right')}`;$('#readerScroll').scrollTop=0;if(turnDir)triggerPageTurn(turnDir);icons();window.dispatchEvent(new Event('lowf:readerchange'))}catch(e){if(e.name==='AbortError'||state.reader!==r)return;$('#readerBody').innerHTML=empty('Chưa mở được PDF',esc(e.message),`<button class="button button-primary" data-action="retry-pdf">Thử lại</button>${r.type==='local'?`<button class="button button-soft" data-action="export-pdf" data-id="${esc(r.id)}">Tải bản gốc</button>`:''}`,'file-warning');icons()}finally{if(state.reader===r)state.pdfBusy=false}}
-function closeReader(){window.LowfSpeech?.stop();window.dispatchEvent(new Event('lowf:readerclose'));timerOpen=false;renderTimerUI();const prior=state.reader;state.reader=null;state.pdfBusy=false;clearInterval(readerTimer);BookMedia.cancelPDF();$('#reader').close();if(prior?.bookId)saveUserData(true);heartbeat();renderMain()}
-function changePage(delta){const r=state.reader;if(!r)return;if(r.type!=='chapters'){if(state.pdfBusy)return;const page=r.page+delta;if(page>=1&&page<=r.pages){r.page=page;renderPDF(delta)}return}const b=book(r.bookId),next=r.chapter+delta;if(next>=b.chapters.length){if(state.user){if(!state.data.progress[b.id]?.finished){addCoins(25,'Hoàn thành cuốn sách: '+b.title)}state.data.progress[b.id].finished=true;saveUserData(true)}closeReader();toast('🎉 Bạn đã đọc hết cuốn sách!'+(state.user?' +25 Lowf Xu 💰':''))}else if(next>=0){r.chapter=next;renderChapter(delta)}}
+function closeReader(){window.LowfSpeech?.stop();window.dispatchEvent(new Event('lowf:readerclose'));timerOpen=false;stylePopOpen=false;renderTimerUI();renderReaderStylePop();const prior=state.reader;state.reader=null;state.pdfBusy=false;clearInterval(readerTimer);BookMedia.cancelPDF();$('#reader').close();if(prior?.bookId)saveUserData(true);heartbeat();renderMain()}
+function changePage(delta){
+ const r=state.reader;if(!r)return;
+ if(r.type!=='chapters'){if(state.pdfBusy)return;const page=r.page+delta;if(page>=1&&page<=r.pages){r.page=page;renderPDF(delta)}return}
+ const b=book(r.bookId),subTotal=r.subTotal||1,nextSub=(r.subPage||0)+delta;
+ if(nextSub>=0&&nextSub<subTotal){r.subPage=nextSub;renderChapter(delta);return}
+ const nextCh=r.chapter+(delta>0?1:-1);
+ if(nextCh>=b.chapters.length){
+  if(state.user){if(!state.data.progress[b.id]?.finished){addCoins(25,'Hoàn thành cuốn sách: '+b.title)}state.data.progress[b.id].finished=true;saveUserData(true)}
+  closeReader();toast('🎉 Bạn đã đọc hết cuốn sách!'+(state.user?' +25 Lowf Xu 💰':''));
+ }else if(nextCh>=0){
+  r.chapter=nextCh;
+  if(delta<0){
+   const rp=readerPrefs(),eff=rp.layout==='spread'&&window.innerWidth<900?'single':rp.layout;
+   const leaves=splitChapterPages(b.chapters[nextCh],eff);
+   r.subPage=Math.max(0,Math.ceil(leaves.length/(eff==='spread'?2:1))-1);
+  }else r.subPage=0;
+  renderChapter(delta);
+ }
+}
 function renderPlayer(){const playing=isAudioPlaying(),t=state.ambient?ambientModes[state.ambient]:state.tracks[state.trackIndex];$('#player').hidden=!t;$('#playerTitle').textContent=t?.title||'Âm nhạc của bạn';$('#playerArtist').textContent=state.ambient?`${t?.tag||'Studio'} · phát trực tiếp`:t?.artist||t?.composer||'Lowf tuyển chọn';$('#playerPlay').innerHTML=icon(playing?'pause':'play');$('#playerPlay').setAttribute('aria-label',playing?'Tạm dừng':'Phát nhạc');$('#audioSeek').disabled=!!state.ambient;const rBtn=$('#readerMusicBtn');if(rBtn){rBtn.classList.toggle('is-playing',playing);rBtn.setAttribute('aria-pressed',String(playing));const lbl=$('span:last-child',rBtn);if(lbl)lbl.textContent=playing?'Đang phát':'Nhạc';}icons()}
 async function playTrack(id){const index=state.tracks.findIndex(t=>t.id===id);if(index<0)return;if(state.tracks[index].access==='member'&&!isOwner()&&!state.membership?.premium){state.user?navigate('plans'):auth();return}if(index===state.trackIndex&&!state.ambient&&audio.getAttribute('src')){await toggleAudio();return}audioEpoch++;BookMedia.pause();state.ambient=null;state.trackIndex=index;const t=state.tracks[index];if(!t.assetId&&!safeURL(t.url))throw new Error('Bản nhạc này chưa có tệp âm thanh.');audio.src=t.assetId?asset(t.assetId):safeURL(t.url);audio.volume=state.volume;try{await audio.play();heartbeat();renderPlayer();if(state.view==='studio')renderMain()}catch{renderPlayer();throw new Error('Chưa phát được bản nhạc. Hãy thử lại hoặc chọn bản khác.')}}
 async function playAmbient(id){if(!ambientModes[id])return;audioEpoch++;audio.pause();state.trackIndex=-1;state.ambient=id;await BookMedia.play(id);BookMedia.setVolume(state.volume);renderPlayer();if(state.view==='studio')renderMain();heartbeat()}
@@ -749,7 +885,7 @@ function openMobileMenu(){
  ];
  modal('Không gian Lowf',`<p class="auth-subtitle" style="margin-top:0">Chọn chuyên mục bạn muốn ghé thăm.</p><div class="mobile-nav-grid">${items.map(([view,ic,title,desc])=>`<button type="button" class="mobile-nav-card ${state.view===view?'active':''}" data-action="nav" data-view="${view}">${icon(ic)}<span><strong>${title}</strong><small>${esc(desc)}</small></span></button>`).join('')}<button type="button" class="mobile-nav-card" data-action="mobile-vocab">${icon('languages')}<span><strong>Sổ từ vựng</strong><small>Từ mới & phiên âm IPA đã lưu</small></span></button></div>${isOwner()?'<a class="button button-primary button-block" href="/admin" style="margin-top:16px">Mở Lowf Studio (Quản trị) ↗</a>':''}`);
 }
-async function handleAction(b){const action=b.dataset.action,id=b.dataset.id;if(b.disabled)return;switch(action){case'nav':closeModal();navigate(b.dataset.view);break;case'decor-open':if(!isOwner())break;$('#decorDrawer')?.classList.contains('open')?closeDecorDrawer():openDecorDrawer();break;case'decor-close':closeDecorDrawer();break;case'decor-preset':{if(!isOwner())break;const pr=THEME_PRESETS.find(x=>x.id===id);if(pr)updateDecor({palette:{primary:pr.primary,background:pr.background,surface:pr.surface,text:pr.text},decor:{preset:pr.id}});break}case'decor-season':{if(!isOwner())break;const st=SEASON_THEMES[id];if(st)updateDecor({palette:{...st.palette},decor:{season:st.id,preset:st.id,petals:true,fxLevel:'vivid',stars:'bright',aurora:true}},{rerender:true});break}case'decor-fx':if(!isOwner())break;updateDecor({decor:{fxLevel:id,petals:id!=='off'}});break;case'decor-bg':if(!isOwner())break;updateDecor({decor:{bgPattern:id}});break;case'decor-stars':if(!isOwner())break;updateDecor({decor:{stars:id}});break;case'decor-card':if(!isOwner())break;updateDecor({decor:{cardStyle:id}});break;case'decor-font':if(!isOwner())break;updateDecor({font:id});break;case'decor-reset':if(!isOwner())break;try{localStorage.removeItem(DECOR_KEY)}catch{}applySettings();if(state.view==='dashboard')renderMain();renderDecorDrawer();toast('Đã khôi phục thiết kế mặc định của Lowf.');break;case'decor-publish':if(!isOwner())break;await publishLiveDesign();break;case'paper-tone':setPreference({paperTone:id});applySettings();break;case'mobile-menu':openMobileMenu();break;case'mobile-vocab':closeModal();window.LowfReaderTools?.openVocabulary();break;case'theme':theme();break;case'account':openAccount();break;case'auth':auth();break;case'auth-tab':auth(id);break;case'auth-google':await startSocialAuth('google');break;case'toggle-pw':{const wrap=b.closest('.pw-wrap'),inp=wrap&&$('input',wrap);if(inp){const show=inp.type==='password';inp.type=show?'text':'password';b.setAttribute('aria-pressed',String(show));b.setAttribute('aria-label',show?'Ẩn mật khẩu':'Hiện mật khẩu');b.innerHTML=icon(show?'eye-off':'eye');icons();}break}case'auth-resend':await resendAuthOtp();break;case'modal-close':closeModal();break;case'logout':await signOut();break;case'verify-email':await verifyEmail();break;case'filter':state.filter=id;renderMain();break;case'review-cat':state.reviewCat=id;renderMain();break;case'read-article':openArticle(id);break;case'read-from-article':closeModal();await openBook(id);break;case'reset-search':state.query='';state.filter='all';state.sort='featured';$('#search').value='';renderMain();break;case'shelf-prev':case'shelf-next':$('#bookShelf')?.scrollBy({left:(action==='shelf-prev'?-1:1)*350,behavior:matchMedia('(prefers-reduced-motion:reduce)').matches?'instant':'smooth'});break;case'read':await openBook(id);break;case'bookmark':await bookmark(id);break;case'upload-pdf':$('#pdfInput').click();break;case'read-local':await openLocalPDF(id);break;case'export-pdf':await BookMedia.exportPDF(id);break;case'delete-pdf':{const p=state.pdfs.find(x=>x.id===id);if(p)modal('Xóa PDF khỏi thiết bị?',`<p class="auth-subtitle">Xóa ${esc(p.name)} khỏi kệ của trình duyệt này. File gốc trên máy của bạn không bị ảnh hưởng.</p><button class="button button-primary button-block" data-action="delete-pdf-confirm" data-id="${esc(id)}">Xóa khỏi kệ</button>`);break}case'delete-pdf-confirm':await BookMedia.deletePDF(id);closeModal();await loadPDFs();toast('Đã xóa PDF khỏi kệ của thiết bị.');break;case'import-saved':state.user?confirmImport():auth();break;case'import-confirm':if(state.user){const saved=[...new Set([...state.data.saved,...legacySaved()])];await api('/api/user-data',{method:'POST',body:{saved}});state.data.saved=saved;closeModal();renderMain();toast('Đã nhập sách đã lưu vào tài khoản.')}break;case'reader-vocabulary':window.LowfReaderTools?.openVocabulary();break;case'reader-close':closeReader();break;case'prev-page':changePage(-1);break;case'next-page':changePage(1);break;case'retry-pdf':await renderPDF();break;case'font':state.font=Math.min(28,Math.max(15,state.font+Number(b.dataset.delta)));setPreference({font:state.font});$('#readerBody').style.setProperty('--reader-font',state.font+'px');break;case'reader-bookmark':state.reader?.bookId?await bookmark(state.reader.bookId):toast('PDF này đã nằm trong kệ sách trên thiết bị.');break;case'play-track':await playTrack(id);break;case'ambient':if(state.ambient===id)await toggleAudio();else await playAmbient(id);break;case'audio-toggle':await toggleAudio();break;case'audio-stop':stopAudio();break;case'prev-track':await nextTrack(-1);break;case'next-track':await nextTrack(1);break;case'play-first':{const playable=state.tracks.find(t=>t.assetId||safeURL(t.url));if(isAudioPlaying()){toast('Nhạc đang phát. Bạn có thể mở sách để đọc cùng.')}else if(playable)await playTrack(playable.id);else await playAmbient('hanoi_rain');break}case'play-trend':playTrendPlaylist(id);break;case'timer-toggle':timerOpen=!timerOpen;renderTimerUI();break;case'timer-pause':timerPaused=!timerPaused;renderTimerUI();break;case'timer-reset':if(timerMode==='pomodoro')pomodoroLeft=pomodoroTotal;else state.sessionSeconds=0;timerPaused=false;renderTimerUI();break;case'timer-pomodoro':{const m=Number(id)||25;timerMode='pomodoro';pomodoroTotal=m*60;pomodoroLeft=m*60;timerPaused=false;timerOpen=false;renderTimerUI();toast(`⏱️ Đã hẹn đồng hồ tập trung ${m} phút! Hoàn thành nhận +15 Lowf Xu.`);break}case'timer-stopwatch':timerMode='stopwatch';pomodoroTotal=0;pomodoroLeft=0;timerPaused=false;timerOpen=false;renderTimerUI();break;case'avatar-open':openAvatarPicker();break;case'avatar-upload':$('#avatarInput')?.click();break;case'avatar-clear':setUserAvatar('');closeModal();toast('Đã chuyển về ảnh chữ cái tên.');break;case'avatar-preset':{const pr=AVATAR_PRESETS.find(x=>x.id===id);if(pr){setUserAvatar(presetAvatarDataUrl(pr));closeModal();toast(`Đã đổi ảnh đại diện "${pr.name}"!`);}break}case'coin-checkin':claimDailyCoins();break;case'coin-redeem':redeemCoinReward(id);break;case'track-credit':trackCredit(id);break;case'play-video':playVideo(id);break;case'join-plan':await joinPlan(id);break;case'cart':showCart();break;case'cart-add':addToCart(b.dataset.kind||'book',id);break;case'cart-quantity':changeCart(b.dataset.kind,id,Number(b.dataset.delta));break;case'cart-remove':changeCart(b.dataset.kind,id,0);break;case'checkout-pay':if(checkoutRedirect&&safePaymentURL(checkoutRedirect)){b.disabled=true;location.assign(checkoutRedirect)}break;case'view-order':await viewOrder(id);break;case'orders-auth':auth();break;case'orders-refresh':state.orderPolls=0;await loadOrders();if(state.selectedOrderId)await loadOrder(state.selectedOrderId);break;case'orders-page':await loadOrders(state.ordersPage+Number(b.dataset.delta));break;case'about':about();break;case'retry':await bootstrap();break;}}
+async function handleAction(b){const action=b.dataset.action,id=b.dataset.id;if(b.disabled)return;switch(action){case'nav':closeModal();navigate(b.dataset.view);break;case'decor-open':if(!isOwner())break;$('#decorDrawer')?.classList.contains('open')?closeDecorDrawer():openDecorDrawer();break;case'decor-close':closeDecorDrawer();break;case'decor-preset':{if(!isOwner())break;const pr=THEME_PRESETS.find(x=>x.id===id);if(pr)updateDecor({palette:{primary:pr.primary,background:pr.background,surface:pr.surface,text:pr.text},decor:{preset:pr.id}});break}case'decor-season':{if(!isOwner())break;const st=SEASON_THEMES[id];if(st)updateDecor({palette:{...st.palette},decor:{season:st.id,preset:st.id,petals:true,fxLevel:'vivid',stars:'bright',aurora:true}},{rerender:true});break}case'decor-fx':if(!isOwner())break;updateDecor({decor:{fxLevel:id,petals:id!=='off'}});break;case'decor-bg':if(!isOwner())break;updateDecor({decor:{bgPattern:id}});break;case'decor-stars':if(!isOwner())break;updateDecor({decor:{stars:id}});break;case'decor-card':if(!isOwner())break;updateDecor({decor:{cardStyle:id}});break;case'decor-font':if(!isOwner())break;updateDecor({font:id});break;case'decor-reset':if(!isOwner())break;try{localStorage.removeItem(DECOR_KEY)}catch{}applySettings();if(state.view==='dashboard')renderMain();renderDecorDrawer();toast('Đã khôi phục thiết kế mặc định của Lowf.');break;case'decor-publish':if(!isOwner())break;await publishLiveDesign();break;case'paper-tone':setPreference({paperTone:id});applyReaderPrefs();break;case'reader-style-toggle':stylePopOpen=!stylePopOpen;if(stylePopOpen)timerOpen=false;renderTimerUI();renderReaderStylePop();break;case'reader-layout':setPreference({readerLayout:id});applyReaderPrefs();if(state.reader?.type==='chapters'){state.reader.subPage=0;renderChapter(0)}break;case'reader-flip':setPreference({readerFlip:id});applyReaderPrefs();if(state.reader?.ready)triggerPageTurn(1);break;case'reader-font':setPreference({readerFont:id});applyReaderPrefs();break;case'reader-line':setPreference({readerLine:id});applyReaderPrefs();break;case'mobile-menu':openMobileMenu();break;case'mobile-vocab':closeModal();window.LowfReaderTools?.openVocabulary();break;case'theme':theme();break;case'account':openAccount();break;case'auth':auth();break;case'auth-tab':auth(id);break;case'auth-google':await startSocialAuth('google');break;case'toggle-pw':{const wrap=b.closest('.pw-wrap'),inp=wrap&&$('input',wrap);if(inp){const show=inp.type==='password';inp.type=show?'text':'password';b.setAttribute('aria-pressed',String(show));b.setAttribute('aria-label',show?'Ẩn mật khẩu':'Hiện mật khẩu');b.innerHTML=icon(show?'eye-off':'eye');icons();}break}case'auth-resend':await resendAuthOtp();break;case'modal-close':closeModal();break;case'logout':await signOut();break;case'verify-email':await verifyEmail();break;case'filter':state.filter=id;renderMain();break;case'review-cat':state.reviewCat=id;renderMain();break;case'read-article':openArticle(id);break;case'read-from-article':closeModal();await openBook(id);break;case'reset-search':state.query='';state.filter='all';state.sort='featured';$('#search').value='';renderMain();break;case'shelf-prev':case'shelf-next':$('#bookShelf')?.scrollBy({left:(action==='shelf-prev'?-1:1)*350,behavior:matchMedia('(prefers-reduced-motion:reduce)').matches?'instant':'smooth'});break;case'read':await openBook(id);break;case'bookmark':await bookmark(id);break;case'upload-pdf':$('#pdfInput').click();break;case'read-local':await openLocalPDF(id);break;case'export-pdf':await BookMedia.exportPDF(id);break;case'delete-pdf':{const p=state.pdfs.find(x=>x.id===id);if(p)modal('Xóa PDF khỏi thiết bị?',`<p class="auth-subtitle">Xóa ${esc(p.name)} khỏi kệ của trình duyệt này. File gốc trên máy của bạn không bị ảnh hưởng.</p><button class="button button-primary button-block" data-action="delete-pdf-confirm" data-id="${esc(id)}">Xóa khỏi kệ</button>`);break}case'delete-pdf-confirm':await BookMedia.deletePDF(id);closeModal();await loadPDFs();toast('Đã xóa PDF khỏi kệ của thiết bị.');break;case'import-saved':state.user?confirmImport():auth();break;case'import-confirm':if(state.user){const saved=[...new Set([...state.data.saved,...legacySaved()])];await api('/api/user-data',{method:'POST',body:{saved}});state.data.saved=saved;closeModal();renderMain();toast('Đã nhập sách đã lưu vào tài khoản.')}break;case'reader-vocabulary':window.LowfReaderTools?.openVocabulary();break;case'reader-close':closeReader();break;case'prev-page':changePage(-1);break;case'next-page':changePage(1);break;case'retry-pdf':await renderPDF();break;case'font':state.font=Math.min(30,Math.max(16,state.font+Number(b.dataset.delta)));setPreference({font:state.font});applyReaderPrefs();break;case'reader-bookmark':state.reader?.bookId?await bookmark(state.reader.bookId):toast('PDF này đã nằm trong kệ sách trên thiết bị.');break;case'play-track':await playTrack(id);break;case'ambient':if(state.ambient===id)await toggleAudio();else await playAmbient(id);break;case'audio-toggle':await toggleAudio();break;case'audio-stop':stopAudio();break;case'prev-track':await nextTrack(-1);break;case'next-track':await nextTrack(1);break;case'play-first':{const playable=state.tracks.find(t=>t.assetId||safeURL(t.url));if(isAudioPlaying()){toast('Nhạc đang phát. Bạn có thể mở sách để đọc cùng.')}else if(playable)await playTrack(playable.id);else await playAmbient('hanoi_rain');break}case'play-trend':playTrendPlaylist(id);break;case'timer-toggle':timerOpen=!timerOpen;if(timerOpen)stylePopOpen=false;renderReaderStylePop();renderTimerUI();break;case'timer-pause':timerPaused=!timerPaused;renderTimerUI();break;case'timer-reset':if(timerMode==='pomodoro')pomodoroLeft=pomodoroTotal;else state.sessionSeconds=0;timerPaused=false;renderTimerUI();break;case'timer-pomodoro':{const m=Number(id)||25;timerMode='pomodoro';pomodoroTotal=m*60;pomodoroLeft=m*60;timerPaused=false;timerOpen=false;renderTimerUI();toast(`⏱️ Đã hẹn đồng hồ tập trung ${m} phút! Hoàn thành nhận +15 Lowf Xu.`);break}case'timer-stopwatch':timerMode='stopwatch';pomodoroTotal=0;pomodoroLeft=0;timerPaused=false;timerOpen=false;renderTimerUI();break;case'avatar-open':openAvatarPicker();break;case'avatar-upload':$('#avatarInput')?.click();break;case'avatar-clear':setUserAvatar('');closeModal();toast('Đã chuyển về ảnh chữ cái tên.');break;case'avatar-preset':{const pr=AVATAR_PRESETS.find(x=>x.id===id);if(pr){setUserAvatar(presetAvatarDataUrl(pr));closeModal();toast(`Đã đổi ảnh đại diện "${pr.name}"!`);}break}case'coin-checkin':claimDailyCoins();break;case'coin-redeem':redeemCoinReward(id);break;case'track-credit':trackCredit(id);break;case'play-video':playVideo(id);break;case'join-plan':await joinPlan(id);break;case'cart':showCart();break;case'cart-add':addToCart(b.dataset.kind||'book',id);break;case'cart-quantity':changeCart(b.dataset.kind,id,Number(b.dataset.delta));break;case'cart-remove':changeCart(b.dataset.kind,id,0);break;case'checkout-pay':if(checkoutRedirect&&safePaymentURL(checkoutRedirect)){b.disabled=true;location.assign(checkoutRedirect)}break;case'view-order':await viewOrder(id);break;case'orders-auth':auth();break;case'orders-refresh':state.orderPolls=0;await loadOrders();if(state.selectedOrderId)await loadOrder(state.selectedOrderId);break;case'orders-page':await loadOrders(state.ordersPage+Number(b.dataset.delta));break;case'about':about();break;case'retry':await bootstrap();break;}}
 document.addEventListener('click',e=>{const b=e.target.closest('[data-action]');if(!b)return;handleAction(b).catch(error=>toast(error.message||'Chưa thực hiện được thao tác. Hãy thử lại.'))});
 document.addEventListener('submit',async e=>{if(e.target.id==='checkoutForm'){e.preventDefault();submitCheckout(e.target);return}if(e.target.id==='authForm'){e.preventDefault();submitAuth(e.target);return}if(e.target.id!=='chatForm')return;e.preventDefault();if(!state.user){auth();return}if(!state.user.emailVerified){toast('Hãy xác minh email để gửi lời nhắn. Bạn có thể gửi lại email trong trang Cá nhân.');return}const form=e.target,input=$('input',form),text=input.value.trim(),button=$('button',form);if(!text)return;button.disabled=true;try{const result=await api('/api/messages',{method:'POST',body:{text}});if(result.message)state.messages.push(result.message);input.value='';$('#chatMessages').innerHTML=state.messages.map(messageHTML).join('');$('#chatMessages').scrollTop=$('#chatMessages').scrollHeight;icons()}catch(error){toast(error.message)}finally{button.disabled=false}});
 $('#search').addEventListener('input',e=>{clearTimeout(searchTimer);const value=e.target.value;searchTimer=setTimeout(()=>{if(!['library','store'].includes(state.view)){navigate('library');$('#search').value=value;$('#search').focus()}state.query=value;renderMain()},160)});
@@ -762,8 +898,10 @@ audio.addEventListener('timeupdate',()=>{$('#audioTime').textContent=time(audio.
 audio.addEventListener('error',()=>{if(audio.getAttribute('src')){renderPlayer();toast('Không tải được âm thanh. Vui lòng chọn lại bản nhạc hoặc thử sau.')}});
 $('#pdfInput').addEventListener('change',async e=>{const files=[...e.target.files];if(!files.length)return;let count=0;for(const file of files){try{await BookMedia.savePDF(file);count++}catch(error){toast(error.message)}}e.target.value='';navigate('pdf');await loadPDFs();if(count)toast(`Đã thêm ${count} PDF vào kệ trên thiết bị.`)});
 $('#avatarInput')?.addEventListener('change',e=>{const file=e.target.files?.[0];e.target.value='';if(!file)return;if(file.size>5*1024*1024){toast('Ảnh đại diện tối đa 5 MB.');return}const img=new Image(),url=URL.createObjectURL(file);img.onload=()=>{const c=document.createElement('canvas');c.width=192;c.height=192;const ctx=c.getContext('2d'),min=Math.min(img.width,img.height);ctx.drawImage(img,(img.width-min)/2,(img.height-min)/2,min,min,0,0,192,192);URL.revokeObjectURL(url);setUserAvatar(c.toDataURL('image/webp',0.85));closeModal();toast('Đã cập nhật ảnh đại diện mới của bạn!');};img.onerror=()=>{URL.revokeObjectURL(url);toast('Chưa đọc được tệp ảnh này.');};img.src=url;});
-$('#chapterSelect').addEventListener('change',e=>{if(state.reader?.type==='chapters'){const prev=state.reader.chapter,next=Number(e.target.value);state.reader.chapter=next;renderChapter(next>=prev?1:-1)}});
+$('#chapterSelect').addEventListener('change',e=>{if(state.reader?.type==='chapters'){const prev=state.reader.chapter,next=Number(e.target.value);state.reader.chapter=next;state.reader.subPage=0;renderChapter(next>=prev?1:-1)}});
 $('#reader').addEventListener('cancel',e=>{e.preventDefault();closeReader()});
+$('#reader').addEventListener('click',e=>{if(stylePopOpen&&!e.target.closest('.reader-style-wrap')){stylePopOpen=false;renderReaderStylePop()}if(timerOpen&&!e.target.closest('.reader-timer-wrap')){timerOpen=false;renderTimerUI()}});
+let resizeTimer=null;window.addEventListener('resize',()=>{if(state.reader?.type==='chapters'){clearTimeout(resizeTimer);resizeTimer=setTimeout(()=>renderChapter(0),180)}});
 $('#modal').addEventListener('cancel',()=>{$$('iframe',$('#modal')).forEach(f=>f.remove());const video=$('video',$('#modal'));if(video){video.pause();video.removeAttribute('src');video.load()}});
 $('#modal').addEventListener('click',e=>{if(e.target===$('#modal')){const r=e.target.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)closeModal()}});
 document.addEventListener('keydown',e=>{if(e.defaultPrevented||e.shiftKey||e.ctrlKey||e.metaKey||e.altKey)return;if(e.target.closest('input,textarea,select,[contenteditable],[data-reader-panel]')||$('#vocabularyDialog')?.open)return;if(e.key==='/'&&!$('#reader').open&&!$('#modal').open){e.preventDefault();$('#search').focus()}if($('#reader').open&&!$('#modal').open&&window.getSelection()?.isCollapsed!==false){if(e.key==='ArrowRight')changePage(1);else if(e.key==='ArrowLeft')changePage(-1)}});
@@ -773,5 +911,5 @@ setInterval(()=>heartbeat(),15000);setInterval(()=>{if(state.view==='community'&
 window.addEventListener('focus',()=>{if(state.user&&!$('#modal').open)refreshMe().then(()=>{if(state.view==='profile')renderMain()}).catch(()=>{})});
 window.LowfReaderBridge=Object.freeze({getContext:()=>{const r=state.reader,b=r?.bookId?book(r.bookId):null;return {open:$('#reader').open,ready:!!r?.ready,bookId:r?.bookId||(r?.type==='local'?'local:'+r.id:''),chapter:r?.chapter||0,page:r?.page||1,type:r?.type||'',title:r?.title||'',language:b?.language||'vi',user:state.user,text:r?.type==='chapters'?[b?.chapters?.[r.chapter]?.title,...(b?.chapters?.[r.chapter]?.paragraphs||[])].filter(Boolean).join('\n\n'):r?.pdfText||''}},requestAuth:()=>auth(),api,toast});
 window.addEventListener('lowf:speech-state',e=>{const speaking=e.detail?.status==='playing',duck=e.detail?.duckAmbient!==false;if(speaking){if(!duck&&isAudioPlaying()){audio.pause();BookMedia.pause();renderPlayer()}else{const low=Math.max(0.05,state.volume*0.18);audio.volume=low;BookMedia.setVolume(low)}}else{audio.volume=state.volume;BookMedia.setVolume(state.volume)}});
-state.font=Math.min(28,Math.max(15,Number(preferences().font)||19));renderUser();renderPlayer();renderCartCount();bootstrap();
+state.font=Math.min(30,Math.max(16,Number(preferences().font)||20));renderUser();renderPlayer();renderCartCount();bootstrap();
 })();
