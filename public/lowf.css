@@ -650,7 +650,7 @@ body:has(#player:not([hidden])) .workspace{padding-bottom:96px}
 .book-leaf{display:flex;flex-direction:column;padding:34px 46px 26px;min-width:0;position:relative}
 .left-leaf{background:linear-gradient(90deg,transparent 84%,rgba(0,0,0,.055) 100%)}
 .right-leaf{background:linear-gradient(270deg,transparent 84%,rgba(0,0,0,.045) 100%)}
-.book-spine{background:linear-gradient(90deg,rgba(0,0,0,.09),rgba(0,0,0,.02) 45%,rgba(255,255,255,.18) 50%,rgba(0,0,0,.07));pointer-events:none}
+.book-spine{width:22px;min-height:100%;background:linear-gradient(90deg,rgba(0,0,0,.09),rgba(0,0,0,.02) 45%,rgba(255,255,255,.18) 50%,rgba(0,0,0,.07));pointer-events:none}
 .leaf-running{display:flex;justify-content:space-between;gap:12px;font-family:'Be Vietnam Pro',sans-serif;font-size:9.5px;letter-spacing:.7px;text-transform:uppercase;opacity:.52;padding-bottom:14px;margin-bottom:20px;border-bottom:1px solid color-mix(in srgb,currentColor 12%,transparent)}
 .leaf-content{flex:1}
 .leaf-num{font-family:'Be Vietnam Pro',sans-serif;font-size:10px;opacity:.5;text-align:center;padding-top:16px;margin-top:auto;letter-spacing:.8px}
