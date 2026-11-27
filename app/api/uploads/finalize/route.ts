@@ -5,7 +5,15 @@ import { rateLimit } from '@/lib/rate-limit';
 import { assetKindSchema, finalizeAsset } from '@/lib/assets';
 
 export const runtime = 'nodejs';
-const schema = z.object({ url: z.string().url().max(1000), kind: assetKindSchema, originalName: z.string().max(512).optional(), title: z.string().max(512).optional() });
+const schema = z
+  .object({
+    url: z.string().url().max(1000).optional(),
+    pathname: z.string().min(5).max(320).optional(),
+    kind: assetKindSchema,
+    originalName: z.string().max(512).optional(),
+    title: z.string().max(512).optional(),
+  })
+  .refine((d) => Boolean(d.url || d.pathname), { message: 'Thiếu đường dẫn tệp cần xác nhận.' });
 export const POST = route(async (request: Request) => {
   assertSameOrigin(request);
   const user = await requireAdmin();

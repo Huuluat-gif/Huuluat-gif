@@ -5,6 +5,7 @@ import { requireAdmin } from '@/lib/auth/server';
 import { route, json, assertSameOrigin, parseBody } from '@/lib/api';
 import { rateLimit } from '@/lib/rate-limit';
 import { blobCredentials } from '@/lib/blob-config';
+import { isR2Configured, isR2Path, r2DeleteObjects } from '@/lib/r2';
 
 export const dynamic = 'force-dynamic';
 const categoryEnum = z.enum([
@@ -36,6 +37,8 @@ export const POST = route(async (request: Request) => {
   let freedBytes = 0;
   const updatedIds: string[] = [];
 
+  const r2Active = isR2Configured();
+
   // Bulk update sortOrder, normalized category, and published/draft status for intact existing books in one SQL round-trip
   if (body.order.length) {
     const ids = body.order.map((o) => o.id);
@@ -61,10 +64,27 @@ export const POST = route(async (request: Request) => {
       WHERE c.kind = 'books'
         AND c.id = v.id
         AND (COALESCE(c.data->>'pdfAssetId', '') <> '' OR jsonb_array_length(COALESCE(c.data->'chapters', '[]'::jsonb)) > 0)
-      RETURNING c.id
+      RETURNING c.id,
+        COALESCE(c.data->>'coverAssetId', '') AS cover_id,
+        COALESCE(c.data->>'pdfAssetId', '') AS pdf_id
     `;
     updatedCount = rows.length;
-    for (const r of rows) updatedIds.push(String(r.id));
+    if (r2Active) {
+      // Only mark an existing book as already migrated when any referenced cover/pdf asset already lives on R2
+      const r2Rows = await sql`
+        SELECT id::text AS id FROM lowf_assets WHERE pathname LIKE 'r2/%'
+      `;
+      const r2AssetIds = new Set(r2Rows.map((r) => String(r.id)));
+      for (const r of rows) {
+        const covId = String(r.cover_id || '');
+        const pdfId = String(r.pdf_id || '');
+        const covOk = !covId || r2AssetIds.has(covId);
+        const pdfOk = !pdfId || r2AssetIds.has(pdfId);
+        if (covOk && pdfOk) updatedIds.push(String(r.id));
+      }
+    } else {
+      for (const r of rows) updatedIds.push(String(r.id));
+    }
   }
 
   // Optionally archive published/draft books outside the curated keepIds list and reclaim their orphaned Blob storage
@@ -103,14 +123,25 @@ export const POST = route(async (request: Request) => {
         LIMIT 800
       `;
       if (orphans.length) {
-        const creds = blobCredentials();
+        const r2Orphans = orphans.filter((o) => isR2Path(String(o.pathname)));
+        const blobOrphans = orphans.filter((o) => !isR2Path(String(o.pathname)));
         const orphanIds: string[] = [];
-        for (let i = 0; i < orphans.length; i += 100) {
-          const batch = orphans.slice(i, i + 100);
-          await del(batch.map((o) => String(o.pathname)), creds);
-          for (const o of batch) {
+        if (r2Orphans.length && r2Active) {
+          await r2DeleteObjects(r2Orphans.map((o) => String(o.pathname)));
+          for (const o of r2Orphans) {
             orphanIds.push(String(o.id));
             freedBytes += Number(o.byte_size || 0);
+          }
+        }
+        if (blobOrphans.length && !r2Active) {
+          const creds = blobCredentials();
+          for (let i = 0; i < blobOrphans.length; i += 100) {
+            const batch = blobOrphans.slice(i, i + 100);
+            await del(batch.map((o) => String(o.pathname)), creds);
+            for (const o of batch) {
+              orphanIds.push(String(o.id));
+              freedBytes += Number(o.byte_size || 0);
+            }
           }
         }
         if (orphanIds.length) {
@@ -129,5 +160,12 @@ export const POST = route(async (request: Request) => {
     }
   }
 
-  return json({ updatedCount, updatedIds, archivedCount, freedAssets, freedMb: Math.round((freedBytes / 1048576) * 10) / 10 });
+  return json({
+    storageBackend: r2Active ? 'r2' : 'vercel-blob',
+    updatedCount,
+    updatedIds,
+    archivedCount,
+    freedAssets,
+    freedMb: Math.round((freedBytes / 1048576) * 10) / 10,
+  });
 });

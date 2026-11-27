@@ -7,6 +7,7 @@ import { getUser } from './auth/server';
 import { hasMembership } from './membership';
 import { hasPurchasedBook } from './commerce';
 import { blobToken,blobCredentials } from './blob-config';
+import { isR2Path, r2GetObject, r2HeadObject, r2PresignUrl } from './r2';
 
 export const assetKindSchema = z.enum(['image', 'pdf', 'audio', 'video']);
 export type AssetKind = z.infer<typeof assetKindSchema>;
@@ -21,9 +22,10 @@ const uploadNamePattern = /^([0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9
 
 export function assertAssetPath(pathname: string, ownerId: string, kind: AssetKind): void {
   if (!/^[a-zA-Z0-9_-]{1,128}$/.test(ownerId)) throw new HttpError(400, 'Định danh tài khoản không hợp lệ.');
+  const normalized = isR2Path(pathname) ? pathname.slice(3) : pathname;
   const prefix = `lowf/${ownerId}/${kind}/`;
-  if (!pathname.startsWith(prefix)) throw new HttpError(403, 'Đường dẫn tải lên không thuộc tài khoản này.');
-  const basename = pathname.slice(prefix.length);
+  if (!normalized.startsWith(prefix)) throw new HttpError(403, 'Đường dẫn tải lên không thuộc tài khoản này.');
+  const basename = normalized.slice(prefix.length);
   const match = basename.match(uploadNamePattern);
   if (!match || !ASSET_RULES[kind].extensions.includes(match[2].toLowerCase())) {
     throw new HttpError(400, 'Tên tệp tải lên phải gồm mã UUID và phần mở rộng đúng định dạng.');
@@ -68,26 +70,41 @@ export function publicAsset(asset: AssetRow) {
 }
 
 /** Called only after an authenticated admin finalize or SDK-verified Blob callback. */
-export async function finalizeAsset(input: { url: string; kind: AssetKind; ownerId: string; originalName?: string; title?: string }) {
-  const url = validatePrivateBlobURL(input.url);
+export async function finalizeAsset(input: { url?: string; pathname?: string; kind: AssetKind; ownerId: string; originalName?: string; title?: string }) {
   let pathname: string;
-  try { pathname = decodeURIComponent(url.pathname.slice(1)); } catch { throw new HttpError(400, 'Đường dẫn tệp không hợp lệ.'); }
-  assertAssetPath(pathname, input.ownerId, input.kind);
-  // head() talks only to the configured Blob control API. The untrusted URL was validated first.
-  const metadata = await head(pathname, blobCredentials());
-  validatePrivateBlobURL(metadata.url);
-  if (metadata.pathname !== pathname) throw new HttpError(400, 'Tệp tải lên không khớp đường dẫn được cấp.');
+  let type: string;
+  let size: number;
   const rule = ASSET_RULES[input.kind];
-  const type = metadata.contentType.split(';')[0].trim().toLowerCase();
-  if (!rule.types.includes(type) || !Number.isSafeInteger(metadata.size) || metadata.size <= 0 || metadata.size > rule.bytes) {
+
+  if (input.pathname && isR2Path(input.pathname.trim())) {
+    pathname = input.pathname.trim();
+    assertAssetPath(pathname, input.ownerId, input.kind);
+    const meta = await r2HeadObject(pathname);
+    type = meta.contentType;
+    size = meta.size;
+  } else if (input.url) {
+    const url = validatePrivateBlobURL(input.url);
+    try { pathname = decodeURIComponent(url.pathname.slice(1)); } catch { throw new HttpError(400, 'Đường dẫn tệp không hợp lệ.'); }
+    assertAssetPath(pathname, input.ownerId, input.kind);
+    // head() talks only to the configured Blob control API. The untrusted URL was validated first.
+    const metadata = await head(pathname, blobCredentials());
+    validatePrivateBlobURL(metadata.url);
+    if (metadata.pathname !== pathname) throw new HttpError(400, 'Tệp tải lên không khớp đường dẫn được cấp.');
+    type = metadata.contentType.split(';')[0].trim().toLowerCase();
+    size = metadata.size;
+  } else {
+    throw new HttpError(400, 'Thiếu đường dẫn tệp cần xác nhận.');
+  }
+
+  if (!rule.types.includes(type) || !Number.isSafeInteger(size) || size <= 0 || size > rule.bytes) {
     throw new HttpError(400, 'Loại tệp hoặc dung lượng không đúng giới hạn.');
   }
   const originalName = safeOriginalName(input.originalName || input.title) || pathname.split('/').at(-1)!;
   const sql = getSQL();
   const rows = await sql`
     INSERT INTO lowf_assets (id, owner_id, pathname, kind, content_type, byte_size, original_name)
-    VALUES (${randomUUID()}, ${input.ownerId}, ${pathname}, ${input.kind}, ${type}, ${metadata.size}, ${originalName})
-    ON CONFLICT (pathname) DO UPDATE SET pathname = EXCLUDED.pathname
+    VALUES (${randomUUID()}, ${input.ownerId}, ${pathname}, ${input.kind}, ${type}, ${size}, ${originalName})
+    ON CONFLICT (pathname) DO UPDATE SET pathname = EXCLUDED.pathname, byte_size = EXCLUDED.byte_size
     WHERE lowf_assets.owner_id = EXCLUDED.owner_id AND lowf_assets.kind = EXCLUDED.kind
     RETURNING id, owner_id, pathname, kind, content_type, byte_size, original_name
   `;
@@ -124,6 +141,18 @@ export async function authorizeAssetRead(id: string): Promise<AssetRow & { isPub
 /** Stream small public images (book covers) directly so Vercel Edge CDN & browsers cache them for 30 days. */
 export async function streamPublicImageAsset(asset: AssetRow): Promise<Response | null> {
   if (asset.kind !== 'image' || Number(asset.byte_size) > 768 * 1024) return null;
+  if (isR2Path(asset.pathname)) {
+    const res = await r2GetObject(asset.pathname);
+    if (!res || !res.body) return null;
+    return new Response(res.body, {
+      status: 200,
+      headers: {
+        'Content-Type': asset.content_type || 'image/jpeg',
+        'Cache-Control': 'public, max-age=604800, s-maxage=2592000, stale-while-revalidate=86400',
+        'X-Content-Type-Options': 'nosniff',
+      },
+    });
+  }
   const result = await getBlob(asset.pathname, { access: 'private', ...blobCredentials() });
   if (!result || result.statusCode !== 200 || !result.stream) return null;
   return new Response(result.stream, {
@@ -138,6 +167,9 @@ export async function streamPublicImageAsset(asset: AssetRow): Promise<Response 
 
 /** A short-lived, single-path capability avoids routing large files through Functions. */
 export async function signedAssetURL(asset: AssetRow): Promise<string> {
+  if (isR2Path(asset.pathname)) {
+    return r2PresignUrl('GET', asset.pathname, 300);
+  }
   const validUntil = Date.now() + 5 * 60 * 1000;
   const token = await issueSignedToken({ ...blobCredentials(), pathname: asset.pathname, operations: ['get'], validUntil });
   const { presignedUrl } = await presignUrl(token, { operation: 'get', pathname: asset.pathname, access: 'private', validUntil });

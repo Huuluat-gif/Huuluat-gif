@@ -6,6 +6,7 @@ import { requireAdmin } from '@/lib/auth/server';
 import { rateLimit } from '@/lib/rate-limit';
 import { blobCredentials } from '@/lib/blob-config';
 import { ASSET_RULES, assetKindSchema, assertAssetPath, publicAsset, safeOriginalName, type AssetRow } from '@/lib/assets';
+import { isR2Configured, r2PutObject } from '@/lib/r2';
 
 export const runtime = 'nodejs';
 const MAX_DIRECT_BYTES = Math.floor(3.8 * 1024 * 1024);
@@ -39,16 +40,21 @@ export const POST = route(async (request: Request) => {
   const rawName = safeOriginalName(String(form.get('originalName') || file.name || ''));
   const extMatch = rawName.toLowerCase().match(/\.([a-z0-9]+)$/);
   const ext = extMatch && rule.extensions.includes(extMatch[1]) ? extMatch[1] : (MIME_TO_EXT[type] || rule.extensions[0]);
-  const pathname = `lowf/${user.id}/${kind}/${randomUUID()}.${ext}`;
+  const useR2 = isR2Configured();
+  const pathname = `${useR2 ? 'r2/' : ''}lowf/${user.id}/${kind}/${randomUUID()}.${ext}`;
   assertAssetPath(pathname, user.id, kind);
 
   const buffer = Buffer.from(await file.arrayBuffer());
-  await put(pathname, buffer, {
-    access: 'private',
-    contentType: type,
-    addRandomSuffix: false,
-    ...blobCredentials(),
-  });
+  if (useR2) {
+    await r2PutObject(pathname, buffer, type);
+  } else {
+    await put(pathname, buffer, {
+      access: 'private',
+      contentType: type,
+      addRandomSuffix: false,
+      ...blobCredentials(),
+    });
+  }
 
   const originalName = rawName || pathname.split('/').at(-1)!;
   const sql = getSQL();

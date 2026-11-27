@@ -563,6 +563,106 @@ function Dialog({
     </dialog>
   );
 }
+async function uploadLargeAsset(params: {
+  file: File;
+  userId: string;
+  kind: AssetKind;
+  title: string;
+  signal?: AbortSignal;
+  onProgress?: (pct: number) => void;
+}): Promise<string> {
+  const { file, userId, kind, title, signal, onProgress } = params;
+  const fallbackMime: Record<AssetKind, string> = {
+    image: "image/jpeg",
+    pdf: "application/pdf",
+    audio: "audio/mpeg",
+    video: "video/mp4",
+  };
+  const contentType = (file.type || fallbackMime[kind]).split(";")[0].trim().toLowerCase();
+  const presign = await request<{
+    backend: "r2" | "vercel-blob";
+    pathname?: string;
+    uploadUrl?: string;
+    contentType?: string;
+  }>("/api/uploads/presign", {
+    method: "POST",
+    body: JSON.stringify({
+      kind,
+      contentType,
+      byteSize: file.size,
+      originalName: title,
+    }),
+  });
+
+  if (presign.backend === "r2" && presign.uploadUrl && presign.pathname) {
+    if (onProgress) {
+      await new Promise<void>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open("PUT", presign.uploadUrl!, true);
+        xhr.setRequestHeader("Content-Type", presign.contentType || contentType);
+        xhr.upload.onprogress = (ev) => {
+          if (ev.lengthComputable) onProgress(Math.round((ev.loaded / ev.total) * 100));
+        };
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) resolve();
+          else reject(new Error(`Tải tệp lên R2 lỗi (${xhr.status})`));
+        };
+        xhr.onerror = () => reject(new Error("Lỗi kết nối khi tải tệp lên R2."));
+        xhr.onabort = () => reject(new Error("Đã hủy tải tệp."));
+        if (signal) {
+          if (signal.aborted) {
+            xhr.abort();
+            return;
+          }
+          signal.addEventListener("abort", () => xhr.abort(), { once: true });
+        }
+        xhr.send(file);
+      });
+    } else {
+      const putRes = await fetch(presign.uploadUrl, {
+        method: "PUT",
+        headers: { "Content-Type": presign.contentType || contentType },
+        body: file,
+        signal,
+      });
+      if (!putRes.ok) throw new Error(`Tải tệp lên R2 lỗi (${putRes.status})`);
+    }
+    const fin = await request<{ asset: { id: string } }>("/api/uploads/finalize", {
+      method: "POST",
+      body: JSON.stringify({
+        pathname: presign.pathname,
+        kind,
+        originalName: title,
+      }),
+    });
+    return fin.asset.id;
+  }
+
+  const ext =
+    title
+      .split(".")
+      .pop()
+      ?.toLowerCase()
+      .replace(/[^a-z0-9]/g, "") || (kind === "pdf" ? "pdf" : "bin");
+  const blob = await upload(`lowf/${userId}/${kind}/${crypto.randomUUID()}.${ext}`, file, {
+    access: "private",
+    handleUploadUrl: "/api/uploads",
+    clientPayload: JSON.stringify({ kind, title }),
+    contentType: file.type || undefined,
+    multipart: file.size > 10 * 1024 * 1024,
+    abortSignal: signal,
+    onUploadProgress: onProgress ? ({ percentage }) => onProgress(Math.round(percentage)) : undefined,
+  });
+  const fin = await request<{ asset: { id: string } }>("/api/uploads/finalize", {
+    method: "POST",
+    body: JSON.stringify({
+      url: blob.url,
+      kind,
+      originalName: title,
+    }),
+  });
+  return fin.asset.id;
+}
 function UploadField({
   label,
   kind,
@@ -610,38 +710,15 @@ function UploadField({
     const controller = new AbortController();
     abort.current = controller;
     try {
-      const ext =
-        file.name
-          .split(".")
-          .pop()
-          ?.toLowerCase()
-          .replace(/[^a-z0-9]/g, "") || "bin";
-      const blob = await upload(
-        `lowf/${userId}/${kind}/${crypto.randomUUID()}.${ext}`,
+      const assetId = await uploadLargeAsset({
         file,
-        {
-          access: "private",
-          handleUploadUrl: "/api/uploads",
-          clientPayload: JSON.stringify({ kind, title: file.name }),
-          contentType: file.type || undefined,
-          multipart: file.size > 10 * 1024 * 1024,
-          abortSignal: controller.signal,
-          onUploadProgress: ({ percentage }) =>
-            setProgress(Math.round(percentage)),
-        },
-      );
-      const result = await request<{ asset: { id: string } }>(
-        "/api/uploads/finalize",
-        {
-          method: "POST",
-          body: JSON.stringify({
-            url: blob.url,
-            kind,
-            originalName: file.name,
-          }),
-        },
-      );
-      onChange(result.asset.id);
+        userId,
+        kind,
+        title: file.name,
+        signal: controller.signal,
+        onProgress: (pct) => setProgress(pct),
+      });
+      onChange(assetId);
       setProgress(100);
     } catch (e) {
       setError(
@@ -3992,16 +4069,11 @@ function BulkPdfImporter({ userId, onDone }: { userId: string; onDone: (items: R
         continue;
       }
       try {
-        const blob = await upload(`lowf/${userId}/pdf/${crypto.randomUUID()}.pdf`, file, {
-          access: "private",
-          handleUploadUrl: "/api/uploads",
-          clientPayload: JSON.stringify({ kind: "pdf", title: file.name }),
-          contentType: "application/pdf",
-          multipart: file.size > 10 * 1024 * 1024,
-        });
-        const fin = await request<{ asset: { id: string } }>("/api/uploads/finalize", {
-          method: "POST",
-          body: JSON.stringify({ url: blob.url, kind: "pdf", originalName: file.name }),
+        const pdfAssetId = await uploadLargeAsset({
+          file,
+          userId,
+          kind: "pdf",
+          title: file.name,
         });
         const { title, author } = cleanBulkTitle(file.name);
         const bookRes = await request<{ item: RecordItem }>("/api/admin/content/books", {
@@ -4015,7 +4087,7 @@ function BulkPdfImporter({ userId, onDone }: { userId: string; onDone: (items: R
             saleEnabled: false,
             description: `Ấn phẩm PDF tuyển chọn (${(file.size / 1048576).toFixed(1)} MB) — tự động tối ưu đọc vừa 1 trang, 2 trang và lọc nền scan trên Lowf.`,
             cover: makeBulkCoverSvg(title, author, i),
-            pdfAssetId: fin.asset.id,
+            pdfAssetId,
             access,
             status,
             language: "vi",
@@ -4175,8 +4247,9 @@ function LocalLibrarySyncPanel({
     setErrors([]);
 
     const base = sourceUrl.replace(/\/+$/, "");
-    const existingSet = new Set(existingIds);
-    // Re-order existing books, archive trimmed books outside the curated plan & reclaim orphaned Blob storage first
+    let existingSet = new Set(existingIds);
+    let r2Backend = false;
+    // Re-order existing books, archive trimmed books outside the curated plan & reclaim orphaned storage first
     try {
       setProgress("Đang sắp xếp thứ tự sách bộ, dọn dung lượng thừa & ẩn sách ngoài danh sách…");
       const keepIds = activePlan.items.map((it) => it.id);
@@ -4186,14 +4259,25 @@ function LocalLibrarySyncPanel({
         category: it.category,
         status: it.status === "draft" ? "draft" : "published",
       }));
-      const syncRes = await request<{ updatedCount: number; updatedIds?: string[]; archivedCount: number; freedMb?: number }>(
+      const syncRes = await request<{
+        storageBackend?: "r2" | "vercel-blob";
+        updatedCount: number;
+        updatedIds?: string[];
+        archivedCount: number;
+        freedMb?: number;
+      }>(
         "/api/admin/content/books/sync-order",
         {
           method: "POST",
           body: JSON.stringify({ order: orderPayload, archiveOthers: true, keepIds }),
         }
       );
-      for (const uid of syncRes.updatedIds || []) existingSet.add(uid);
+      if (syncRes.storageBackend === "r2") {
+        r2Backend = true;
+        existingSet = new Set(syncRes.updatedIds || []);
+      } else {
+        for (const uid of syncRes.updatedIds || []) existingSet.add(uid);
+      }
     } catch {
       // Non-fatal: continue syncing new items
     }
@@ -4215,13 +4299,14 @@ function LocalLibrarySyncPanel({
     }
 
     let cursor = 0;
-    const workers = Array.from({ length: 3 }, async () => {
+    const workerCount = r2Backend ? 5 : 3;
+    const workers = Array.from({ length: workerCount }, async () => {
       while (!stopRef.current) {
         const idx = cursor++;
         if (idx >= queue.length) break;
         const item = queue[idx];
         try {
-          let coverAssetId = existingCoverMap[item.id] || "";
+          let coverAssetId = r2Backend ? "" : (existingCoverMap[item.id] || "");
           let cover = "";
           if (!coverAssetId && item.hasPhotoCover) {
             const covRes = await fetch(`${base}/api/sync/cover/${encodeURIComponent(item.id)}`);
@@ -4248,18 +4333,12 @@ function LocalLibrarySyncPanel({
               pdfAssetId = await uploadDirectFile(pdfBlob, "pdf", `${item.id}.pdf`);
             } else {
               const pdfFile = new File([pdfBlob], `${item.id}.pdf`, { type: "application/pdf" });
-              const uploaded = await upload(`lowf/${userId}/pdf/${crypto.randomUUID()}.pdf`, pdfFile, {
-                access: "private",
-                handleUploadUrl: "/api/uploads",
-                clientPayload: JSON.stringify({ kind: "pdf", title: `${item.id}.pdf` }),
-                contentType: "application/pdf",
-                multipart: pdfBlob.size > 10 * 1024 * 1024,
+              pdfAssetId = await uploadLargeAsset({
+                file: pdfFile,
+                userId,
+                kind: "pdf",
+                title: `${item.id}.pdf`,
               });
-              const fin = await request<{ asset: { id: string } }>("/api/uploads/finalize", {
-                method: "POST",
-                body: JSON.stringify({ url: uploaded.url, kind: "pdf", originalName: `${item.id}.pdf` }),
-              });
-              pdfAssetId = fin.asset.id;
             }
             blobBytes += pdfBlob.size;
           } else {
