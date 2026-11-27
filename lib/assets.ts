@@ -119,25 +119,65 @@ export async function finalizeAsset(input: { url?: string; pathname?: string; ki
   return publicAsset(rows[0] as AssetRow);
 }
 
+let assetIndexesEnsured: Promise<void> | null = null;
+function ensureAssetRefIndexes(): Promise<void> {
+  if (!assetIndexesEnsured) {
+    assetIndexesEnsured = (async () => {
+      try {
+        const sql = getSQL();
+        await Promise.all([
+          sql`CREATE INDEX IF NOT EXISTS idx_lowf_content_pub_cover ON lowf_content ((data->>'coverAssetId')) WHERE status = 'published'`,
+          sql`CREATE INDEX IF NOT EXISTS idx_lowf_content_pub_pdf ON lowf_content ((data->>'pdfAssetId')) WHERE status = 'published'`,
+          sql`CREATE INDEX IF NOT EXISTS idx_lowf_content_pub_asset ON lowf_content ((data->>'assetId')) WHERE status = 'published'`,
+        ]);
+      } catch {
+        // Non-fatal if DB user lacks DDL privilege; query still runs cleanly.
+      }
+    })();
+  }
+  return assetIndexesEnsured;
+}
+
+const publicImageCache = new Map<string, { asset: AssetRow & { isPublic: true }; expiresAt: number }>();
+
 export async function authorizeAssetRead(id: string): Promise<AssetRow & { isPublic?: boolean }> {
   if (!uuidPattern.test(id)) throw new HttpError(404, 'Không tìm thấy tệp.');
   id = id.toLowerCase();
+  const cached = publicImageCache.get(id);
+  if (cached && cached.expiresAt > Date.now()) return cached.asset;
+
+  await ensureAssetRefIndexes();
   const sql = getSQL();
   const rows = await sql`SELECT id, owner_id, pathname, kind, content_type, byte_size, original_name FROM lowf_assets WHERE id = ${id}::uuid LIMIT 1`;
   const asset = rows[0] as AssetRow | undefined;
   if (!asset) throw new HttpError(404, 'Không tìm thấy tệp.');
+
+  const cachePublicImage = (row: AssetRow) => {
+    const out = { ...row, isPublic: true as const };
+    if (row.kind === 'image') {
+      if (publicImageCache.size >= 1000) publicImageCache.clear();
+      publicImageCache.set(id, { asset: out, expiresAt: Date.now() + 5 * 60 * 1000 });
+    }
+    return out;
+  };
+
   if (asset.kind === 'image') {
-    const designs = await sql`SELECT 1 FROM lowf_design_versions WHERE status = 'published' AND settings->'hero'->>'imageAssetId' = ${id} LIMIT 1`;
-    if (designs.length) return { ...asset, isPublic: true };
+    const [coverRefs, designs] = await Promise.all([
+      sql`SELECT 1 FROM lowf_content WHERE status = 'published' AND data->>'coverAssetId' = ${id} LIMIT 1`,
+      sql`SELECT 1 FROM lowf_design_versions WHERE status = 'published' AND (settings->'hero'->>'imageAssetId' = ${id} OR settings->'brand'->>'logoAssetId' = ${id} OR settings->'brand'->>'faviconAssetId' = ${id} OR settings->'decor'->>'bgImageAssetId' = ${id}) LIMIT 1`,
+    ]);
+    if (coverRefs.length || designs.length) return cachePublicImage(asset);
+    const user = await getUser();
+    if (user && (user.isAdmin || user.id === asset.owner_id)) return asset;
+    throw new HttpError(user ? 403 : 401, user ? 'Gói hiện tại chưa có quyền truy cập tệp này.' : 'Đăng nhập để đọc nội dung này.');
   }
-  const references = await sql`
-    SELECT id,kind,data->>'access' AS access, data->>'coverAssetId' AS cover_id
-    FROM lowf_content
-    WHERE status = 'published'
-      AND (data->>'coverAssetId' = ${id} OR data->>'pdfAssetId' = ${id} OR data->>'assetId' = ${id})
-    LIMIT 100
-  `;
-  if (references.some(row => (asset.kind === 'image' && row.cover_id === id) || row.access === 'free' || row.access == null)) return { ...asset, isPublic: true };
+
+  const references =
+    asset.kind === 'pdf'
+      ? await sql`SELECT id, kind, data->>'access' AS access FROM lowf_content WHERE status = 'published' AND data->>'pdfAssetId' = ${id} LIMIT 20`
+      : await sql`SELECT id, kind, data->>'access' AS access FROM lowf_content WHERE status = 'published' AND data->>'assetId' = ${id} LIMIT 20`;
+
+  if (references.some(row => row.access === 'free' || row.access == null)) return { ...asset, isPublic: true };
   const user = await getUser();
   if (user && (user.isAdmin || user.id === asset.owner_id)) return asset;
   if (user && references.length > 0 && await hasMembership(user.id)) return asset;
