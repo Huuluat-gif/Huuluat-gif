@@ -6,7 +6,6 @@ import { publicItem } from '@/lib/content';
 import { defaultDesign } from '@/lib/validation';
 import { getCommerceStatus,getPurchasedBookIds } from '@/lib/commerce';
 export const dynamic='force-dynamic';
-let curatedReady:Promise<void>|null=null;
 export const GET=route(async(request)=>{
  const sql=getSQL();
  const user=await getUser();

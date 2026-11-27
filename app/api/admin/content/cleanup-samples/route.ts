@@ -24,11 +24,13 @@ const payloadSchema = z
   })
   .optional();
 
+type CleanupBody = { includeShortText?: boolean; minChars?: number };
+
 export const POST = route(async (request) => {
   assertSameOrigin(request);
   const user = await requireAdmin();
   await rateLimit(`admin:${user.id}`, 30, 60);
-  const body = (await parseBody(request, payloadSchema).catch(() => ({}))) || {};
+  const body: CleanupBody = (await parseBody(request, payloadSchema).catch(() => ({} as CleanupBody))) ?? {};
   const includeShortText = body.includeShortText !== false;
   const minChars = body.minChars ?? 30000; // ~20 paperback pages (~1,500 chars/page)
   const sql = getSQL();
