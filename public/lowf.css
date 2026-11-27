@@ -1456,6 +1456,10 @@ body.is-tab-hidden .petals-layer span,body.is-tab-hidden .bg-3d-stage span,body.
     border:1px solid color-mix(in srgb,var(--season-accent) 34%,var(--line));
     box-shadow:0 10px 24px -14px rgba(16,28,20,.18);
   }
+  [data-theme=dark] .mobile-season-card{
+    background:linear-gradient(135deg,color-mix(in srgb,var(--green) 24%,#19261f),color-mix(in srgb,var(--season-accent) 16%,#16211c));
+    border-color:color-mix(in srgb,var(--green) 36%,var(--line));
+  }
   .mobile-season-art{width:58px;height:74px;flex-shrink:0;display:grid;place-items:center}
   .mobile-season-art .lm3d-svg{width:58px;height:74px;display:block}
   .mobile-season-info{min-width:0;flex:1}
