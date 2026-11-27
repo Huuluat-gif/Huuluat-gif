@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { get as getBlob, head, issueSignedToken, presignUrl } from '@vercel/blob';
+import { head } from '@vercel/blob';
 import { z } from 'zod';
 import { getSQL } from './db';
 import { HttpError } from './api';
@@ -7,7 +7,8 @@ import { getUser } from './auth/server';
 import { hasMembership } from './membership';
 import { hasPurchasedBook } from './commerce';
 import { blobToken,blobCredentials } from './blob-config';
-import { isR2Path, r2GetObject, r2HeadObject, r2PresignUrl } from './r2';
+import { isR2Path, r2HeadObject } from './r2';
+import { storageSignedGetUrl, storageStream } from './storage';
 
 export const assetKindSchema = z.enum(['image', 'pdf', 'audio', 'video']);
 export type AssetKind = z.infer<typeof assetKindSchema>;
@@ -19,10 +20,16 @@ export const ASSET_RULES: Record<AssetKind, { bytes: number; types: string[]; ex
 };
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const uploadNamePattern = /^([0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})\.([a-z0-9]+)$/i;
+const canonicalR2Pattern = /^(books\/(?:pdf|epub)|covers\/(?:original|card|thumb)|assets)\/[a-zA-Z0-9._-]{1,120}\.([a-z0-9]+)$/i;
 
 export function assertAssetPath(pathname: string, ownerId: string, kind: AssetKind): void {
   if (!/^[a-zA-Z0-9_-]{1,128}$/.test(ownerId)) throw new HttpError(400, 'Định danh tài khoản không hợp lệ.');
-  const normalized = isR2Path(pathname) ? pathname.slice(3) : pathname;
+  if (pathname.includes('..') || pathname.startsWith('/')) throw new HttpError(400, 'Đường dẫn tệp không hợp lệ.');
+  const canonicalMatch = pathname.match(canonicalR2Pattern);
+  if (canonicalMatch && ASSET_RULES[kind].extensions.includes(canonicalMatch[2].toLowerCase())) {
+    return;
+  }
+  const normalized = pathname.startsWith('r2/') ? pathname.slice(3) : pathname;
   const prefix = `lowf/${ownerId}/${kind}/`;
   if (!normalized.startsWith(prefix)) throw new HttpError(403, 'Đường dẫn tải lên không thuộc tài khoản này.');
   const basename = normalized.slice(prefix.length);
@@ -138,24 +145,12 @@ export async function authorizeAssetRead(id: string): Promise<AssetRow & { isPub
   throw new HttpError(user ? 403 : 401, user ? 'Gói hiện tại chưa có quyền truy cập tệp này.' : 'Đăng nhập để đọc nội dung này.');
 }
 
-/** Stream small public images (book covers) directly so Vercel Edge CDN & browsers cache them for 30 days. */
+/** Stream small public images (book covers) directly so Cloudflare/Edge CDN & browsers cache them for 30 days. */
 export async function streamPublicImageAsset(asset: AssetRow): Promise<Response | null> {
   if (asset.kind !== 'image' || Number(asset.byte_size) > 768 * 1024) return null;
-  if (isR2Path(asset.pathname)) {
-    const res = await r2GetObject(asset.pathname);
-    if (!res || !res.body) return null;
-    return new Response(res.body, {
-      status: 200,
-      headers: {
-        'Content-Type': asset.content_type || 'image/jpeg',
-        'Cache-Control': 'public, max-age=604800, s-maxage=2592000, stale-while-revalidate=86400',
-        'X-Content-Type-Options': 'nosniff',
-      },
-    });
-  }
-  const result = await getBlob(asset.pathname, { access: 'private', ...blobCredentials() });
-  if (!result || result.statusCode !== 200 || !result.stream) return null;
-  return new Response(result.stream, {
+  const result = await storageStream(asset.pathname);
+  if (!result || !result.body) return null;
+  return new Response(result.body, {
     status: 200,
     headers: {
       'Content-Type': asset.content_type || 'image/jpeg',
@@ -165,13 +160,7 @@ export async function streamPublicImageAsset(asset: AssetRow): Promise<Response 
   });
 }
 
-/** A short-lived, single-path capability avoids routing large files through Functions. */
+/** A short-lived, single-path capability avoids routing large files through Functions/Workers. */
 export async function signedAssetURL(asset: AssetRow): Promise<string> {
-  if (isR2Path(asset.pathname)) {
-    return r2PresignUrl('GET', asset.pathname, 300);
-  }
-  const validUntil = Date.now() + 5 * 60 * 1000;
-  const token = await issueSignedToken({ ...blobCredentials(), pathname: asset.pathname, operations: ['get'], validUntil });
-  const { presignedUrl } = await presignUrl(token, { operation: 'get', pathname: asset.pathname, access: 'private', validUntil });
-  return presignedUrl;
+  return storageSignedGetUrl(asset.pathname, 300);
 }

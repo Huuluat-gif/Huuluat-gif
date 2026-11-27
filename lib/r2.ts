@@ -1,5 +1,6 @@
 import { createHash, createHmac } from 'node:crypto';
 import { HttpError } from './api';
+import { isIsolatedPreviewEnv } from './env';
 
 export interface R2Config {
   accountId: string;
@@ -8,13 +9,21 @@ export interface R2Config {
   bucket: string;
 }
 
+export interface R2ObjectHead {
+  size: number;
+  contentType: string;
+  etag?: string;
+  lastModified?: string;
+  acceptRanges?: string;
+}
+
 export function getR2Config(): R2Config | null {
   const accountId = (process.env.R2_ACCOUNT_ID || '').trim();
   const accessKeyId = (process.env.R2_ACCESS_KEY_ID || '').trim();
   const secretAccessKey = (process.env.R2_SECRET_ACCESS_KEY || '').trim();
   const bucket = (
-    process.env.VERCEL_ENV === 'preview'
-      ? (process.env.R2_PREVIEW_BUCKET || process.env.R2_BUCKET || '')
+    isIsolatedPreviewEnv()
+      ? (process.env.R2_STAGING_BUCKET || process.env.R2_PREVIEW_BUCKET || process.env.R2_BUCKET || '')
       : (process.env.R2_BUCKET || '')
   ).trim();
   if (!accountId || !accessKeyId || !secretAccessKey || !bucket) return null;
@@ -26,7 +35,12 @@ export function isR2Configured(): boolean {
 }
 
 export function isR2Path(pathname: string): boolean {
-  return pathname.startsWith('r2/');
+  return (
+    pathname.startsWith('r2/') ||
+    pathname.startsWith('books/') ||
+    pathname.startsWith('covers/') ||
+    pathname.startsWith('assets/')
+  );
 }
 
 function requireR2(): R2Config {
@@ -44,7 +58,7 @@ function encodeKeyPath(bucket: string, key: string): string {
   return `/${encodeRFC3986(bucket)}/${cleanKey.split('/').map(encodeRFC3986).join('/')}`;
 }
 
-function sha256Hex(data: string | Uint8Array): string {
+export function sha256Hex(data: string | Uint8Array): string {
   return createHash('sha256').update(data).digest('hex');
 }
 
@@ -64,72 +78,110 @@ function amzTimestamps(now = new Date()): { amzDate: string; dateStamp: string }
   return { amzDate: iso, dateStamp: iso.slice(0, 8) };
 }
 
+function isRetryableStatus(status: number): boolean {
+  return status === 429 || status === 500 || status === 502 || status === 503 || status === 504;
+}
+
+async function sleep(ms: number): Promise<void> {
+  await new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 async function r2SignedFetch(
-  method: 'GET' | 'HEAD' | 'PUT' | 'DELETE',
+  method: 'GET' | 'HEAD' | 'PUT' | 'DELETE' | 'POST',
   key: string,
-  options?: { body?: Buffer; contentType?: string }
+  options?: {
+    body?: Buffer | Uint8Array;
+    contentType?: string;
+    range?: string;
+    cacheControl?: string;
+    query?: Record<string, string>;
+    retries?: number;
+  }
 ): Promise<Response> {
   const cfg = requireR2();
   const host = `${cfg.accountId}.r2.cloudflarestorage.com`;
   const canonicalUri = encodeKeyPath(cfg.bucket, key);
-  const { amzDate, dateStamp } = amzTimestamps();
-  const body = options?.body;
-  const payloadHash = sha256Hex(body ?? '');
+  const queryEntries = Object.entries(options?.query || {}).sort((a, b) => a[0].localeCompare(b[0]));
+  const canonicalQuery = queryEntries
+    .map(([k, v]) => `${encodeRFC3986(k)}=${encodeRFC3986(v)}`)
+    .join('&');
+  const maxRetries = Math.max(0, Math.min(4, options?.retries ?? 2));
 
-  const headersToSign: Record<string, string> = {
-    host,
-    'x-amz-content-sha256': payloadHash,
-    'x-amz-date': amzDate,
-  };
-  if (options?.contentType) {
-    headersToSign['content-type'] = options.contentType;
+  let lastError: unknown;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const { amzDate, dateStamp } = amzTimestamps();
+      const body = options?.body;
+      const payloadHash = sha256Hex(body ?? '');
+
+      const headersToSign: Record<string, string> = {
+        host,
+        'x-amz-content-sha256': payloadHash,
+        'x-amz-date': amzDate,
+      };
+      if (options?.contentType) headersToSign['content-type'] = options.contentType;
+      if (options?.cacheControl) headersToSign['cache-control'] = options.cacheControl;
+      if (options?.range) headersToSign['range'] = options.range;
+
+      const sortedNames = Object.keys(headersToSign).sort();
+      const canonicalHeaders = sortedNames.map((k) => `${k}:${headersToSign[k]}\n`).join('');
+      const signedHeaders = sortedNames.join(';');
+
+      const canonicalRequest = [
+        method,
+        canonicalUri,
+        canonicalQuery,
+        canonicalHeaders,
+        signedHeaders,
+        payloadHash,
+      ].join('\n');
+
+      const scope = `${dateStamp}/auto/s3/aws4_request`;
+      const stringToSign = [
+        'AWS4-HMAC-SHA256',
+        amzDate,
+        scope,
+        sha256Hex(canonicalRequest),
+      ].join('\n');
+
+      const signature = createHmac('sha256', signingKey(cfg.secretAccessKey, dateStamp))
+        .update(stringToSign)
+        .digest('hex');
+
+      const reqHeaders: Record<string, string> = {
+        'x-amz-content-sha256': payloadHash,
+        'x-amz-date': amzDate,
+        Authorization: `AWS4-HMAC-SHA256 Credential=${cfg.accessKeyId}/${scope}, SignedHeaders=${signedHeaders}, Signature=${signature}`,
+      };
+      if (options?.contentType) reqHeaders['Content-Type'] = options.contentType;
+      if (options?.cacheControl) reqHeaders['Cache-Control'] = options.cacheControl;
+      if (options?.range) reqHeaders['Range'] = options.range;
+
+      const fullUrl = `https://${host}${canonicalUri}${canonicalQuery ? `?${canonicalQuery}` : ''}`;
+      const res = await fetch(fullUrl, {
+        method,
+        headers: reqHeaders,
+        body: body ? new Uint8Array(body) : undefined,
+        cache: 'no-store',
+      });
+      if (!isRetryableStatus(res.status) || attempt === maxRetries) {
+        return res;
+      }
+      await sleep(250 * Math.pow(2, attempt));
+    } catch (err) {
+      lastError = err;
+      if (attempt === maxRetries) throw err;
+      await sleep(250 * Math.pow(2, attempt));
+    }
   }
-  const sortedNames = Object.keys(headersToSign).sort();
-  const canonicalHeaders = sortedNames.map((k) => `${k}:${headersToSign[k]}\n`).join('');
-  const signedHeaders = sortedNames.join(';');
-
-  const canonicalRequest = [
-    method,
-    canonicalUri,
-    '',
-    canonicalHeaders,
-    signedHeaders,
-    payloadHash,
-  ].join('\n');
-
-  const scope = `${dateStamp}/auto/s3/aws4_request`;
-  const stringToSign = [
-    'AWS4-HMAC-SHA256',
-    amzDate,
-    scope,
-    sha256Hex(canonicalRequest),
-  ].join('\n');
-
-  const signature = createHmac('sha256', signingKey(cfg.secretAccessKey, dateStamp))
-    .update(stringToSign)
-    .digest('hex');
-
-  const reqHeaders: Record<string, string> = {
-    'x-amz-content-sha256': payloadHash,
-    'x-amz-date': amzDate,
-    Authorization: `AWS4-HMAC-SHA256 Credential=${cfg.accessKeyId}/${scope}, SignedHeaders=${signedHeaders}, Signature=${signature}`,
-  };
-  if (options?.contentType) {
-    reqHeaders['Content-Type'] = options.contentType;
-  }
-
-  return fetch(`https://${host}${canonicalUri}`, {
-    method,
-    headers: reqHeaders,
-    body: body ? new Uint8Array(body) : undefined,
-    cache: 'no-store',
-  });
+  throw lastError instanceof Error ? lastError : new HttpError(502, 'Không thể kết nối tới Cloudflare R2.');
 }
 
 export function r2PresignUrl(
   method: 'GET' | 'PUT',
   key: string,
-  expiresSeconds = 300
+  expiresSeconds = 300,
+  extraQuery?: Record<string, string>
 ): string {
   const cfg = requireR2();
   const host = `${cfg.accountId}.r2.cloudflarestorage.com`;
@@ -144,6 +196,7 @@ export function r2PresignUrl(
     ['X-Amz-Date', amzDate],
     ['X-Amz-Expires', String(expires)],
     ['X-Amz-SignedHeaders', 'host'],
+    ...Object.entries(extraQuery || {}),
   ];
   queryParams.sort((a, b) => a[0].localeCompare(b[0]));
   const canonicalQuery = queryParams
@@ -173,14 +226,26 @@ export function r2PresignUrl(
   return `https://${host}${canonicalUri}?${canonicalQuery}&X-Amz-Signature=${signature}`;
 }
 
-export async function r2PutObject(key: string, body: Buffer, contentType: string): Promise<void> {
-  const res = await r2SignedFetch('PUT', key, { body, contentType });
+export async function r2PutObject(
+  key: string,
+  body: Buffer | Uint8Array,
+  contentType: string,
+  options?: { cacheControl?: string }
+): Promise<{ sha256: string; etag?: string; size: number }> {
+  const sha256 = sha256Hex(body);
+  const res = await r2SignedFetch('PUT', key, {
+    body,
+    contentType,
+    cacheControl: options?.cacheControl,
+  });
   if (!res.ok) {
     throw new HttpError(502, `Không thể lưu tệp vào Cloudflare R2 (HTTP ${res.status}).`);
   }
+  const etag = res.headers.get('etag')?.replace(/"/g, '') || undefined;
+  return { sha256, etag, size: body.byteLength };
 }
 
-export async function r2HeadObject(key: string): Promise<{ size: number; contentType: string }> {
+export async function r2HeadObject(key: string): Promise<R2ObjectHead> {
   const res = await r2SignedFetch('HEAD', key);
   if (res.status === 404) {
     throw new HttpError(404, 'Tệp chưa tồn tại trên Cloudflare R2.');
@@ -193,12 +258,23 @@ export async function r2HeadObject(key: string): Promise<{ size: number; content
     .split(';')[0]
     .trim()
     .toLowerCase();
-  return { size, contentType };
+  return {
+    size,
+    contentType,
+    etag: res.headers.get('etag')?.replace(/"/g, '') || undefined,
+    lastModified: res.headers.get('last-modified') || undefined,
+    acceptRanges: res.headers.get('accept-ranges') || 'bytes',
+  };
 }
 
-export async function r2GetObject(key: string): Promise<Response | null> {
-  const res = await r2SignedFetch('GET', key);
-  if (!res.ok || !res.body) return null;
+export async function r2Exists(key: string): Promise<boolean> {
+  const res = await r2SignedFetch('HEAD', key, { retries: 1 });
+  return res.ok;
+}
+
+export async function r2GetObject(key: string, options?: { range?: string }): Promise<Response | null> {
+  const res = await r2SignedFetch('GET', key, { range: options?.range });
+  if ((res.status !== 200 && res.status !== 206) || !res.body) return null;
   return res;
 }
 

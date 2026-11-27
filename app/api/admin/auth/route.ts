@@ -1,6 +1,7 @@
 import { requireAdmin, ensureProfileAvatarColumn } from '@/lib/auth/server';
 import { getSQL } from '@/lib/db';
 import { json, route } from '@/lib/api';
+import { getAppEnv, isIsolatedPreviewEnv } from '@/lib/env';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,7 +10,7 @@ export const GET = route(async () => {
   await ensureProfileAvatarColumn();
   const sql = getSQL();
   const baseUrl = process.env.NEON_AUTH_BASE_URL || '';
-  const cookieSecret = process.env.VERCEL_ENV === 'preview'
+  const cookieSecret = isIsolatedPreviewEnv()
     ? process.env.LOWF_PREVIEW_AUTH_COOKIE_SECRET
     : process.env.NEON_AUTH_COOKIE_SECRET;
   const [countRows, recentRows] = await Promise.all([
@@ -24,7 +25,7 @@ export const GET = route(async () => {
       authHost,
       ownerEmail: admin.email,
       sessionTtlSeconds: 300,
-      environment: process.env.VERCEL_ENV || 'production',
+      environment: getAppEnv(),
       methods: ['Google OAuth 1 chạm', 'Mã Email 6 số (OTP)', 'Email + Mật khẩu'],
     },
     stats: {

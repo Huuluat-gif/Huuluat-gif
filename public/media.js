@@ -652,7 +652,11 @@
         ...docOpts, isEvalSupported: false,
         cMapUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/',
         standardFontDataUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/standard_fonts/',
-        cMapPacked: true, disableAutoFetch: true, disableStream: true
+        cMapPacked: true,
+        disableAutoFetch: true,
+        disableStream: false,
+        disableRange: false,
+        rangeChunkSize: 262144
       });
       return cache.task.promise;
     })();

@@ -57,7 +57,7 @@ import { PaymentSettingsPanel, OrdersPanel } from "./commerce";
 type Tab = "overview" | "books" | "tracks" | "videos" | "design" | "plans" | "payments" | "orders" | "auth";
 type Kind = "books" | "tracks" | "videos" | "plans";
 type AssetKind = "image" | "pdf" | "audio" | "video";
-type ItemStatus = "draft" | "published" | "archived";
+type ItemStatus = "draft" | "processing" | "needs_review" | "ready" | "published" | "archived" | "failed";
 type RecordItem = {
   id: string;
   title?: string;
@@ -86,6 +86,13 @@ type RecordItem = {
   language?: string;
   sourceUrl?: string;
   licenseLabel?: string;
+  isbn?: string;
+  publisher?: string;
+  publishedYear?: number;
+  translator?: string;
+  copyrightStatus?: "public_domain" | "licensed" | "owner_authorized" | "needs_review";
+  coverSource?: string;
+  metadataVerified?: boolean;
   sourceKind?: "upload" | "youtube";
   youtubeUrl?: string;
   youtubeId?: string;
@@ -487,7 +494,7 @@ function Field({
   );
 }
 function StateBadge({ item }: { item: RecordItem }) {
-  const state =
+  const state: ItemStatus =
     item.status === "archived"
       ? "archived"
       : item.enabled !== undefined
@@ -495,16 +502,20 @@ function StateBadge({ item }: { item: RecordItem }) {
           ? "published"
           : "draft"
         : item.status || "draft";
+  const badgeMap: Record<ItemStatus, { cls: string; text: string }> = {
+    published: { cls: styles.greenBadge, text: "Đang hiển thị" },
+    ready: { cls: styles.greenBadge, text: "Sẵn sàng duyệt" },
+    needs_review: { cls: styles.goldBadge, text: "Cần rà soát" },
+    processing: { cls: styles.goldBadge, text: "Đang xử lý" },
+    draft: { cls: styles.goldBadge, text: "Bản nháp" },
+    failed: { cls: styles.grayBadge, text: "Lỗi xử lý" },
+    archived: { cls: styles.grayBadge, text: "Đã lưu trữ" },
+  };
+  const info = badgeMap[state] || badgeMap.draft;
   return (
-    <span
-      className={`${styles.badge} ${state === "published" ? styles.greenBadge : state === "archived" ? styles.grayBadge : styles.goldBadge}`}
-    >
+    <span className={`${styles.badge} ${info.cls}`}>
       <span />
-      {state === "published"
-        ? "Đang hiển thị"
-        : state === "archived"
-          ? "Đã lưu trữ"
-          : "Bản nháp"}
+      {info.text}
     </span>
   );
 }
@@ -1051,7 +1062,10 @@ export default function AdminStudio({environment='production'}:{environment?:'pr
     // Enter advances the guided form; publication always uses an explicit final action.
     if (editorTab !== "publish" && submitter?.value !== "draft") { nextEditorStep(); return; }
     const action = submitter?.value;
-    const item: RecordItem = action === "draft" || action === "published" || action === "archived" ? { ...editor.item, status: action } : editor.item;
+    const explicitStatuses: ItemStatus[] = ["draft", "processing", "needs_review", "ready", "published", "archived", "failed"];
+    const item: RecordItem = explicitStatuses.includes(action as ItemStatus)
+      ? { ...editor.item, status: action as ItemStatus }
+      : editor.item;
     if (
       !(kind === "plans" ? item.name : item.title)?.trim() ||
       (kind === "books" && !item.author?.trim())
@@ -1108,6 +1122,12 @@ export default function AdminStudio({environment='production'}:{environment?:'pr
               language: item.language || "vi",
               sourceUrl: item.sourceUrl || "",
               licenseLabel: item.licenseLabel || "",
+              ...(item.isbn?.trim() ? { isbn: item.isbn.trim() } : {}),
+              ...(item.publisher?.trim() ? { publisher: item.publisher.trim() } : {}),
+              ...(item.publishedYear ? { publishedYear: Number(item.publishedYear) } : {}),
+              ...(item.translator?.trim() ? { translator: item.translator.trim() } : {}),
+              ...(item.copyrightStatus ? { copyrightStatus: item.copyrightStatus } : {}),
+              ...(item.coverSource?.trim() ? { coverSource: item.coverSource.trim() } : {}),
             }
           : kind === "plans"
             ? {
@@ -1478,8 +1498,8 @@ export default function AdminStudio({environment='production'}:{environment?:'pr
         </header>
         <main className={styles.main}>
           <div className={styles.environmentNotice}>
-            <div><strong>{environment==='preview'?'Preview · Môi trường thử nghiệm':'Website chính · Production'}</strong><span>{environment==='preview'?'Dữ liệu và tệp thử nghiệm được lưu riêng. Xuất bản tại đây chỉ thay đổi bản Preview.':'Lưu nháp để xem riêng; chỉ bấm Xuất bản khi muốn khách thấy thay đổi.'}</span></div>
-            <a href={environment==='preview'?'https://lowf-library.vercel.app/admin':'https://lowf-library-preview.vercel.app/admin'} target="_blank" rel="noopener noreferrer">{environment==='preview'?'Mở quản trị website chính':'Mở môi trường Preview'} <ArrowUpRight size={15}/></a>
+            <div><strong>{environment==='preview'?'Staging / Preview · Môi trường thử nghiệm':'Website chính · Production (lowflibray.com)'}</strong><span>{environment==='preview'?'Dữ liệu và kho R2 thử nghiệm tách riêng hoàn toàn. Xuất bản tại đây không ảnh hưởng website chính thức.':'Lưu nháp hoặc gắn Cần rà soát để xem riêng; chỉ bấm Xuất bản khi bạn duyệt cho độc giả xem.'}</span></div>
+            <a href={environment==='preview'?'https://www.lowflibray.com/admin':'/admin?tab=overview'} target={environment==='preview'?'_blank':undefined} rel={environment==='preview'?'noopener noreferrer':undefined}>{environment==='preview'?'Mở quản trị website chính':'Trung tâm vận hành Lowf'} <ArrowUpRight size={15}/></a>
           </div>
           {loadError && (
             <div className={styles.errorBanner} role="alert">
@@ -1540,11 +1560,12 @@ export default function AdminStudio({environment='production'}:{environment?:'pr
                       onClick={() => nav("design")}
                       className={styles.kpiCard}
                     >
-                      <small>Giao diện &amp; 4 Mùa</small>
-                      <strong>6</strong>
-                      <span>Chủ đề mùa &amp; Trang trí live</span>
+                      <small>Giao diện &amp; 12 Mùa</small>
+                      <strong>12</strong>
+                      <span>Chủ đề mùa &amp; Biểu tượng 3D</span>
                     </button>
                   </div>
+                  <OperationsHealthPanel onNavigateBooks={() => nav("books")} />
                   <section
                     className={styles.panel}
                     aria-label="Thao tác nhanh cho chủ website"
@@ -1845,6 +1866,8 @@ export default function AdminStudio({environment='production'}:{environment?:'pr
                       {[
                         ["all", "Tất cả"],
                         ["published", "Đang hiển thị"],
+                        ["needs_review", "Cần rà soát"],
+                        ["ready", "Sẵn sàng"],
                         ["draft", "Bản nháp"],
                         ["archived", "Lưu trữ"],
                       ].map(([id, label]) => (
@@ -3285,6 +3308,33 @@ export default function AdminStudio({environment='production'}:{environment?:'pr
                           <Field label="Giấy phép / Quyền phân phối">
                             <input maxLength={300} value={editor.item.licenseLabel || ""} onChange={e => patchItem({ licenseLabel: e.target.value })} placeholder="Ví dụ: Public domain / Tôi sở hữu" />
                           </Field>
+                          <Field label="Trạng thái bản quyền">
+                            <select
+                              value={editor.item.copyrightStatus || "needs_review"}
+                              onChange={e => patchItem({ copyrightStatus: e.target.value as RecordItem["copyrightStatus"] })}
+                            >
+                              <option value="needs_review">Cần rà soát bản quyền</option>
+                              <option value="owner_authorized">Tài liệu chủ sở hữu ủy quyền</option>
+                              <option value="licensed">Có giấy phép phân phối</option>
+                              <option value="public_domain">Phạm vi công cộng (Public Domain)</option>
+                            </select>
+                          </Field>
+                          <Field label="Mã ISBN (không bắt buộc)">
+                            <input maxLength={32} value={editor.item.isbn || ""} onChange={e => patchItem({ isbn: e.target.value })} placeholder="978-..." />
+                          </Field>
+                          <Field label="Nhà xuất bản">
+                            <input maxLength={160} value={editor.item.publisher || ""} onChange={e => patchItem({ publisher: e.target.value })} placeholder="Tên nhà xuất bản" />
+                          </Field>
+                          <Field label="Năm xuất bản">
+                            <input
+                              type="number"
+                              min="1500"
+                              max="2100"
+                              value={editor.item.publishedYear || ""}
+                              onChange={e => patchItem({ publishedYear: e.target.value ? Number(e.target.value) : undefined })}
+                              placeholder="2024"
+                            />
+                          </Field>
                           <Field label="Đường dẫn nguồn" wide>
                             <input type="url" maxLength={2000} value={editor.item.sourceUrl || ""} onChange={e => patchItem({ sourceUrl: e.target.value })} placeholder="https://…" />
                           </Field>
@@ -3449,6 +3499,23 @@ export default function AdminStudio({environment='production'}:{environment?:'pr
                         Ảnh bìa hiện tại được giữ khi bạn chưa thay tệp.
                       </span>
                     </div>
+                  )}
+                  {editor.kind === "books" && (
+                    <OnlineCoverFinder
+                      title={editor.item.title || ""}
+                      author={editor.item.author || ""}
+                      isbn={editor.item.isbn || ""}
+                      currentCoverAssetId={editor.item.coverAssetId}
+                      currentCover={editor.item.cover}
+                      onApply={(assetId, coverSource) => {
+                        patchItem({ coverAssetId: assetId, coverSource });
+                        inform("✨ Đã lưu ảnh bìa tìm kiếm trực tiếp vào Cloudflare R2!");
+                      }}
+                      onRestore={(prevAssetId, prevCover) => {
+                        patchItem({ coverAssetId: prevAssetId, cover: prevCover });
+                        inform("↩️ Đã khôi phục lại ảnh bìa trước đó.");
+                      }}
+                    />
                   )}
                   {!(editor.kind === "videos" && editor.item.sourceKind === "youtube") && <UploadField
                     label={
@@ -3636,6 +3703,22 @@ export default function AdminStudio({environment='production'}:{environment?:'pr
                       <span><strong>Chuyển vào kho lưu trữ</strong><small>Ẩn nội dung khỏi website khi lưu. File và thông tin vẫn được giữ để bạn chỉnh sửa sau.</small></span>
                       <input type="checkbox" checked={editor.item.status === "archived"} onChange={e => patchItem({ status: e.target.checked ? "archived" : "draft" })} />
                     </label>}
+                    {editor.kind === "books" && (
+                      <Field label="Trạng thái duyệt nội dung (Workflow 7 bước)" hint="Sách chỉ hiển thị công khai với độc giả khi ở trạng thái Đã xuất bản.">
+                        <select
+                          value={editor.item.status || "draft"}
+                          onChange={(e) => patchItem({ status: e.target.value as ItemStatus })}
+                        >
+                          <option value="draft">Bản nháp (draft)</option>
+                          <option value="processing">Đang xử lý (processing)</option>
+                          <option value="needs_review">Cần chủ trang rà soát (needs_review)</option>
+                          <option value="ready">Sẵn sàng xuất bản (ready)</option>
+                          <option value="published">Đã xuất bản công khai (published)</option>
+                          <option value="archived">Đã lưu trữ / ẩn (archived)</option>
+                          <option value="failed">Lỗi xử lý (failed)</option>
+                        </select>
+                      </Field>
+                    )}
                     <Field label="Quyền truy cập">
                       <select
                         value={editor.item.access || "free"}
@@ -3679,9 +3762,37 @@ export default function AdminStudio({environment='production'}:{environment?:'pr
               {editorTab !== "publish" ? (
                 <button key="next-step" type="button" className={styles.primary} disabled={saving} onClick={event => { event.preventDefault(); nextEditorStep(); }}>Tiếp tục <ArrowRight size={17} /></button>
               ) : (
-                <button key="publish-content" className={styles.primary} type="submit" value={editor.kind === "plans" ? "plan" : editor.item.status === "archived" ? "archived" : "published"} disabled={saving}>
+                <button
+                  key="publish-content"
+                  className={styles.primary}
+                  type="submit"
+                  value={
+                    editor.kind === "plans"
+                      ? "plan"
+                      : editor.item.status && ["archived", "needs_review", "ready", "processing", "failed"].includes(editor.item.status)
+                        ? editor.item.status
+                        : "published"
+                  }
+                  disabled={saving}
+                >
                   {saving ? <LoaderCircle className={styles.spin} size={16} /> : <Check size={17} />}
-                  {saving ? "Đang lưu…" : editor.kind === "plans" ? "Lưu gói" : editor.item.status === "archived" ? "Lưu trữ nội dung" : editor.kind === "books" ? "Xuất bản sách" : "Xuất bản"}
+                  {saving
+                    ? "Đang lưu…"
+                    : editor.kind === "plans"
+                      ? "Lưu gói"
+                      : editor.item.status === "archived"
+                        ? "Lưu trữ nội dung"
+                        : editor.item.status === "needs_review"
+                          ? "Lưu (Cần rà soát)"
+                          : editor.item.status === "ready"
+                            ? "Lưu (Sẵn sàng duyệt)"
+                            : editor.item.status === "processing"
+                              ? "Lưu (Đang xử lý)"
+                              : editor.item.status === "failed"
+                                ? "Lưu (Lỗi xử lý)"
+                                : editor.kind === "books"
+                                  ? "Xuất bản sách"
+                                  : "Xuất bản"}
                 </button>
               )}
             </footer>
@@ -4047,7 +4158,7 @@ function cleanBulkTitle(filename: string): { title: string; author: string } {
 
 function BulkPdfImporter({ userId, onDone }: { userId: string; onDone: (items: RecordItem[]) => void }) {
   const [category, setCategory] = useState<"marketing" | "kinhte" | "kynang" | "tamly" | "phapluat" | "ngoaingu" | "lichsu" | "khoahoc" | "vanhocvn" | "vanhocqt" | "tieuthuyet" | "truyentranh" | "tamlinh" | "trinhtham" | "dacbiet">("kinhte");
-  const [status, setStatus] = useState<"published" | "draft">("published");
+  const [status, setStatus] = useState<"needs_review" | "draft" | "published">("needs_review");
   const [access, setAccess] = useState<"free" | "member">("free");
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState("");
@@ -4110,7 +4221,7 @@ function BulkPdfImporter({ userId, onDone }: { userId: string; onDone: (items: R
       <div style={{ flex: 1, minWidth: 240 }}>
         <strong>📚 Nhập hàng loạt nhiều sách PDF cùng lúc (tối đa 50 MB / file)</strong>
         <p style={{ marginTop: 4 }}>
-          Chọn cùng lúc 10–50 file PDF từ máy tính (ví dụ bộ 40+ Ebook Đầu tư) — Lowf Studio tự đặt tên sách gọn đẹp, tạo bìa bìa cứng, tải lên kho Vercel Blob an toàn và tự động tối ưu trình đọc 1 trang / 2 trang cho mọi độc giả.
+          Chọn cùng lúc 10–50 file PDF từ máy tính — Lowf Studio tự đặt tên sách gọn đẹp, lưu an toàn lên kho Cloudflare R2 (10 GB miễn phí · $0 egress) và mặc định đặt trạng thái <b>Cần rà soát</b> để bạn duyệt bìa &amp; thông tin trước khi xuất bản.
         </p>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10, alignItems: "center" }}>
           <select className={styles.categorySelect} value={category} onChange={(e) => setCategory(e.target.value as typeof category)} disabled={busy}>
@@ -4131,8 +4242,9 @@ function BulkPdfImporter({ userId, onDone }: { userId: string; onDone: (items: R
             <option value="dacbiet">Tuyển chọn Lowf</option>
           </select>
           <select className={styles.categorySelect} value={status} onChange={(e) => setStatus(e.target.value as typeof status)} disabled={busy}>
+            <option value="needs_review">Cần rà soát trước khi đăng (Khuyên dùng)</option>
+            <option value="draft">Lưu bản nháp</option>
             <option value="published">Xuất bản ngay</option>
-            <option value="draft">Lưu bản nháp để duyệt</option>
           </select>
           <select className={styles.categorySelect} value={access} onChange={(e) => setAccess(e.target.value as typeof access)} disabled={busy}>
             <option value="free">Miễn phí</option>
@@ -4431,9 +4543,9 @@ function LocalLibrarySyncPanel({
     >
       <RefreshCw size={20} />
       <div style={{ flex: 1, minWidth: 260 }}>
-        <strong>🔄 Đồng bộ thư viện sách đã tuyển chọn &amp; bìa thật lên website chính</strong>
+        <strong>🔄 Đồng bộ kho sách sạch &amp; ảnh bìa lên Cloudflare R2 + Neon PostgreSQL</strong>
         <p style={{ marginTop: 4 }}>
-          Đẩy trực tiếp bộ sách đã lọc sạch (&ge; 20 trang, 13 thể loại, bìa thật nén sắc nét) từ máy chủ xem trước trên máy của bạn lên Neon Postgres &amp; Vercel Blob. Tự động bỏ qua sách đã có, có thể tạm dừng và chạy tiếp bất kỳ lúc nào.
+          Đẩy trực tiếp toàn bộ sách hợp lệ đã lọc rác, khử trùng lặp SHA-256 và chuẩn hóa ảnh bìa lên Cloudflare R2 (10 GB miễn phí · $0 băng thông đọc) &amp; Neon PostgreSQL. Hỗ trợ tạm dừng và tiếp tục bất cứ lúc nào.
         </p>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10, alignItems: "center" }}>
           <select
@@ -4446,9 +4558,9 @@ function LocalLibrarySyncPanel({
               setPlan(null);
             }}
           >
-            <option value="free-tier">Khuyên dùng · Gọn dưới ~550 MB (vừa khít gói Free 1 GB · đủ 500+ sách hot)</option>
-            <option value="epubs-only">Nhanh · Chỉ sách chữ EPUB + bìa thật (~15 MB Blob)</option>
-            <option value="all-under-50mb">Toàn bộ sách ≤ 50 MB (cần gói Blob mở rộng)</option>
+            <option value="free-tier">Gói tinh tuyển · ~550 cuốn nổi bật (~534 MB · 5.3% R2 Free)</option>
+            <option value="all-under-50mb">Toàn bộ kho sách sạch ≤ 50 MB (~4.8 GB · vừa gói R2 Free 10 GB)</option>
+            <option value="epubs-only">Nhanh · Chỉ sách chữ EPUB + bìa thật (~15 MB R2)</option>
           </select>
           <label style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, cursor: "pointer" }}>
             <input
@@ -4515,6 +4627,295 @@ function LocalLibrarySyncPanel({
           </p>
         )}
       </div>
+    </div>
+  );
+}
+
+type StorageTelemetry = {
+  activeBackend: "r2" | "vercel-blob";
+  books: {
+    total: number;
+    active: number;
+    byStatus: Record<string, number>;
+    pdfBooks: number;
+    epubBooks: number;
+    missingCover: number;
+    svgFallbackCover: number;
+    copyrightReview: number;
+    missingPdfAssets: number;
+    missingCoverAssets: number;
+    legacyBlobPublishedBooks: number;
+    duplicateTitleGroups: number;
+  };
+  storage: {
+    r2: {
+      objects: number;
+      mb: number;
+      freeQuotaGb: number;
+      usagePercentOfFree: number;
+      estimatedMonthlyUsd: number;
+    };
+    vercelBlob: {
+      objects: number;
+      mb: number;
+    };
+  };
+  users: { profiles: number };
+};
+
+function OperationsHealthPanel({ onNavigateBooks }: { onNavigateBooks: () => void }) {
+  const [stats, setStats] = useState<StorageTelemetry | null>(null);
+  const [err, setErr] = useState("");
+  const [busy, setBusy] = useState(true);
+
+  const loadStats = useCallback(async () => {
+    setBusy(true);
+    setErr("");
+    try {
+      const data = await request<StorageTelemetry>("/api/admin/storage/stats");
+      setStats(data);
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Chưa tải được dữ liệu hạ tầng.");
+    } finally {
+      setBusy(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadStats();
+  }, [loadStats]);
+
+  return (
+    <section className={styles.panel} aria-label="Trung tâm giám sát lưu trữ và chất lượng thư viện">
+      <div className={styles.panelTitle}>
+        <div>
+          <h2>Trung tâm vận hành · Cloudflare R2 &amp; Sức khỏe kho sách</h2>
+          <p>
+            Giám sát dung lượng R2, chi phí ước tính, tỷ lệ ảnh bìa, bản quyền và tệp cần đồng bộ theo thời gian thực.
+          </p>
+        </div>
+        <button type="button" className={styles.secondary} onClick={() => void loadStats()} disabled={busy}>
+          <RefreshCw size={14} className={busy ? styles.spin : ""} /> Làm mới
+        </button>
+      </div>
+      {err && <p className={styles.error}>{err}</p>}
+      {stats && (
+        <>
+          <div className={styles.quickGrid4}>
+            <div className={styles.quickCard}>
+              <strong>☁️ Backend: {stats.activeBackend === "r2" ? "Cloudflare R2" : "Vercel Blob"}</strong>
+              <small>
+                R2: <b>{stats.storage.r2.mb} MB</b> ({stats.storage.r2.objects} tệp) · {stats.storage.r2.usagePercentOfFree}% gói Free 10 GB · Ước tính <b>${stats.storage.r2.estimatedMonthlyUsd}/tháng</b>.
+              </small>
+            </div>
+            <div className={styles.quickCard}>
+              <strong>🎨 Chất lượng bìa sách</strong>
+              <small>
+                Thiếu bìa: <b>{stats.books.missingCover}</b> · Bìa SVG dự phòng: <b>{stats.books.svgFallbackCover}</b> · Ảnh hỏng: <b>{stats.books.missingCoverAssets}</b>.
+              </small>
+            </div>
+            <div className={styles.quickCard}>
+              <strong>⚖️ Kiểm duyệt &amp; Trùng lặp</strong>
+              <small>
+                Cần rà soát bản quyền: <b>{stats.books.copyrightReview}</b> · Nhóm trùng tên: <b>{stats.books.duplicateTitleGroups}</b> · Sách chờ duyệt: <b>{(stats.books.byStatus.needs_review || 0) + (stats.books.byStatus.draft || 0)}</b>.
+              </small>
+            </div>
+            <div className={styles.quickCard}>
+              <strong>🔄 Trạng thái chuyển đổi Blob → R2</strong>
+              <small>
+                Blob cũ còn <b>{stats.storage.vercelBlob.objects}</b> tệp ({stats.storage.vercelBlob.mb} MB) · Sách đang trỏ Blob cũ: <b>{stats.books.legacyBlobPublishedBooks}</b> · PDF thiếu tệp: <b>{stats.books.missingPdfAssets}</b>.
+              </small>
+            </div>
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12, alignItems: "center", justifyContent: "space-between" }}>
+            <div className={styles.authMethodPills}>
+              <span>Đang hiển thị: {stats.books.byStatus.published || 0}</span>
+              <span>Sẵn sàng: {stats.books.byStatus.ready || 0}</span>
+              <span>Cần rà soát: {stats.books.byStatus.needs_review || 0}</span>
+              <span>Bản nháp: {stats.books.byStatus.draft || 0}</span>
+              <span>Lưu trữ: {stats.books.byStatus.archived || 0}</span>
+              <span>PDF: {stats.books.pdfBooks} · EPUB: {stats.books.epubBooks}</span>
+            </div>
+            <button type="button" className={styles.secondary} onClick={onNavigateBooks}>
+              Mở trình quản lý sách <ArrowRight size={14} />
+            </button>
+          </div>
+        </>
+      )}
+    </section>
+  );
+}
+
+type OnlineCoverCandidate = {
+  id: string;
+  provider: "openlibrary" | "google-books";
+  title: string;
+  author: string;
+  isbn?: string;
+  publishedYear?: string;
+  thumbnailUrl: string;
+  imageUrl: string;
+  licenseNote: string;
+};
+
+function OnlineCoverFinder({
+  title,
+  author,
+  isbn,
+  currentCoverAssetId,
+  currentCover,
+  onApply,
+  onRestore,
+}: {
+  title: string;
+  author: string;
+  isbn?: string;
+  currentCoverAssetId?: string;
+  currentCover?: string;
+  onApply: (assetId: string, coverSource: string) => void;
+  onRestore: (prevAssetId?: string, prevCover?: string) => void;
+}) {
+  const [searchTitle, setSearchTitle] = useState(title);
+  const [searchAuthor, setSearchAuthor] = useState(author);
+  const [candidates, setCandidates] = useState<OnlineCoverCandidate[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [importingId, setImportingId] = useState("");
+  const [err, setErr] = useState("");
+  const [previousCover, setPreviousCover] = useState<{ assetId?: string; cover?: string } | null>(null);
+
+  useEffect(() => {
+    setSearchTitle(title);
+    setSearchAuthor(author);
+  }, [title, author]);
+
+  async function doSearch() {
+    if (!searchTitle.trim() && !isbn?.trim()) {
+      setErr("Nhập tên sách hoặc ISBN trước khi tìm kiếm bìa.");
+      return;
+    }
+    setSearching(true);
+    setErr("");
+    try {
+      const qs = new URLSearchParams();
+      if (searchTitle.trim()) qs.set("title", searchTitle.trim());
+      if (searchAuthor.trim()) qs.set("author", searchAuthor.trim());
+      if (isbn?.trim()) qs.set("isbn", isbn.trim());
+      const res = await request<{ candidates: OnlineCoverCandidate[] }>(`/api/admin/covers/search?${qs.toString()}`);
+      setCandidates(res.candidates || []);
+      if (!res.candidates?.length) {
+        setErr("Không tìm thấy bìa khớp chính xác trên Open Library / Google Books. Bạn vẫn có thể giữ bìa cũ hoặc tải ảnh bìa riêng.");
+      }
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Chưa tìm được bìa trực tuyến.");
+    } finally {
+      setSearching(false);
+    }
+  }
+
+  async function importCover(cand: OnlineCoverCandidate) {
+    setImportingId(cand.id);
+    setErr("");
+    try {
+      if (!previousCover) {
+        setPreviousCover({ assetId: currentCoverAssetId, cover: currentCover });
+      }
+      const res = await request<{ asset: { id: string }; coverSource: string }>("/api/admin/covers/search", {
+        method: "POST",
+        body: JSON.stringify({
+          imageUrl: cand.imageUrl,
+          bookTitle: searchTitle || title,
+          provider: cand.provider,
+        }),
+      });
+      onApply(res.asset.id, `${cand.provider}:${cand.id}`);
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Không tải được ảnh bìa này vào R2.");
+    } finally {
+      setImportingId("");
+    }
+  }
+
+  return (
+    <div className={styles.inlineNotice} style={{ flexDirection: "column", alignItems: "stretch", gap: 10 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <Search size={16} />
+          <strong>Tìm kiếm &amp; bổ sung ảnh bìa sách trực tuyến (Open Library / Google Books)</strong>
+        </div>
+        {previousCover && (
+          <button
+            type="button"
+            className={styles.smallButton}
+            onClick={() => {
+              onRestore(previousCover.assetId, previousCover.cover);
+              setPreviousCover(null);
+            }}
+          >
+            ↩️ Hoàn tác · Giữ bìa cũ
+          </button>
+        )}
+      </div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+        <input
+          type="text"
+          value={searchTitle}
+          onChange={(e) => setSearchTitle(e.target.value)}
+          placeholder="Tên sách cần tìm bìa…"
+          style={{ flex: "1 1 180px", padding: "8px 10px", borderRadius: 10, border: "1px solid rgba(0,0,0,.15)", fontSize: 13 }}
+        />
+        <input
+          type="text"
+          value={searchAuthor}
+          onChange={(e) => setSearchAuthor(e.target.value)}
+          placeholder="Tác giả (tùy chọn)"
+          style={{ flex: "1 1 140px", padding: "8px 10px", borderRadius: 10, border: "1px solid rgba(0,0,0,.15)", fontSize: 13 }}
+        />
+        <button type="button" className={styles.secondary} onClick={() => void doSearch()} disabled={searching}>
+          {searching ? <LoaderCircle size={14} className={styles.spin} /> : <Search size={14} />}
+          {searching ? "Đang tìm…" : "Tìm bìa online"}
+        </button>
+      </div>
+      {err && <p className={styles.error} style={{ margin: 0, fontSize: 12 }}>{err}</p>}
+      {candidates.length > 0 && (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))", gap: 10, marginTop: 4 }}>
+          {candidates.map((cand) => (
+            <div
+              key={cand.id}
+              style={{
+                border: "1px solid rgba(0,0,0,.1)",
+                borderRadius: 10,
+                padding: 8,
+                background: "#fff",
+                display: "flex",
+                flexDirection: "column",
+                gap: 6,
+              }}
+            >
+              <img
+                src={cand.thumbnailUrl}
+                alt={cand.title}
+                style={{ width: "100%", aspectRatio: "2 / 3", objectFit: "cover", borderRadius: 6, background: "#f2f1ec" }}
+                loading="lazy"
+              />
+              <small style={{ fontSize: 11, fontWeight: 600, lineHeight: 1.25, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={cand.title}>
+                {cand.title}
+              </small>
+              <small style={{ fontSize: 10, opacity: 0.65 }}>
+                {cand.provider === "openlibrary" ? "Open Library" : "Google Books"}
+                {cand.publishedYear ? ` · ${cand.publishedYear}` : ""}
+              </small>
+              <button
+                type="button"
+                className={styles.smallButton}
+                disabled={importingId !== ""}
+                onClick={() => void importCover(cand)}
+              >
+                {importingId === cand.id ? "Đang lưu…" : "Dùng bìa này"}
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
