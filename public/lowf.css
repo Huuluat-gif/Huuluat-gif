@@ -1646,3 +1646,31 @@ body.is-tab-hidden .petals-layer span,body.is-tab-hidden .bg-3d-stage span,body.
 .toc-pdf-chip{padding:5px 9px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font-size:10px;font-weight:600;transition:all .16s}
 .toc-pdf-chip:hover,.toc-pdf-chip.active{border-color:var(--green);background:var(--mint);color:var(--green)}
 @media(max-width:760px){.reader-toc-btn{max-width:142px;height:30px;padding:0 9px;font-size:10px}}
+
+/* 20E. Uniform Hardcover Book Jackets & Owner 1-Click Cover Studio */
+.book-jacket{position:relative;overflow:hidden;border-radius:6px 10px 10px 6px}
+.book-jacket img{width:100%;height:100%;object-fit:cover;display:block}
+.book-jacket::after{content:'';position:absolute;inset:0;pointer-events:none;background:linear-gradient(90deg,rgba(0,0,0,.22) 0%,rgba(255,255,255,.16) 4.5%,rgba(0,0,0,.07) 7%,transparent 14%,transparent 94%,rgba(0,0,0,.08) 100%);border-radius:inherit}
+.cover-edit-btn{
+  position:absolute;left:8px;bottom:8px;z-index:4;
+  display:inline-flex;align-items:center;gap:4px;padding:4px 9px;border-radius:999px;
+  background:rgba(16,28,22,.82);color:#fff;border:1px solid rgba(255,255,255,.22);
+  font-size:9.5px;font-weight:600;opacity:0;transform:translateY(4px);
+  transition:opacity .18s ease,transform .18s ease,background-color .18s ease;
+}
+.book-card:hover .cover-edit-btn,.cover-edit-btn:focus-visible{opacity:1;transform:translateY(0)}
+.cover-edit-btn:hover{background:var(--nav-accent,var(--green))}
+@media(hover:none){.cover-edit-btn{opacity:.9;transform:none}}
+.cover-studio-top{display:flex;gap:16px;align-items:center;padding:14px;border-radius:14px;background:var(--bg);border:1px solid var(--line);margin-bottom:16px}
+.cover-studio-preview{width:86px;height:120px;border-radius:6px 9px 9px 6px;overflow:hidden;flex-shrink:0;box-shadow:0 10px 24px rgba(15,28,20,.22);border:1px solid var(--line)}
+.cover-studio-preview img{width:100%;height:100%;object-fit:cover;display:block}
+.cover-studio-meta{min-width:0;flex:1}
+.cover-studio-meta strong{display:block;font-size:14px;line-height:1.35}
+.cover-studio-meta small{display:block;font-size:11px;color:var(--muted);margin-top:3px}
+.cover-studio-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:11px}
+.cover-tpl-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin-top:10px}
+@media(max-width:560px){.cover-tpl-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.cover-tpl-card{display:flex;flex-direction:column;align-items:center;gap:5px;padding:7px;border-radius:11px;border:1.5px solid var(--line);background:var(--bg);font-size:9.5px;font-weight:600;color:var(--ink);transition:transform .18s,border-color .18s,box-shadow .18s}
+.cover-tpl-card:hover{transform:translateY(-2px);border-color:var(--nav-accent,var(--green));box-shadow:0 8px 18px -8px rgba(18,32,24,.22)}
+.cover-tpl-thumb{width:100%;aspect-ratio:5/7;border-radius:6px;overflow:hidden;border:1px solid rgba(0,0,0,.1)}
+.cover-tpl-thumb img{width:100%;height:100%;object-fit:cover;display:block}
