@@ -3882,7 +3882,7 @@ function cleanBulkTitle(filename: string): { title: string; author: string } {
 }
 
 function BulkPdfImporter({ userId, onDone }: { userId: string; onDone: (items: RecordItem[]) => void }) {
-  const [category, setCategory] = useState<"kinhte" | "vanhocvn" | "vanhocqt" | "dacbiet">("kinhte");
+  const [category, setCategory] = useState<"kinhte" | "kynang" | "vanhocvn" | "vanhocqt" | "tieuthuyet" | "khoahoc" | "lichsu" | "tamlinh" | "trinhtham" | "dacbiet">("kinhte");
   const [status, setStatus] = useState<"published" | "draft">("published");
   const [access, setAccess] = useState<"free" | "member">("free");
   const [busy, setBusy] = useState(false);
@@ -3956,9 +3956,15 @@ function BulkPdfImporter({ userId, onDone }: { userId: string; onDone: (items: R
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10, alignItems: "center" }}>
           <select className={styles.categorySelect} value={category} onChange={(e) => setCategory(e.target.value as typeof category)} disabled={busy}>
             <option value="kinhte">Kinh tế &amp; Đầu tư</option>
+            <option value="kynang">Phát triển bản thân</option>
             <option value="vanhocvn">Văn học Việt Nam</option>
             <option value="vanhocqt">Văn học nước ngoài</option>
-            <option value="dacbiet">Tuyển chọn</option>
+            <option value="tieuthuyet">Tiểu thuyết &amp; Kỳ ảo</option>
+            <option value="khoahoc">Khoa học &amp; Công nghệ</option>
+            <option value="lichsu">Lịch sử &amp; Quân sự</option>
+            <option value="tamlinh">Tôn giáo &amp; Tâm linh</option>
+            <option value="trinhtham">Trinh thám &amp; Kinh dị</option>
+            <option value="dacbiet">Tuyển chọn Lowf</option>
           </select>
           <select className={styles.categorySelect} value={status} onChange={(e) => setStatus(e.target.value as typeof status)} disabled={busy}>
             <option value="published">Xuất bản ngay</option>
