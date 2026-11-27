@@ -1444,6 +1444,14 @@ body.is-tab-hidden .petals-layer span,body.is-tab-hidden .bg-3d-stage span,body.
   .topbar,.decor-aurora .workspace>.topbar,.reader-edge-nav,.trend-mood{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
   .topbar,.decor-aurora .workspace>.topbar{background:var(--surface)!important}
 }
+@media(max-width:767px){
+  .topbar,.decor-aurora .workspace>.topbar{padding:0 12px!important;gap:7px!important;height:64px!important}
+  .workspace{padding-top:64px!important}
+  .topbar .header-sky-toggle{display:none!important}
+  .topbar .search{flex:1 1 auto!important;width:auto!important;max-width:none!important;min-width:92px!important;padding:7px 10px!important;margin-left:0!important}
+  .topbar .search kbd{display:none!important}
+  .mobile-management{position:relative!important;top:auto!important;z-index:2!important}
+}
 
 /* Ergonomic Typography Measure, Alignment & Continuous Scroll Chapter Transition */
 .reader[data-ralign=justify] .reader-scroll article p{text-align:justify;hyphens:auto;text-indent:1.4em}
