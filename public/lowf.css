@@ -1485,8 +1485,8 @@ body.is-tab-hidden .petals-layer span,body.is-tab-hidden .bg-3d-stage span,body.
     border:1px solid color-mix(in srgb,var(--season-accent) 44%,var(--line));
     color:var(--ink);box-shadow:0 4px 12px rgba(0,0,0,.14);
   }
-  .hero-copy h2{max-width:calc(100% - 122px)!important}
-  .hero-copy .hero-eyebrow-pill{max-width:calc(100% - 122px)}
+  .hero-copy h2,.hero-copy p{max-width:calc(100% - 126px)!important}
+  .hero-copy .hero-eyebrow-pill{max-width:calc(100% - 126px)}
   .season-stage-widget{display:block!important}
   .season-stage-box{height:210px!important;perspective:none!important}
   .season-stage-box .lm3d-rig{width:185px!important;height:210px!important;transform:none!important;transform-style:flat!important}
