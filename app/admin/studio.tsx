@@ -4078,6 +4078,7 @@ type SyncPlanItem = {
   pdfBytes: number;
   hasPhotoCover: boolean;
   coverSvg?: string;
+  sortOrder?: number;
 };
 type SyncPlanResponse = {
   mode: string;
@@ -4152,6 +4153,26 @@ function LocalLibrarySyncPanel({
     setErrors([]);
 
     const base = sourceUrl.replace(/\/+$/, "");
+    // Re-order existing books & archive trimmed books outside the curated plan first
+    try {
+      setProgress("Đang sắp xếp thứ tự sách bộ & ẩn các đầu sách đã lọc bỏ…");
+      const keepIds = activePlan.items.map((it) => it.id);
+      const orderPayload = activePlan.items.map((it, i) => ({
+        id: it.id,
+        sortOrder: typeof it.sortOrder === "number" ? it.sortOrder : i + 1,
+        category: it.category,
+      }));
+      await request<{ updatedCount: number; archivedCount: number }>(
+        "/api/admin/content/books/sync-order",
+        {
+          method: "POST",
+          body: JSON.stringify({ order: orderPayload, archiveOthers: true, keepIds }),
+        }
+      );
+    } catch {
+      // Non-fatal: continue syncing new items
+    }
+
     const existingSet = new Set(existingIds);
     const queue = activePlan.items.filter((it) => !existingSet.has(it.id));
     const skippedCount = activePlan.items.length - queue.length;
@@ -4249,6 +4270,7 @@ function LocalLibrarySyncPanel({
             access: "free",
             status: "published",
             language: item.language || "vi",
+            sortOrder: typeof item.sortOrder === "number" ? item.sortOrder : idx + 1,
           };
           if (coverAssetId) payload.coverAssetId = coverAssetId;
           else payload.cover = cover;
