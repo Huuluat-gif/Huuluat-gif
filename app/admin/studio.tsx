@@ -1726,6 +1726,7 @@ export default function AdminStudio({environment='production'}:{environment?:'pr
                         aria-label="Lọc theo thể loại sách"
                       >
                         <option value="all">Tất cả thể loại</option>
+                        <option value="marketing">Bán hàng &amp; Marketing</option>
                         <option value="kinhte">Kinh tế &amp; Đầu tư</option>
                         <option value="kynang">Phát triển bản thân</option>
                         <option value="vanhocvn">Văn học Việt Nam</option>
