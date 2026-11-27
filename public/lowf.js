@@ -1414,7 +1414,10 @@ function authMessage(error){
  if(/PASSWORD_TOO_LONG/.test(hay))return'Mật khẩu tối đa 128 ký tự.';
  if(/INVALID_EMAIL/.test(hay))return'Địa chỉ email chưa đúng định dạng. Vui lòng kiểm tra lại.';
  if(/PROVIDER_NOT_FOUND|SOCIAL.*NOT|OAUTH.*DISABLED|GOOGLE.*NOT/.test(hay))return'Đăng nhập Google chưa được kích hoạt trong Neon Auth Console. Hãy dùng tab "Mã Email" (không cần mật khẩu) ngay bên dưới để vào tức thì.';
- if(/ORIGIN_REJECTED|INVALID_ORIGIN|CSRF/.test(hay))return'Phiên truy cập chưa khớp tên miền. Hãy tải lại trang và thử đăng nhập lại.';
+ if(/CALLBACK|TRUSTED|ORIGIN_REJECTED|INVALID_ORIGIN|CSRF/.test(hay)){
+  const isPrev=/-git-.*\.vercel\.app$/i.test(location.hostname);
+  return isPrev?'Google chỉ cho phép đăng nhập trên tên miền chính (lowf-library.vercel.app). Trên bản xem trước Preview này, hãy bấm tab "Mã Email" hoặc nhập Email & Mật khẩu bên dưới để vào quản trị ngay!':'Phiên truy cập chưa khớp tên miền. Hãy tải lại trang và thử đăng nhập lại.';
+ }
  if(error?.status===429||/TOO_MANY|RATE_LIMIT/.test(hay))return'Bạn đã thử nhiều lần. Vui lòng đợi khoảng 1 phút rồi thử lại.';
  if(error?.status===503||/AUTH_REQUEST_FAILED/.test(hay))return'Hệ thống đăng nhập tạm bận. Vui lòng đợi vài giây rồi thử lại.';
  return message||'Chưa thực hiện được thao tác. Hãy thử lại.';
@@ -1464,7 +1467,8 @@ function auth(tab='login',options={}){
   :tab==='otp-signin-verify'?'<button type="button" data-action="auth-tab" data-id="otp-signin">Đổi địa chỉ email</button>'
   :tab==='reset-code'?'<button type="button" data-action="auth-tab" data-id="verify">Xác minh email</button>'
   :'<button type="button" data-action="auth-tab" data-id="verify">Nhập mã xác minh email</button>';
- const socialBlock=showSocial?`<button type="button" class="auth-google-btn" data-action="auth-google">${googleLogoSVG}<span>Tiếp tục nhanh với Google</span></button><div class="auth-or"><span>hoặc dùng Email</span></div>`:'';
+ const isPreviewHost=/-git-.*\.vercel\.app$/i.test(location.hostname);
+ const socialBlock=showSocial?(isPreviewHost?`<div class="auth-step-hint" style="margin-bottom:12px">💡 <strong>Đang ở bản xem trước Preview:</strong> Google chỉ hỗ trợ tên miền chính thức — hãy dùng <strong>Mật khẩu</strong> hoặc tab <strong>✨ Mã Email (6 số)</strong> ngay bên dưới để đăng nhập tức thì.</div>`:`<button type="button" class="auth-google-btn" data-action="auth-google">${googleLogoSVG}<span>Tiếp tục nhanh với Google</span></button><div class="auth-or"><span>hoặc dùng Email</span></div>`):'';
  const passwordField=hasPassword?`<label class="form-field"><span>${['reset','reset-code'].includes(tab)?'Mật khẩu mới':'Mật khẩu'} ${tab==='signup'||tab==='reset'||tab==='reset-code'?'(tối thiểu 8 ký tự)':''}</span><div class="pw-wrap"><input type="password" name="password" autocomplete="${tab==='login'?'current-password':'new-password'}" minlength="8" maxlength="128" required placeholder="Nhập mật khẩu…"><button type="button" class="pw-eye" data-action="toggle-pw" aria-label="Hiện mật khẩu" aria-pressed="false">${icon('eye')}</button></div></label>`:'';
  const submitLabel=tab==='signup'?'Tiếp tục tạo tài khoản'
   :tab==='otp-signin'?'Gửi mã đăng nhập về Email'
