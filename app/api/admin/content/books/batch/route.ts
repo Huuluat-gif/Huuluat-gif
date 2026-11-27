@@ -11,10 +11,52 @@ const batchSchema = z.object({
   books: z.array(z.record(z.string(), z.unknown())).min(1).max(30),
 });
 
+let statusConstraintEnsured: Promise<void> | null = null;
+function ensureExpandedStatusConstraint(): Promise<void> {
+  if (!statusConstraintEnsured) {
+    statusConstraintEnsured = (async () => {
+      try {
+        const sql = getSQL();
+        await sql`
+          DO $$
+          DECLARE
+            c record;
+          BEGIN
+            FOR c IN
+              SELECT conname
+              FROM pg_constraint
+              WHERE conrelid = 'lowf_content'::regclass
+                AND contype = 'c'
+                AND pg_get_constraintdef(oid) LIKE '%status%'
+                AND pg_get_constraintdef(oid) NOT LIKE '%needs_review%'
+            LOOP
+              EXECUTE format('ALTER TABLE lowf_content DROP CONSTRAINT IF EXISTS %I', c.conname);
+            END LOOP;
+            IF NOT EXISTS (
+              SELECT 1 FROM pg_constraint
+              WHERE conrelid = 'lowf_content'::regclass
+                AND conname = 'lowf_content_status_check'
+                AND pg_get_constraintdef(oid) LIKE '%needs_review%'
+            ) THEN
+              ALTER TABLE lowf_content
+                ADD CONSTRAINT lowf_content_status_check
+                CHECK (status IN ('draft','processing','needs_review','ready','published','archived','failed'));
+            END IF;
+          END $$;
+        `;
+      } catch {
+        // Non-fatal if DB user lacks DDL privilege or constraint already expanded
+      }
+    })();
+  }
+  return statusConstraintEnsured;
+}
+
 export const POST = route(async (request: Request) => {
   assertSameOrigin(request);
   const user = await requireAdmin();
   await rateLimit(`admin-batch:${user.id}`, 600, 60);
+  await ensureExpandedStatusConstraint();
 
   const body = await parseBody(request, batchSchema, 4 * 1024 * 1024);
   const sql = getSQL();

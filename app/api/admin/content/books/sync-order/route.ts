@@ -53,11 +53,12 @@ export const POST = route(async (request: Request) => {
     `,
     r2Active
       ? sql`
-          SELECT id::text AS id
+          SELECT id::text AS id, kind, original_name
           FROM lowf_assets
           WHERE pathname LIKE 'r2/%' OR pathname LIKE 'books/%' OR pathname LIKE 'covers/%' OR pathname LIKE 'assets/%'
+          ORDER BY created_at DESC
         `
-      : Promise.resolve([] as Array<{ id: string }>),
+      : Promise.resolve([] as Array<{ id: string; kind: string; original_name: string }>),
   ]);
 
   const existingById = new Map<string, {
@@ -77,7 +78,14 @@ export const POST = route(async (request: Request) => {
     });
   }
 
-  const r2AssetIds = new Set(r2AssetRows.map((r) => String(r.id)));
+  const r2AssetIds = new Set<string>();
+  const r2ByName = new Map<string, string>();
+  for (const r of r2AssetRows) {
+    const aid = String(r.id);
+    r2AssetIds.add(aid);
+    const key = `${String(r.kind)}:${String(r.original_name || '').trim()}`;
+    if (!r2ByName.has(key)) r2ByName.set(key, aid);
+  }
 
   // 2. Only update rows whose sortOrder/category/status ACTUALLY differ (avoids rewriting toasted JSONB!)
   const toUpdateIds: string[] = [];
@@ -135,7 +143,16 @@ export const POST = route(async (request: Request) => {
 
   for (const o of body.order) {
     const cur = existingById.get(o.id);
-    if (!cur) continue;
+    if (!cur) {
+      // Reuse R2 assets already uploaded for this slug (avoids re-uploading hundreds of MB if a batch retried!)
+      if (r2Active) {
+        const prevCov = r2ByName.get(`image:${o.id}.jpg`);
+        const prevPdf = r2ByName.get(`pdf:${o.id}.pdf`);
+        if (prevCov) r2CoverMap[o.id] = prevCov;
+        if (prevPdf) r2PdfMap[o.id] = prevPdf;
+      }
+      continue;
+    }
     const covOnR2 = !cur.coverId || r2AssetIds.has(cur.coverId);
     const pdfOnR2 = !cur.pdfId || r2AssetIds.has(cur.pdfId);
     if (cur.coverId && r2AssetIds.has(cur.coverId)) r2CoverMap[o.id] = cur.coverId;

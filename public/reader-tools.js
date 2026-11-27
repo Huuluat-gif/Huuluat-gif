@@ -56,7 +56,7 @@
     if(eyeBtn){
       eyeBtn.setAttribute('aria-pressed',String(toolsVisible));
       eyeBtn.classList.toggle('is-hidden-tools',!toolsVisible);
-      eyeBtn.innerHTML=`<i data-lucide="${toolsVisible?'notebook-pen':'book-marked'}" aria-hidden="true"></i><span>${toolsVisible?'Ghi chú':'Mở ghi chú'}</span>`;
+      eyeBtn.innerHTML=`<i data-lucide="${toolsVisible?'notebook-pen':'bookmark'}" aria-hidden="true"></i><span>${toolsVisible?'Ghi chú':'Mở ghi chú'}</span>`;
       window.lucide?.createIcons();
     }
     if(announce){
