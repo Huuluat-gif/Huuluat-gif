@@ -38,7 +38,7 @@ export const POST = route(async (request: Request) => {
         try { data = payloadSchema.parse(JSON.parse(clientPayload || '{}')); }
         catch { throw new HttpError(400, 'Hãy chọn đúng loại tệp cần tải lên.'); }
         assertAssetPath(pathname, user.id, data.kind);
-        await rateLimit(`upload:${user.id}`, 60, 3600);
+        await rateLimit(`upload:${user.id}`, 3000, 3600);
         const rule = ASSET_RULES[data.kind];
         return {
           allowedContentTypes: rule.types,

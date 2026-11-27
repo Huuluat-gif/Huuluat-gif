@@ -1637,6 +1637,21 @@ export default function AdminStudio({environment='production'}:{environment?:'pr
                   </div>
                   {tab === "books" && (
                     <>
+                      <LocalLibrarySyncPanel
+                        userId={user.id}
+                        existingIds={content.books.filter((b) => b.status === "published").map((b) => b.id)}
+                        onSynced={(synced) => {
+                          if (synced.length) {
+                            setContent((prev) => {
+                              const map = new Map<string, RecordItem>();
+                              for (const item of prev.books) map.set(item.id, item);
+                              for (const item of synced) map.set(item.id, item);
+                              return { ...prev, books: Array.from(map.values()) };
+                            });
+                            inform(`✨ Đã đồng bộ ${synced.length} cuốn sách lên thư viện chính!`);
+                          }
+                        }}
+                      />
                       <BulkPdfImporter
                         userId={user.id}
                         onDone={(created) => {
@@ -4042,6 +4057,327 @@ function BulkPdfImporter({ userId, onDone }: { userId: string; onDone: (items: R
         {errors.length > 0 && (
           <p className={styles.error} style={{ marginTop: 6, fontSize: 11.5 }}>
             Một số tệp chưa tải được ({errors.length}): {errors.slice(0, 3).join(" · ")}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+type SyncMode = "free-tier" | "epubs-only" | "all-under-50mb";
+type SyncPlanItem = {
+  id: string;
+  title: string;
+  author: string;
+  category: string;
+  format: string;
+  price: number;
+  description: string;
+  language?: string;
+  kind: "epub" | "pdf";
+  pdfBytes: number;
+  hasPhotoCover: boolean;
+  coverSvg?: string;
+};
+type SyncPlanResponse = {
+  mode: string;
+  totalCount: number;
+  epubCount: number;
+  pdfCount: number;
+  estimatedBlobMb: number;
+  skippedHeavyCount: number;
+  skippedHeavyMb: number;
+  items: SyncPlanItem[];
+};
+
+function LocalLibrarySyncPanel({
+  userId,
+  existingIds,
+  onSynced,
+}: {
+  userId: string;
+  existingIds: string[];
+  onSynced: (items: RecordItem[]) => void;
+}) {
+  const [sourceUrl, setSourceUrl] = useState("http://127.0.0.1:4321");
+  const [mode, setMode] = useState<SyncMode>("free-tier");
+  const [plan, setPlan] = useState<SyncPlanResponse | null>(null);
+  const [status, setStatus] = useState<"idle" | "checking" | "running" | "paused" | "done">("idle");
+  const [progress, setProgress] = useState("");
+  const [stats, setStats] = useState({ done: 0, total: 0, skipped: 0, failed: 0, blobMb: 0 });
+  const [errors, setErrors] = useState<string[]>([]);
+  const stopRef = useRef(false);
+
+  async function checkSource(targetMode: SyncMode = mode) {
+    setStatus("checking");
+    setErrors([]);
+    setProgress("Đang kết nối máy chủ xem trước trên máy của bạn…");
+    try {
+      const base = sourceUrl.replace(/\/+$/, "");
+      const res = await fetch(`${base}/api/sync/plan?mode=${encodeURIComponent(targetMode)}`, { cache: "no-store" });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = (await res.json()) as SyncPlanResponse;
+      setPlan(data);
+      const alreadySet = new Set(existingIds);
+      const pending = data.items.filter((it) => !alreadySet.has(it.id)).length;
+      setProgress(
+        `Đã kết nối! Sẵn sàng đồng bộ ${pending}/${data.totalCount} cuốn (${data.epubCount} EPUB + ${data.pdfCount} PDF · ước tính ~${data.estimatedBlobMb} MB Blob${data.skippedHeavyCount ? ` · tạm giữ lại ${data.skippedHeavyCount} PDF scan nặng ${data.skippedHeavyMb} MB để không vượt hạn mức 1 GB` : ""}).`
+      );
+      setStatus("idle");
+      return data;
+    } catch (e) {
+      setStatus("idle");
+      setProgress("");
+      setErrors([`Chưa kết nối được ${sourceUrl} (${e instanceof Error ? e.message : "lỗi mạng"}). Hãy đảm bảo máy chủ xem trước cục bộ đang chạy.`]);
+      return null;
+    }
+  }
+
+  async function uploadDirectFile(file: Blob, kind: "image" | "pdf", filename: string): Promise<string> {
+    const fd = new FormData();
+    fd.append("file", new File([file], filename, { type: file.type || (kind === "pdf" ? "application/pdf" : "image/jpeg") }));
+    fd.append("kind", kind);
+    fd.append("originalName", filename);
+    const res = await fetch("/api/uploads/direct", { method: "POST", credentials: "same-origin", body: fd });
+    const data = (await res.json().catch(() => ({}))) as { asset?: { id: string }; error?: string };
+    if (!res.ok || !data.asset?.id) throw new Error(data.error || `Upload lỗi (${res.status})`);
+    return data.asset.id;
+  }
+
+  async function startSync() {
+    const activePlan = plan && plan.mode === mode ? plan : await checkSource(mode);
+    if (!activePlan) return;
+    stopRef.current = false;
+    setStatus("running");
+    setErrors([]);
+
+    const base = sourceUrl.replace(/\/+$/, "");
+    const existingSet = new Set(existingIds);
+    const queue = activePlan.items.filter((it) => !existingSet.has(it.id));
+    const skippedCount = activePlan.items.length - queue.length;
+
+    let doneCount = 0;
+    let failCount = 0;
+    let blobBytes = 0;
+    const syncedBuffer: RecordItem[] = [];
+    const failedList: string[] = [];
+    setStats({ done: 0, total: queue.length, skipped: skippedCount, failed: 0, blobMb: 0 });
+
+    if (!queue.length) {
+      setStatus("done");
+      setProgress(`✨ Toàn bộ ${activePlan.totalCount} cuốn trong gói này đã có đầy đủ trên thư viện chính!`);
+      return;
+    }
+
+    let cursor = 0;
+    const workers = Array.from({ length: 3 }, async () => {
+      while (!stopRef.current) {
+        const idx = cursor++;
+        if (idx >= queue.length) break;
+        const item = queue[idx];
+        try {
+          let coverAssetId = "";
+          let cover = "";
+          if (item.hasPhotoCover) {
+            const covRes = await fetch(`${base}/api/sync/cover/${encodeURIComponent(item.id)}`);
+            if (covRes.ok) {
+              const covBlob = await covRes.blob();
+              if (covBlob.size > 0) {
+                coverAssetId = await uploadDirectFile(covBlob, "image", `${item.id}.jpg`);
+                blobBytes += covBlob.size;
+              }
+            }
+          }
+          if (!coverAssetId) {
+            cover = item.coverSvg || makeBulkCoverSvg(item.title, item.author, idx);
+          }
+
+          let pdfAssetId = "";
+          let chapters: { title: string; paragraphs: string[] }[] | undefined;
+
+          if (item.kind === "pdf") {
+            const pdfRes = await fetch(`${base}/api/sync/pdf/${encodeURIComponent(item.id)}`);
+            if (!pdfRes.ok) throw new Error(`Không đọc được PDF (${pdfRes.status})`);
+            const pdfBlob = await pdfRes.blob();
+            if (pdfBlob.size <= 3.5 * 1024 * 1024) {
+              pdfAssetId = await uploadDirectFile(pdfBlob, "pdf", `${item.id}.pdf`);
+            } else {
+              const pdfFile = new File([pdfBlob], `${item.id}.pdf`, { type: "application/pdf" });
+              const uploaded = await upload(`lowf/${userId}/pdf/${crypto.randomUUID()}.pdf`, pdfFile, {
+                access: "private",
+                handleUploadUrl: "/api/uploads",
+                clientPayload: JSON.stringify({ kind: "pdf", title: `${item.id}.pdf` }),
+                contentType: "application/pdf",
+                multipart: pdfBlob.size > 10 * 1024 * 1024,
+              });
+              const fin = await request<{ asset: { id: string } }>("/api/uploads/finalize", {
+                method: "POST",
+                body: JSON.stringify({ url: uploaded.url, kind: "pdf", originalName: `${item.id}.pdf` }),
+              });
+              pdfAssetId = fin.asset.id;
+            }
+            blobBytes += pdfBlob.size;
+          } else {
+            const bookRes = await fetch(`${base}/api/books/${encodeURIComponent(item.id)}`);
+            if (!bookRes.ok) throw new Error(`Không đọc được chương EPUB (${bookRes.status})`);
+            const bookJson = (await bookRes.json()) as { book?: { chapters?: { title: string; paragraphs: string[] }[] } };
+            const rawChapters = bookJson.book?.chapters || [];
+            chapters = rawChapters
+              .slice(0, 600)
+              .map((ch, cIdx) => ({
+                title: String(ch.title || `Chương ${cIdx + 1}`).trim().slice(0, 155) || `Chương ${cIdx + 1}`,
+                paragraphs: (Array.isArray(ch.paragraphs) ? ch.paragraphs : [])
+                  .map((p) => String(p || "").trim().slice(0, 11800))
+                  .filter(Boolean)
+                  .slice(0, 600),
+              }))
+              .filter((ch) => ch.paragraphs.length > 0);
+            if (!chapters.length) {
+              chapters = [{ title: item.title.slice(0, 150), paragraphs: [item.description || item.title] }];
+            }
+          }
+
+          const payload: Record<string, unknown> = {
+            id: item.id,
+            title: item.title.slice(0, 158),
+            author: (item.author || "Lowf Tuyển Chọn").slice(0, 118),
+            category: item.category,
+            format: item.format === "Ebook" || item.format === "Sách giấy" || item.format === "Combo" ? item.format : "Ebook Free",
+            price: Math.max(0, Math.round(item.price || 0)),
+            saleEnabled: false,
+            description: (item.description || `${item.title} — ${item.author}`).slice(0, 4900),
+            access: "free",
+            status: "published",
+            language: item.language || "vi",
+          };
+          if (coverAssetId) payload.coverAssetId = coverAssetId;
+          else payload.cover = cover;
+          if (pdfAssetId) payload.pdfAssetId = pdfAssetId;
+          if (chapters) payload.chapters = chapters;
+
+          const saved = await request<{ saved: RecordItem[]; failed: { id: string; error: string }[] }>(
+            "/api/admin/content/books/batch",
+            { method: "POST", body: JSON.stringify({ books: [payload] }) }
+          );
+          if (saved.saved?.length) {
+            doneCount += 1;
+            syncedBuffer.push(...saved.saved);
+          } else {
+            throw new Error(saved.failed?.[0]?.error || "Không lưu được sách");
+          }
+        } catch (e) {
+          failCount += 1;
+          failedList.push(`${item.id} (${item.title.slice(0, 32)}): ${e instanceof Error ? e.message : "lỗi"}`);
+        }
+
+        setStats({
+          done: doneCount,
+          total: queue.length,
+          skipped: skippedCount,
+          failed: failCount,
+          blobMb: Math.round((blobBytes / 1048576) * 10) / 10,
+        });
+        setProgress(
+          `Đang đồng bộ ${doneCount + failCount}/${queue.length} cuốn · Thành công: ${doneCount} · Lỗi: ${failCount} · Blob đợt này: ${(blobBytes / 1048576).toFixed(1)} MB (${item.title.slice(0, 42)})`
+        );
+        if (syncedBuffer.length >= 25) {
+          onSynced(syncedBuffer.splice(0, syncedBuffer.length));
+        }
+      }
+    });
+
+    await Promise.all(workers);
+    if (syncedBuffer.length) onSynced(syncedBuffer.splice(0, syncedBuffer.length));
+    setErrors(failedList);
+    if (stopRef.current) {
+      setStatus("paused");
+      setProgress(`Đã tạm dừng tại ${doneCount}/${queue.length} cuốn. Bấm "Bắt đầu đồng bộ" lại để tiếp tục phần còn lại.`);
+    } else {
+      setStatus("done");
+      setProgress(`✨ Hoàn tất đồng bộ ${doneCount}/${queue.length} cuốn mới (đã bỏ qua ${skippedCount} cuốn sẵn có · tổng Blob đợt này: ${(blobBytes / 1048576).toFixed(1)} MB${failCount ? ` · ${failCount} lỗi` : ""}).`);
+    }
+  }
+
+  return (
+    <div
+      className={styles.notice}
+      data-sync-status={status}
+      style={{ alignItems: "flex-start", gap: 14, flexWrap: "wrap", marginBottom: 12 }}
+    >
+      <RefreshCw size={20} />
+      <div style={{ flex: 1, minWidth: 260 }}>
+        <strong>🔄 Đồng bộ thư viện sách đã tuyển chọn &amp; bìa thật lên website chính</strong>
+        <p style={{ marginTop: 4 }}>
+          Đẩy trực tiếp bộ sách đã lọc sạch (&ge; 20 trang, 13 thể loại, bìa thật nén sắc nét) từ máy chủ xem trước trên máy của bạn lên Neon Postgres &amp; Vercel Blob. Tự động bỏ qua sách đã có, có thể tạm dừng và chạy tiếp bất kỳ lúc nào.
+        </p>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10, alignItems: "center" }}>
+          <select
+            className={styles.categorySelect}
+            value={mode}
+            disabled={status === "running"}
+            onChange={(e) => {
+              const nextMode = e.target.value as SyncMode;
+              setMode(nextMode);
+              setPlan(null);
+            }}
+          >
+            <option value="free-tier">Khuyên dùng · Vừa khít gói Free (~930 cuốn: 519 EPUB + ~410 PDF gọn &amp; bìa thật)</option>
+            <option value="epubs-only">Nhanh · Toàn bộ 519 sách EPUB + bìa thật (~8 MB Blob)</option>
+            <option value="all-under-50mb">Toàn bộ sách ≤ 50 MB (cần gói Blob &gt; 3.5 GB)</option>
+          </select>
+          <input
+            type="text"
+            value={sourceUrl}
+            disabled={status === "running"}
+            onChange={(e) => setSourceUrl(e.target.value)}
+            style={{ padding: "8px 10px", borderRadius: 10, border: "1px solid rgba(0,0,0,.14)", fontSize: 12.5, width: 190 }}
+            aria-label="Địa chỉ máy chủ cục bộ"
+          />
+          <button
+            type="button"
+            className={styles.secondary}
+            disabled={status === "running" || status === "checking"}
+            onClick={() => void checkSource(mode)}
+          >
+            Kiểm tra kết nối
+          </button>
+          {status !== "running" ? (
+            <button type="button" className={styles.primary} onClick={() => void startSync()}>
+              <CloudUpload size={15} /> {status === "paused" ? "Tiếp tục đồng bộ" : "Đồng bộ ngay"}
+            </button>
+          ) : (
+            <button
+              type="button"
+              className={styles.secondary}
+              onClick={() => {
+                stopRef.current = true;
+              }}
+            >
+              Tạm dừng
+            </button>
+          )}
+        </div>
+        {stats.total > 0 && (
+          <div style={{ marginTop: 10 }}>
+            <div style={{ height: 8, borderRadius: 99, background: "rgba(0,0,0,.08)", overflow: "hidden" }}>
+              <div
+                style={{
+                  height: "100%",
+                  width: `${Math.min(100, Math.round(((stats.done + stats.failed) / Math.max(1, stats.total)) * 100))}%`,
+                  background: "var(--accent, #b84568)",
+                  transition: "width .25s ease",
+                }}
+              />
+            </div>
+            <p style={{ marginTop: 6, fontSize: 12, fontWeight: 600 }}>
+              Tiến độ: {stats.done}/{stats.total} thành công · Đã có sẵn: {stats.skipped} · Lỗi: {stats.failed} · Blob: {stats.blobMb} MB
+            </p>
+          </div>
+        )}
+        {progress && <p style={{ marginTop: 6, fontSize: 12.5 }}>{progress}</p>}
+        {errors.length > 0 && (
+          <p className={styles.error} style={{ marginTop: 6, fontSize: 11.5 }}>
+            Chi tiết lỗi ({errors.length}): {errors.slice(0, 4).join(" · ")}
           </p>
         )}
       </div>
