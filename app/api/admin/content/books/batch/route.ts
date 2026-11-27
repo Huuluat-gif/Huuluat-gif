@@ -31,16 +31,16 @@ export const POST = route(async (request: Request) => {
       const item = normalizeItem('books', cleanRaw);
       const id = String(item.id || randomUUID());
       item.id = id;
-      await validateAssets('books', item, user.id);
 
       if (preserveChapters && !item.chapters) {
-        // Fast asset/metadata patch for existing EPUBs without transferring or overwriting existing chapters JSONB
+        // Validate uploaded R2 assets cleanly while allowing existing chapters stored in Neon DB to satisfy publish check
+        await validateAssets('books', { ...item, status: 'draft' }, user.id);
         const patched = await sql`
           UPDATE lowf_content
           SET data = (CASE WHEN data ? 'chapters' THEN jsonb_build_object('chapters', data->'chapters') ELSE '{}'::jsonb END) || ${JSON.stringify(item)}::jsonb,
               status = ${String(item.status)},
               updated_at = now()
-          WHERE kind = 'books' AND id = ${id}
+          WHERE kind = 'books' AND id = ${id} AND data ? 'chapters'
           RETURNING id
         `;
         if (patched.length) {
@@ -48,6 +48,8 @@ export const POST = route(async (request: Request) => {
           continue;
         }
       }
+
+      await validateAssets('books', item, user.id);
 
       await sql`
         INSERT INTO lowf_content(kind, id, data, status)
