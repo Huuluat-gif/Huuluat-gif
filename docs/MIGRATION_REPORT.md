@@ -21,14 +21,15 @@
 | **Trung tâm Quản trị & Tìm bìa trực tuyến** | Tạo [`app/api/admin/storage/stats/route.ts`](../app/api/admin/storage/stats/route.ts), [`app/api/admin/covers/search/route.ts`](../app/api/admin/covers/search/route.ts) (chống SSRF bằng allowlist) và nâng cấp [`app/admin/studio.tsx`](../app/admin/studio.tsx) (`OperationsHealthPanel`, `OnlineCoverFinder` + Hoàn tác bìa cũ, 7 trạng thái, mặc định `needs_review` khi nhập hàng loạt) | `app/admin/studio.tsx`, `app/api/admin/covers/search/route.ts`, `app/api/admin/storage/stats/route.ts` |
 | **Pipeline Lọc Sách & Di chuyển R2 Resumable** | Viết và chạy thật [`scripts/catalog_pipeline.py`](../scripts/catalog_pipeline.py) trên toàn bộ 14 thư mục sách gốc (2.423 tệp → 1.130 sách sạch duy nhất); viết và chạy dry-run [`scripts/migrate_to_r2.py`](../scripts/migrate_to_r2.py) | `scripts/catalog_pipeline.py`, `scripts/migrate_to_r2.py` |
 
+| **Kiểm chứng CI Node 24 thực tế (`typecheck` + `build` + `security`)** | Đã chạy thực tế trên GitHub Actions Run `#45991732782`: `npm ci`, `npm run typecheck`, `npm audit`, kiểm tra vệ sinh repo & `npm run build` đều đạt **`completed / success`** | [GitHub Actions #45991732782](https://github.com/Huuluat-gif/Huuluat-gif/actions/runs/45991732782) |
+
 ---
 
 ## 2. Hạng mục Chờ Điều kiện / Chờ Phê duyệt (Báo cáo Trung thực)
 
 | Hạng mục | Lý do chưa chạy ngay | Điều kiện để hoàn tất |
 | --- | --- | --- |
-| **`npm run typecheck`, `npm run build`, `vinext build`** | Máy Mac cục bộ hiện **chưa cài `node`/`npm`/`wrangler`** | Tự động chạy ngay trên **GitHub Actions Node 24** khi push nhánh `migration/cloudflare` |
-| **Deploy Cloudflare Workers Staging (`lowf-library-staging`)** | Cần `CLOUDFLARE_API_TOKEN` & `CLOUDFLARE_ACCOUNT_ID` trong GitHub Environment `staging` và secrets Worker (`DATABASE_URL`, `NEON_AUTH_*`, `R2_*`) | Thêm secrets theo [`DEPLOYMENT_GUIDE.md`](DEPLOYMENT_GUIDE.md) rồi chạy workflow Staging |
+| **Deploy Cloudflare Workers Staging (`lowf-library-staging`)** | Step `vinext build && wrangler deploy --env staging` trên Run `#45991732782` tự động `skipped` an toàn vì chưa nạp `CLOUDFLARE_API_TOKEN` & `CLOUDFLARE_ACCOUNT_ID` trong GitHub Environment `staging` | Thêm 2 secrets vào GitHub Environment `staging` + nạp Worker secrets (`DATABASE_URL`, `NEON_AUTH_*`, `R2_*`) theo [`DEPLOYMENT_GUIDE.md`](DEPLOYMENT_GUIDE.md) |
 | **Áp dụng `scripts/db-migrate-v2.sql` lên Neon Production** | Quy tắc bắt buộc không sửa Production trước khi chủ sở hữu phê duyệt | Chạy sau khi chủ sở hữu xác nhận duyệt |
 | **Đồng bộ nốt ~272 bìa + ~90 PDF (và lô 1.079 sách mới) lên `lowf-library-media`** | Chờ chủ sở hữu chọn phạm vi sách (556 vs 1.079 cuốn) và phê duyệt | Chạy 1 lệnh `scripts/migrate_to_r2.py --env production --execute` + đồng bộ metadata |
 | **Đổi DNS `lowflibray.com` sang Cloudflare DNS** | Quy tắc bắt buộc không tự đổi DNS Production | Thực hiện cùng chủ sở hữu tại Name.com theo [`DNS_PLAN.md`](DNS_PLAN.md) sau phê duyệt |
