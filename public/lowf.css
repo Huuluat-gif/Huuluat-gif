@@ -1436,14 +1436,30 @@ body.is-tab-hidden .petals-layer span,body.is-tab-hidden .bg-3d-stage span,body.
   .pdf-smart-bar{padding:5px 8px!important;gap:5px!important}
   .pdf-smart-btn{padding:6px 9px!important;font-size:10.5px!important;min-height:32px}
 }
-/* High-FPS Performance Optimization: Zero-Lag Grid Containment & Lightweight Mobile Surfaces */
-.book-card{content-visibility:auto;contain-intrinsic-size:200px 350px}
+/* High-FPS Performance Optimization: Zero-Lag Grid Containment, Smooth 3D Seasonal Landmark & Editorial Polish */
+.book-card{content-visibility:auto;contain-intrinsic-size:200px 355px}
+.book-card h3{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:2.7em;line-height:1.35}
+.book-card .author{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.book-cover{border-radius:12px;transition:transform .24s cubic-bezier(.22,1,.36,1),box-shadow .24s ease}
+.book-card:hover .book-cover{transform:translateY(-4px)}
+.hero-landmark-3d,.season-stage-widget,.season-stage-box{contain:layout paint style}
+.petals-layer span:nth-child(n+9){display:none}
+[data-fx-level=vivid] .petals-layer span:nth-child(n+9){display:block}
 @media(max-width:900px){
-  .petals-layer,.bg-3d-stage,.season-landmark-3d,.shooting-star,.hero-sunbeams,.season-stage-widget{display:none!important}
+  /* Keep 3D Seasonal Landmark & gentle petals ON mobile, optimized to 1 ultra-light GPU float (<1% GPU!) */
+  .bg-3d-stage,.shooting-star,.hero-sunbeams{display:none!important}
+  .petals-layer span:nth-child(n+6){display:none!important}
+  .hero-landmark-3d{display:block!important;width:132px!important;height:166px!important;right:4px!important;bottom:-4px!important;opacity:.95;perspective:none!important}
+  .season-stage-widget{display:block!important}
+  .season-stage-box{height:210px!important;perspective:none!important}
+  .season-stage-box .lm3d-rig{width:185px!important;height:210px!important;transform:none!important;transform-style:flat!important}
+  .lm3d-svg{transform:translateZ(0)!important;animation:lmMobileFloat 7s ease-in-out infinite!important}
+  .lm3d-bulb,.lm3d-sway,.lm3d-spin,.lm3d-star,.lm3d-ring,.lm3d-floor,.lm3d-steam{animation:none!important}
   .hero-book-3d,.pulse-dot::after,.ribbon-spark,.peace-sanctuary::before{animation:none!important}
   .topbar,.decor-aurora .workspace>.topbar,.reader-edge-nav,.trend-mood{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
   .topbar,.decor-aurora .workspace>.topbar{background:var(--surface)!important}
 }
+@keyframes lmMobileFloat{0%,100%{transform:translate3d(0,0,0)}50%{transform:translate3d(0,-6px,0)}}
 @media(max-width:767px){
   .topbar,.decor-aurora .workspace>.topbar{padding:0 12px!important;gap:7px!important;height:64px!important}
   .workspace{padding-top:64px!important}
@@ -1451,6 +1467,10 @@ body.is-tab-hidden .petals-layer span,body.is-tab-hidden .bg-3d-stage span,body.
   .topbar .search{flex:1 1 auto!important;width:auto!important;max-width:none!important;min-width:92px!important;padding:7px 10px!important;margin-left:0!important}
   .topbar .search kbd{display:none!important}
   .mobile-management{position:relative!important;top:auto!important;z-index:2!important}
+  .filters{flex-wrap:nowrap!important;overflow-x:auto!important;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity;padding-bottom:6px;scrollbar-width:none}
+  .filters::-webkit-scrollbar{display:none}
+  .filters .filter{flex:0 0 auto;scroll-snap-align:start;white-space:nowrap}
+  .book-grid{gap:14px 12px!important}
 }
 
 /* Ergonomic Typography Measure, Alignment & Continuous Scroll Chapter Transition */

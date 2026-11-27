@@ -559,7 +559,7 @@ const NAV_EFFECTS=[
  {id:'clean',name:'Chuyển mượt nhẹ',desc:'Tối giản êm mắt'}
 ];
 const NAV_COLOR_SWATCHES=['#2c6546','#b84568','#9e511c','#166b85','#4d3d91','#b3322a','#0f766e','#1e293b'];
-const defaultDecor={preset:'blush',season:'spring',bgPattern:'clean',bgWallpaper:'none',bgOpacity:24,navSync:true,navColor:'',navStyle:'pill-glow',navEffect:'magnetic',landmark3d:false,fxLevel:'gentle',stars:'soft',petals:false,aurora:true,paperGrain:false,cardStyle:'hardcover'};
+const defaultDecor={preset:'blush',season:'spring',bgPattern:'clean',bgWallpaper:'none',bgOpacity:24,navSync:true,navColor:'',navStyle:'pill-glow',navEffect:'magnetic',landmark3d:true,fxLevel:'gentle',stars:'soft',petals:true,aurora:true,paperGrain:false,cardStyle:'hardcover'};
 function seasonLandmark3D(id){
  const labels3d={
   christmas:'🎄 Cây Thông Noel 3D',
