@@ -4281,7 +4281,7 @@ type SyncPlanItem = {
   hasPhotoCover: boolean;
   coverSvg?: string;
   sortOrder?: number;
-  status?: "published" | "draft";
+  status?: "published" | "draft" | "needs_review" | "ready";
 };
 type SyncPlanResponse = {
   mode: string;
@@ -4372,7 +4372,7 @@ function LocalLibrarySyncPanel({
         id: it.id,
         sortOrder: typeof it.sortOrder === "number" ? it.sortOrder : i + 1,
         category: it.category,
-        status: it.status === "draft" ? "draft" : "published",
+        status: it.status && ["published", "draft", "needs_review", "ready"].includes(it.status) ? it.status : "published",
       }));
       const syncRes = await request<{
         storageBackend?: "r2" | "vercel-blob";
@@ -4387,7 +4387,7 @@ function LocalLibrarySyncPanel({
         "/api/admin/content/books/sync-order",
         {
           method: "POST",
-          body: JSON.stringify({ order: orderPayload, archiveOthers: true, keepIds }),
+          body: JSON.stringify({ order: orderPayload, archiveOthers: mode === "free-tier", keepIds }),
         }
       );
       if (syncRes.storageBackend === "r2") {
@@ -4508,7 +4508,7 @@ function LocalLibrarySyncPanel({
             saleEnabled: false,
             description: (item.description || `${item.title} — ${item.author}`).slice(0, 4900),
             access: "free",
-            status: item.status === "draft" ? "draft" : "published",
+            status: item.status && ["published", "draft", "needs_review", "ready"].includes(item.status) ? item.status : "published",
             language: item.language || "vi",
             sortOrder: typeof item.sortOrder === "number" ? item.sortOrder : idx + 1,
           };

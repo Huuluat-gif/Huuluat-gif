@@ -564,10 +564,10 @@
     const zen = !!document.querySelector('#reader.reader-zen-mode');
     const isMobile = window.innerWidth < 768;
     const padX = isMobile ? 20 : (zen ? 48 : 132);
-    const padY = isMobile ? 22 : (zen ? 54 : 36);
+    const padY = isMobile ? 42 : (zen ? 54 : 82);
     const rawW = scroller && scroller.clientWidth > 120 ? scroller.clientWidth : window.innerWidth;
-    const rawH = scroller && scroller.clientHeight > 120 ? scroller.clientHeight : Math.max(360, window.innerHeight - (zen ? 64 : 215));
-    return { availW: Math.max(240, rawW - padX), availH: Math.max(280, rawH - padY) };
+    const rawH = scroller && scroller.clientHeight > 120 ? scroller.clientHeight : Math.max(340, window.innerHeight - (zen ? 72 : 245));
+    return { availW: Math.max(240, rawW - padX), availH: Math.max(260, rawH - padY) };
   }
   async function renderSinglePdfPage(pdfPage, canvas, targetW, targetH, textLayer, options, epoch, isSpread) {
     const baseViewport = pdfPage.getViewport({ scale: 1 });

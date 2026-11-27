@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { getSQL } from '@/lib/db';
 import { requireUser } from '@/lib/auth/server';
-import { json,route,assertSameOrigin,parseBody,dayKey,HttpError } from '@/lib/api';
+import { json,route,assertSameOrigin,parseBody,dayKey } from '@/lib/api';
 import { getUserData } from '@/lib/user-data';
 import { idSchema } from '@/lib/validation';
 import { rateLimit } from '@/lib/rate-limit';
@@ -9,9 +9,19 @@ const schema=z.object({saved:z.array(idSchema).max(500).optional(),progress:z.re
 export const POST=route(async request=>{
  assertSameOrigin(request);const user=await requireUser();await rateLimit(`data:${user.id}`,120,60);const body=await parseBody(request,schema);const sql=getSQL();
  const ids=[...new Set([...(body.saved||[]),...Object.keys(body.progress||{})])];
- if(ids.length){const rows=await sql`SELECT id FROM lowf_content WHERE kind='books' AND status='published' AND id=ANY(${ids}::text[])`;const allowed=new Set(rows.map(r=>r.id));if(ids.some(id=>!allowed.has(id)))throw new HttpError(400,'Một cuốn sách không còn trong thư viện.');}
- const progress=Object.fromEntries(Object.entries(body.progress||{}).map(([id,p])=>[id,{chapter:p.chapter,finished:p.finished||false,updated:dayKey()}]));
- if(body.saved!==undefined){await sql`INSERT INTO lowf_user_data(user_id,saved,progress) VALUES(${user.id},${JSON.stringify([...new Set(body.saved)])}::jsonb,${JSON.stringify(progress)}::jsonb) ON CONFLICT(user_id) DO UPDATE SET saved=EXCLUDED.saved,progress=lowf_user_data.progress||EXCLUDED.progress,updated_at=now()`;}
+ let allowed=new Set<string>();
+ if(ids.length){
+  const rows=await sql`SELECT id FROM lowf_content WHERE kind='books' AND status='published' AND id=ANY(${ids}::text[])`;
+  allowed=new Set(rows.map(r=>String(r.id)));
+ }
+ // Silently prune archived/removed book IDs so returning readers never get stuck with HTTP 400 toasts.
+ const cleanSaved=body.saved!==undefined?[...new Set(body.saved.filter(id=>allowed.has(id)))]:undefined;
+ const progress=Object.fromEntries(
+  Object.entries(body.progress||{})
+   .filter(([id])=>allowed.has(id))
+   .map(([id,p])=>[id,{chapter:p.chapter,finished:p.finished||false,updated:dayKey()}])
+ );
+ if(cleanSaved!==undefined){await sql`INSERT INTO lowf_user_data(user_id,saved,progress) VALUES(${user.id},${JSON.stringify(cleanSaved)}::jsonb,${JSON.stringify(progress)}::jsonb) ON CONFLICT(user_id) DO UPDATE SET saved=EXCLUDED.saved,progress=lowf_user_data.progress||EXCLUDED.progress,updated_at=now()`;}
  else await sql`INSERT INTO lowf_user_data(user_id,progress) VALUES(${user.id},${JSON.stringify(progress)}::jsonb) ON CONFLICT(user_id) DO UPDATE SET progress=lowf_user_data.progress||EXCLUDED.progress,updated_at=now()`;
  return json({data:await getUserData(user.id)});
 });
