@@ -4167,9 +4167,10 @@ function LocalLibrarySyncPanel({
     setErrors([]);
 
     const base = sourceUrl.replace(/\/+$/, "");
-    // Re-order existing books & archive trimmed books outside the curated plan first
+    const existingSet = new Set(existingIds);
+    // Re-order existing books, archive trimmed books outside the curated plan & reclaim orphaned Blob storage first
     try {
-      setProgress("Đang sắp xếp thứ tự sách bộ & ẩn các đầu sách đã lọc bỏ…");
+      setProgress("Đang sắp xếp thứ tự sách bộ, dọn dung lượng thừa & ẩn sách ngoài danh sách…");
       const keepIds = activePlan.items.map((it) => it.id);
       const orderPayload = activePlan.items.map((it, i) => ({
         id: it.id,
@@ -4177,18 +4178,18 @@ function LocalLibrarySyncPanel({
         category: it.category,
         status: it.status === "draft" ? "draft" : "published",
       }));
-      await request<{ updatedCount: number; archivedCount: number }>(
+      const syncRes = await request<{ updatedCount: number; updatedIds?: string[]; archivedCount: number; freedMb?: number }>(
         "/api/admin/content/books/sync-order",
         {
           method: "POST",
           body: JSON.stringify({ order: orderPayload, archiveOthers: true, keepIds }),
         }
       );
+      for (const uid of syncRes.updatedIds || []) existingSet.add(uid);
     } catch {
       // Non-fatal: continue syncing new items
     }
 
-    const existingSet = new Set(existingIds);
     const queue = activePlan.items.filter((it) => !existingSet.has(it.id));
     const skippedCount = activePlan.items.length - queue.length;
 

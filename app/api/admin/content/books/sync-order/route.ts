@@ -1,8 +1,10 @@
 import { z } from 'zod';
+import { del } from '@vercel/blob';
 import { getSQL } from '@/lib/db';
 import { requireAdmin } from '@/lib/auth/server';
 import { route, json, assertSameOrigin, parseBody } from '@/lib/api';
 import { rateLimit } from '@/lib/rate-limit';
+import { blobCredentials } from '@/lib/blob-config';
 
 export const dynamic = 'force-dynamic';
 const categoryEnum = z.enum([
@@ -30,8 +32,11 @@ export const POST = route(async (request: Request) => {
 
   let updatedCount = 0;
   let archivedCount = 0;
+  let freedAssets = 0;
+  let freedBytes = 0;
+  const updatedIds: string[] = [];
 
-  // Bulk update sortOrder, normalized category, and published/draft status in one SQL round-trip
+  // Bulk update sortOrder, normalized category, and published/draft status for intact existing books in one SQL round-trip
   if (body.order.length) {
     const ids = body.order.map((o) => o.id);
     const orders = body.order.map((o) => o.sortOrder);
@@ -53,13 +58,16 @@ export const POST = route(async (request: Request) => {
       FROM (
         SELECT * FROM unnest(${ids}::text[], ${orders}::int[], ${categories}::text[], ${statuses}::text[]) AS t(id, ord, cat, st)
       ) AS v
-      WHERE c.kind = 'books' AND c.id = v.id
+      WHERE c.kind = 'books'
+        AND c.id = v.id
+        AND (COALESCE(c.data->>'pdfAssetId', '') <> '' OR jsonb_array_length(COALESCE(c.data->'chapters', '[]'::jsonb)) > 0)
       RETURNING c.id
     `;
     updatedCount = rows.length;
+    for (const r of rows) updatedIds.push(String(r.id));
   }
 
-  // Optionally archive published books outside the curated keepIds list (e.g. trimmed fantasy novels)
+  // Optionally archive published/draft books outside the curated keepIds list and reclaim their orphaned Blob storage
   if (body.archiveOthers && body.keepIds && body.keepIds.length) {
     const archived = await sql`
       UPDATE lowf_content
@@ -67,12 +75,59 @@ export const POST = route(async (request: Request) => {
           data = jsonb_set(data, '{status}', '"archived"', true),
           updated_at = now()
       WHERE kind = 'books'
-        AND status = 'published'
+        AND status IN ('published', 'draft')
         AND NOT (id = ANY(${body.keepIds}::text[]))
       RETURNING id
     `;
     archivedCount = archived.length;
+
+    try {
+      const orphans = await sql`
+        SELECT a.id, a.pathname, a.byte_size
+        FROM lowf_assets a
+        WHERE a.kind IN ('pdf', 'image')
+          AND EXISTS (
+            SELECT 1 FROM lowf_content c
+            WHERE c.kind = 'books' AND c.status = 'archived'
+              AND (c.data->>'coverAssetId' = a.id::text OR c.data->>'pdfAssetId' = a.id::text)
+          )
+          AND NOT EXISTS (
+            SELECT 1 FROM lowf_content c
+            WHERE c.status IN ('published', 'draft')
+              AND (c.data->>'coverAssetId' = a.id::text OR c.data->>'pdfAssetId' = a.id::text OR c.data->>'assetId' = a.id::text)
+          )
+          AND NOT EXISTS (
+            SELECT 1 FROM lowf_design_versions d
+            WHERE d.settings::text LIKE '%' || a.id::text || '%'
+          )
+        LIMIT 800
+      `;
+      if (orphans.length) {
+        const creds = blobCredentials();
+        const orphanIds: string[] = [];
+        for (let i = 0; i < orphans.length; i += 100) {
+          const batch = orphans.slice(i, i + 100);
+          await del(batch.map((o) => String(o.pathname)), creds);
+          for (const o of batch) {
+            orphanIds.push(String(o.id));
+            freedBytes += Number(o.byte_size || 0);
+          }
+        }
+        if (orphanIds.length) {
+          await sql`
+            UPDATE lowf_content
+            SET data = (data - 'coverAssetId') - 'pdfAssetId'
+            WHERE kind = 'books' AND status = 'archived'
+              AND (data->>'coverAssetId' = ANY(${orphanIds}::text[]) OR data->>'pdfAssetId' = ANY(${orphanIds}::text[]))
+          `;
+          await sql`DELETE FROM lowf_assets WHERE id::text = ANY(${orphanIds}::text[])`;
+          freedAssets = orphanIds.length;
+        }
+      }
+    } catch {
+      // Non-fatal: archived rows remain hidden even if Blob cleanup hits a transient error
+    }
   }
 
-  return json({ updatedCount, archivedCount });
+  return json({ updatedCount, updatedIds, archivedCount, freedAssets, freedMb: Math.round((freedBytes / 1048576) * 10) / 10 });
 });
