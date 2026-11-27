@@ -1639,7 +1639,7 @@ export default function AdminStudio({environment='production'}:{environment?:'pr
                     <>
                       <LocalLibrarySyncPanel
                         userId={user.id}
-                        existingIds={content.books.filter((b) => b.status === "published").map((b) => b.id)}
+                        existingIds={content.books.filter((b) => b.status === "published" || b.status === "draft").map((b) => b.id)}
                         onSynced={(synced) => {
                           if (synced.length) {
                             setContent((prev) => {
@@ -1753,6 +1753,7 @@ export default function AdminStudio({environment='production'}:{environment?:'pr
                         <option value="vanhocvn">Văn học Việt Nam</option>
                         <option value="vanhocqt">Văn học nước ngoài</option>
                         <option value="tieuthuyet">Tiểu thuyết &amp; Kỳ ảo</option>
+                        <option value="truyentranh">Truyện tranh &amp; Manga</option>
                         <option value="tamlinh">Tôn giáo &amp; Tâm linh</option>
                         <option value="trinhtham">Trinh thám &amp; Kinh dị</option>
                         <option value="dacbiet">Tuyển chọn Lowf</option>
@@ -3145,10 +3146,21 @@ export default function AdminStudio({environment='production'}:{environment?:'pr
                             patchItem({ category: e.target.value })
                           }
                         >
+                          <option value="kinhte">Kinh tế &amp; Đầu tư</option>
+                          <option value="marketing">Bán hàng &amp; Marketing</option>
+                          <option value="kynang">Phát triển bản thân</option>
+                          <option value="tamly">Tâm lý &amp; Tư duy</option>
+                          <option value="lichsu">Lịch sử &amp; Văn minh</option>
+                          <option value="khoahoc">Khoa học &amp; Công nghệ</option>
+                          <option value="phapluat">Pháp luật &amp; Chính trị</option>
+                          <option value="ngoaingu">Ngoại ngữ &amp; Tiếng Anh</option>
                           <option value="vanhocvn">Văn học Việt Nam</option>
                           <option value="vanhocqt">Văn học nước ngoài</option>
-                          <option value="kinhte">Kinh tế & Đầu tư</option>
-                          <option value="dacbiet">Đặc biệt</option>
+                          <option value="tieuthuyet">Tiểu thuyết &amp; Kỳ ảo</option>
+                          <option value="truyentranh">Truyện tranh &amp; Manga</option>
+                          <option value="trinhtham">Trinh thám &amp; Kinh dị</option>
+                          <option value="tamlinh">Tôn giáo &amp; Tâm linh</option>
+                          <option value="dacbiet">Tuyển chọn Lowf</option>
                         </select>
                       </Field>
                       <Field label="Định dạng">
@@ -3952,7 +3964,7 @@ function cleanBulkTitle(filename: string): { title: string; author: string } {
 }
 
 function BulkPdfImporter({ userId, onDone }: { userId: string; onDone: (items: RecordItem[]) => void }) {
-  const [category, setCategory] = useState<"marketing" | "kinhte" | "kynang" | "tamly" | "phapluat" | "ngoaingu" | "lichsu" | "khoahoc" | "vanhocvn" | "vanhocqt" | "tieuthuyet" | "tamlinh" | "trinhtham" | "dacbiet">("kinhte");
+  const [category, setCategory] = useState<"marketing" | "kinhte" | "kynang" | "tamly" | "phapluat" | "ngoaingu" | "lichsu" | "khoahoc" | "vanhocvn" | "vanhocqt" | "tieuthuyet" | "truyentranh" | "tamlinh" | "trinhtham" | "dacbiet">("kinhte");
   const [status, setStatus] = useState<"published" | "draft">("published");
   const [access, setAccess] = useState<"free" | "member">("free");
   const [busy, setBusy] = useState(false);
@@ -4036,6 +4048,7 @@ function BulkPdfImporter({ userId, onDone }: { userId: string; onDone: (items: R
             <option value="vanhocvn">Văn học Việt Nam</option>
             <option value="vanhocqt">Văn học nước ngoài</option>
             <option value="tieuthuyet">Tiểu thuyết &amp; Kỳ ảo</option>
+            <option value="truyentranh">Truyện tranh &amp; Manga</option>
             <option value="tamlinh">Tôn giáo &amp; Tâm linh</option>
             <option value="trinhtham">Trinh thám &amp; Kinh dị</option>
             <option value="dacbiet">Tuyển chọn Lowf</option>
@@ -4079,6 +4092,7 @@ type SyncPlanItem = {
   hasPhotoCover: boolean;
   coverSvg?: string;
   sortOrder?: number;
+  status?: "published" | "draft";
 };
 type SyncPlanResponse = {
   mode: string;
@@ -4161,6 +4175,7 @@ function LocalLibrarySyncPanel({
         id: it.id,
         sortOrder: typeof it.sortOrder === "number" ? it.sortOrder : i + 1,
         category: it.category,
+        status: it.status === "draft" ? "draft" : "published",
       }));
       await request<{ updatedCount: number; archivedCount: number }>(
         "/api/admin/content/books/sync-order",
@@ -4268,7 +4283,7 @@ function LocalLibrarySyncPanel({
             saleEnabled: false,
             description: (item.description || `${item.title} — ${item.author}`).slice(0, 4900),
             access: "free",
-            status: "published",
+            status: item.status === "draft" ? "draft" : "published",
             language: item.language || "vi",
             sortOrder: typeof item.sortOrder === "number" ? item.sortOrder : idx + 1,
           };

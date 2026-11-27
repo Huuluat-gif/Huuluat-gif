@@ -16,8 +16,12 @@
   let annotations=[],annotationMore=false,annotationOffset=0,annotationLoading=false;
   let selected=null,editId=null,color='yellow',translation=null,penMode=false,drawing=null,pen=null;
   let words=[],wordOffset=0,wordsMore=false,wordLoading=false,wordsLoadedFor='',vocabularyEpoch=0;
-  let toolsVisible=true;
-  try{toolsVisible=localStorage.getItem('lowf.reader.toolsHidden')!=='1';}catch{}
+  let toolsVisible=window.innerWidth>760;
+  try{
+    const savedVis=localStorage.getItem('lowf.reader.toolsHidden');
+    if(savedVis==='1')toolsVisible=false;
+    else if(savedVis==='0')toolsVisible=true;
+  }catch{}
   const uid=()=>String(bridge.getContext().user?.id||'');
   const key=c=>[c.bookId,c.chapter,c.page,String(c.user?.id||'')].join('|');
   const samePage=a=>a.bookId===context.bookId&&a.chapter===context.chapter&&a.page===context.page;

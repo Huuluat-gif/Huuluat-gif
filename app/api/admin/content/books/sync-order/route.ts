@@ -7,7 +7,7 @@ import { rateLimit } from '@/lib/rate-limit';
 export const dynamic = 'force-dynamic';
 const categoryEnum = z.enum([
   'marketing', 'kinhte', 'kynang', 'tamly', 'phapluat', 'ngoaingu',
-  'lichsu', 'khoahoc', 'vanhocvn', 'vanhocqt', 'tieuthuyet', 'tamlinh',
+  'lichsu', 'khoahoc', 'vanhocvn', 'vanhocqt', 'tieuthuyet', 'truyentranh', 'tamlinh',
   'trinhtham', 'dacbiet',
 ]);
 const syncOrderSchema = z.object({
@@ -15,6 +15,7 @@ const syncOrderSchema = z.object({
     id: z.string().min(1).max(80),
     sortOrder: z.number().int().min(0).max(999999),
     category: categoryEnum.optional(),
+    status: z.enum(['published', 'draft']).optional(),
   })).max(2000),
   archiveOthers: z.boolean().optional(),
   keepIds: z.array(z.string().min(1).max(80)).max(2000).optional(),
@@ -30,21 +31,27 @@ export const POST = route(async (request: Request) => {
   let updatedCount = 0;
   let archivedCount = 0;
 
-  // Bulk update sortOrder (and normalized category if provided) for existing books in one SQL round-trip
+  // Bulk update sortOrder, normalized category, and published/draft status in one SQL round-trip
   if (body.order.length) {
     const ids = body.order.map((o) => o.id);
     const orders = body.order.map((o) => o.sortOrder);
     const categories = body.order.map((o) => o.category || '');
+    const statuses = body.order.map((o) => o.status || 'published');
     const rows = await sql`
       UPDATE lowf_content AS c
-      SET data = CASE
-            WHEN v.cat <> '' THEN jsonb_set(jsonb_set(c.data, '{sortOrder}', to_jsonb(v.ord), true), '{category}', to_jsonb(v.cat), true)
-            ELSE jsonb_set(c.data, '{sortOrder}', to_jsonb(v.ord), true)
-          END,
-          status = 'published',
+      SET data = jsonb_set(
+            CASE
+              WHEN v.cat <> '' THEN jsonb_set(jsonb_set(c.data, '{sortOrder}', to_jsonb(v.ord), true), '{category}', to_jsonb(v.cat), true)
+              ELSE jsonb_set(c.data, '{sortOrder}', to_jsonb(v.ord), true)
+            END,
+            '{status}',
+            to_jsonb(v.st),
+            true
+          ),
+          status = v.st,
           updated_at = now()
       FROM (
-        SELECT * FROM unnest(${ids}::text[], ${orders}::int[], ${categories}::text[]) AS t(id, ord, cat)
+        SELECT * FROM unnest(${ids}::text[], ${orders}::int[], ${categories}::text[], ${statuses}::text[]) AS t(id, ord, cat, st)
       ) AS v
       WHERE c.kind = 'books' AND c.id = v.id
       RETURNING c.id

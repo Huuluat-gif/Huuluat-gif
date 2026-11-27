@@ -1393,7 +1393,57 @@ body.is-tab-hidden .petals-layer span,body.is-tab-hidden .bg-3d-stage span,body.
 .reader[data-paper=dusk]{--r-desk:#1a1e22;--r-paper:#242a2f;--r-ink:#dde3e8;--r-border:#38424a;--r-edge:#1f252a}
 .reader[data-paper=dusk] .chapter-label,.reader[data-paper=midnight] .chapter-label{color:#9cc294}
 .reader[data-paper=dusk] .book-spine{background:linear-gradient(90deg,rgba(0,0,0,.38),rgba(0,0,0,.1) 45%,rgba(255,255,255,.05) 50%,rgba(0,0,0,.34))}
-.reader .reader-workspace{filter:brightness(var(--r-dim,1));transition:filter .18s ease}
+.reader .reader-workspace{position:relative;z-index:1}
+.reader[data-dimmed="1"] .reader-workspace{filter:brightness(var(--r-dim,1));transition:filter .18s ease}
+.reader-header{position:relative;z-index:40}
+.reader-toolbar{position:relative;z-index:30}
+.reader-tool-ribbon{position:relative;z-index:20}
+.pdf-smart-bar{position:relative;z-index:15}
+.reader-tools-panel{z-index:95!important}
+.reader-pop-backdrop{position:fixed;inset:0;z-index:110;background:rgba(12,20,16,.44);animation:turnFadeIn .16s ease}
+.reader-pop-backdrop[hidden]{display:none!important}
+.reader-toc-pop{position:fixed!important;top:104px;left:20px;right:auto;bottom:auto;z-index:120!important}
+.reader-style-pop{position:fixed!important;top:104px;right:20px;left:auto;bottom:auto;z-index:120!important;max-height:calc(100dvh - 130px);overflow-y:auto}
+.reader-timer-pop{position:fixed!important;top:58px;right:20px;left:auto;bottom:auto;z-index:120!important;max-height:calc(100dvh - 80px);overflow-y:auto}
+.reader-pop-close{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:var(--soft);color:var(--ink);font-size:16px;font-weight:700;flex-shrink:0}
+.reader-pop-close:hover{background:var(--mint);color:var(--green)}
+@media(max-width:760px){
+  .reader-toolbar{padding:7px 10px!important;gap:8px!important;justify-content:space-between!important;flex-wrap:nowrap!important;overflow:visible!important}
+  .reader-toolbar .paper-tones,.reader-toolbar .reader-font-step{display:none!important}
+  .reader-toolbar-left{flex:1 1 auto!important;min-width:0!important}
+  .reader-toc-wrap{width:100%;max-width:100%}
+  .reader-toc-btn{width:100%!important;max-width:100%!important;height:36px!important;padding:0 11px!important;font-size:11px!important;justify-content:space-between}
+  .reader-style-btn{height:36px!important;padding:0 12px!important;font-size:11px!important}
+  .reader-save-btn{width:36px!important;height:36px!important}
+  .reader-toc-pop,.reader-style-pop,.reader-timer-pop{
+    position:fixed!important;left:0!important;right:0!important;bottom:0!important;top:auto!important;
+    width:100%!important;max-width:100%!important;max-height:76dvh!important;
+    border-radius:22px 22px 0 0!important;border-bottom:0!important;
+    padding-bottom:max(18px,env(safe-area-inset-bottom))!important;
+    box-shadow:0 -18px 48px rgba(10,18,14,.34)!important;
+    overflow-y:auto;-webkit-overflow-scrolling:touch;
+  }
+  .reader-toc-pop{display:flex;flex-direction:column;overflow:hidden!important}
+  .reader-toc-pop .toc-list{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:max(14px,env(safe-area-inset-bottom))}
+  .reader-toc-pop .toc-item{min-height:44px;font-size:12.5px}
+  .reader-header{padding:8px 10px!important;gap:6px!important;min-height:50px}
+  .reader-header>div:first-of-type{min-width:0;flex:1}
+  .reader-header strong{font-size:12px!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+  .reader-header small{font-size:9.5px!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+  .reader-footer{padding:9px 12px calc(9px + env(safe-area-inset-bottom))!important}
+  .reader-footer .button{min-height:40px!important;padding:8px 14px!important;font-size:11.5px!important}
+  .reader-scroll{padding:10px 8px 18px!important}
+  .pdf-smart-bar{padding:5px 8px!important;gap:5px!important}
+  .pdf-smart-btn{padding:6px 9px!important;font-size:10.5px!important;min-height:32px}
+}
+/* High-FPS Performance Optimization: Zero-Lag Grid Containment & Lightweight Mobile Surfaces */
+.book-card{content-visibility:auto;contain-intrinsic-size:200px 350px}
+@media(max-width:900px){
+  .petals-layer,.bg-3d-stage,.season-landmark-3d,.shooting-star,.hero-sunbeams,.season-stage-widget{display:none!important}
+  .hero-book-3d,.pulse-dot::after,.ribbon-spark,.peace-sanctuary::before{animation:none!important}
+  .topbar,.decor-aurora .workspace>.topbar,.reader-edge-nav,.trend-mood{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+  .topbar,.decor-aurora .workspace>.topbar{background:var(--surface)!important}
+}
 
 /* Ergonomic Typography Measure, Alignment & Continuous Scroll Chapter Transition */
 .reader[data-ralign=justify] .reader-scroll article p{text-align:justify;hyphens:auto;text-indent:1.4em}
