@@ -1640,6 +1640,11 @@ export default function AdminStudio({environment='production'}:{environment?:'pr
                       <LocalLibrarySyncPanel
                         userId={user.id}
                         existingIds={content.books.filter((b) => b.status === "published" || b.status === "draft").map((b) => b.id)}
+                        existingCoverMap={Object.fromEntries(
+                          content.books
+                            .filter((b) => (b.status === "published" || b.status === "draft") && typeof b.coverAssetId === "string" && b.coverAssetId)
+                            .map((b) => [b.id, String(b.coverAssetId)])
+                        )}
                         onSynced={(synced) => {
                           if (synced.length) {
                             setContent((prev) => {
@@ -4108,14 +4113,17 @@ type SyncPlanResponse = {
 function LocalLibrarySyncPanel({
   userId,
   existingIds,
+  existingCoverMap,
   onSynced,
 }: {
   userId: string;
   existingIds: string[];
+  existingCoverMap: Record<string, string>;
   onSynced: (items: RecordItem[]) => void;
 }) {
   const [sourceUrl, setSourceUrl] = useState("http://127.0.0.1:4321");
   const [mode, setMode] = useState<SyncMode>("free-tier");
+  const [resyncPdfs, setResyncPdfs] = useState(false);
   const [plan, setPlan] = useState<SyncPlanResponse | null>(null);
   const [status, setStatus] = useState<"idle" | "checking" | "running" | "paused" | "done">("idle");
   const [progress, setProgress] = useState("");
@@ -4190,7 +4198,7 @@ function LocalLibrarySyncPanel({
       // Non-fatal: continue syncing new items
     }
 
-    const queue = activePlan.items.filter((it) => !existingSet.has(it.id));
+    const queue = activePlan.items.filter((it) => !existingSet.has(it.id) || (resyncPdfs && it.kind === "pdf"));
     const skippedCount = activePlan.items.length - queue.length;
 
     let doneCount = 0;
@@ -4213,9 +4221,9 @@ function LocalLibrarySyncPanel({
         if (idx >= queue.length) break;
         const item = queue[idx];
         try {
-          let coverAssetId = "";
+          let coverAssetId = existingCoverMap[item.id] || "";
           let cover = "";
-          if (item.hasPhotoCover) {
+          if (!coverAssetId && item.hasPhotoCover) {
             const covRes = await fetch(`${base}/api/sync/cover/${encodeURIComponent(item.id)}`);
             if (covRes.ok) {
               const covBlob = await covRes.blob();
@@ -4359,10 +4367,19 @@ function LocalLibrarySyncPanel({
               setPlan(null);
             }}
           >
-            <option value="free-tier">Khuyên dùng · Vừa khít gói Free (~930 cuốn: 519 EPUB + ~410 PDF gọn &amp; bìa thật)</option>
-            <option value="epubs-only">Nhanh · Toàn bộ 519 sách EPUB + bìa thật (~8 MB Blob)</option>
-            <option value="all-under-50mb">Toàn bộ sách ≤ 50 MB (cần gói Blob &gt; 3.5 GB)</option>
+            <option value="free-tier">Khuyên dùng · Gọn dưới ~550 MB (vừa khít gói Free 1 GB · đủ 500+ sách hot)</option>
+            <option value="epubs-only">Nhanh · Chỉ sách chữ EPUB + bìa thật (~15 MB Blob)</option>
+            <option value="all-under-50mb">Toàn bộ sách ≤ 50 MB (cần gói Blob mở rộng)</option>
           </select>
+          <label style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, cursor: "pointer" }}>
+            <input
+              type="checkbox"
+              checked={resyncPdfs}
+              disabled={status === "running"}
+              onChange={(e) => setResyncPdfs(e.target.checked)}
+            />
+            <span>Tải lại file PDF sau khi dọn Blob (giữ nguyên bìa &amp; EPUB)</span>
+          </label>
           <input
             type="text"
             value={sourceUrl}
