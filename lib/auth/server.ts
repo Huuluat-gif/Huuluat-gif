@@ -1,6 +1,7 @@
 import { createNeonAuth } from '@neon/auth/next/server';
 import { HttpError } from '@/lib/api';
 import { getSQL } from '@/lib/db';
+import { isIsolatedPreviewEnv } from '@/lib/env';
 export type User = { id: string; name: string; email: string; emailVerified: boolean; isAdmin: boolean; avatarUrl?: string };
 let avatarColReady: Promise<void> | null = null;
 export function ensureProfileAvatarColumn(): Promise<void> {
@@ -24,7 +25,7 @@ export async function getProfileAvatar(userId: string): Promise<string> {
 let instance: ReturnType<typeof createNeonAuth> | undefined;
 export function getAuth() {
   if (!instance) {
-    const baseUrl = process.env.NEON_AUTH_BASE_URL, secret = process.env.VERCEL_ENV==='preview'?process.env.LOWF_PREVIEW_AUTH_COOKIE_SECRET:process.env.NEON_AUTH_COOKIE_SECRET;
+    const baseUrl = process.env.NEON_AUTH_BASE_URL, secret = isIsolatedPreviewEnv()?(process.env.LOWF_STAGING_AUTH_COOKIE_SECRET||process.env.LOWF_PREVIEW_AUTH_COOKIE_SECRET||process.env.NEON_AUTH_COOKIE_SECRET):process.env.NEON_AUTH_COOKIE_SECRET;
     if (!baseUrl || !secret || secret.length < 32) throw new Error('Authentication is not configured');
     instance = createNeonAuth({ baseUrl, cookies: { secret, sessionDataTtl: 300 }, logLevel: 'silent' });
   }

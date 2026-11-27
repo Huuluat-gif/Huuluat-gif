@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { isHttpsIngress } from './env';
 export class HttpError extends Error {
   constructor(public status: number, message: string, public code = 'REQUEST_ERROR') { super(message); }
 }
@@ -25,7 +26,8 @@ export function assertSameOrigin(request: Request) {
   // Host is the HTTP authority the browser actually visited; browser scripts
   // cannot override it. Never accept an arbitrary x-forwarded-host here.
   const host=request.headers.get('host')||url.host;
-  const protocol=process.env.VERCEL==='1'?'https:':url.protocol;
+  const forwardedProto=request.headers.get('x-forwarded-proto')?.split(',')[0]?.trim().toLowerCase();
+  const protocol=forwardedProto==='https'?'https:':isHttpsIngress()?'https:':url.protocol;
   let matches=false;
   try { const from=new URL(origin||'');matches=from.host===host&&from.protocol===protocol&&from.origin===origin; } catch {}
   if (!matches || request.headers.get('sec-fetch-site') === 'cross-site') throw new HttpError(403, 'Yêu cầu phải được gửi từ chính website Lowf.', 'ORIGIN_REJECTED');

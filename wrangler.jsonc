@@ -1,0 +1,63 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "lowf-library",
+  "compatibility_date": "2026-11-27",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1,
+    "traces": {
+      "enabled": true,
+      "head_sampling_rate": 0.2
+    }
+  },
+  "placement": {
+    "mode": "smart"
+  },
+  "vars": {
+    "CF_WORKERS": "1",
+    "LOWF_ENV": "staging",
+    "LOWF_CANONICAL_ORIGIN": "https://www.lowflibray.com",
+    "LOWF_STAGING_ORIGIN": "https://lowf-library-staging.huuluat05.workers.dev",
+    "R2_BUCKET": "lowf-library-media",
+    "R2_STAGING_BUCKET": "lowf-library-staging-media"
+  },
+  "r2_buckets": [
+    {
+      "binding": "LOWF_MEDIA",
+      "bucket_name": "lowf-library-staging-media"
+    }
+  ],
+  "env": {
+    "staging": {
+      "name": "lowf-library-staging",
+      "vars": {
+        "CF_WORKERS": "1",
+        "LOWF_ENV": "staging",
+        "R2_BUCKET": "lowf-library-staging-media",
+        "R2_STAGING_BUCKET": "lowf-library-staging-media"
+      },
+      "r2_buckets": [
+        {
+          "binding": "LOWF_MEDIA",
+          "bucket_name": "lowf-library-staging-media"
+        }
+      ]
+    },
+    "production": {
+      "name": "lowf-library-prod",
+      "vars": {
+        "CF_WORKERS": "1",
+        "LOWF_ENV": "production",
+        "LOWF_CANONICAL_ORIGIN": "https://www.lowflibray.com",
+        "R2_BUCKET": "lowf-library-media"
+      },
+      "r2_buckets": [
+        {
+          "binding": "LOWF_MEDIA",
+          "bucket_name": "lowf-library-media"
+        }
+      ]
+    }
+  }
+}

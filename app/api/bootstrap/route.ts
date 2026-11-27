@@ -5,6 +5,7 @@ import { hasMembership } from '@/lib/membership';
 import { publicItem } from '@/lib/content';
 import { defaultDesign } from '@/lib/validation';
 import { getCommerceStatus,getPurchasedBookIds } from '@/lib/commerce';
+import { getCanonicalOrigin, getStagingOrigin, isIsolatedPreviewEnv } from '@/lib/env';
 export const dynamic='force-dynamic';
 export const GET=route(async(request)=>{
  const sql=getSQL();
@@ -16,5 +17,5 @@ export const GET=route(async(request)=>{
  const [rows,design,commerce,purchases]=await Promise.all([sql`SELECT kind,id,data-'chapters' AS data,status,CASE WHEN kind='books' THEN jsonb_array_length(COALESCE(data->'chapters','[]'::jsonb)) ELSE 0 END AS chapter_count FROM lowf_content WHERE status='published' ORDER BY CASE WHEN kind='books' AND (data->>'sortOrder') ~ '^[0-9]+$' THEN (data->>'sortOrder')::int ELSE 999999 END, created_at, id`,designQuery,getCommerceStatus(!!user?.isAdmin),user?getPurchasedBookIds(user.id):Promise.resolve([])]);
  const bought=new Set(purchases);
  const collection=(kind:string)=>rows.filter(r=>r.kind===kind).map(r=>{const purchased=kind==='books'&&bought.has(String(r.id)),item=publicItem(r,entitled||purchased);if(kind==='books'){item.purchased=purchased;item.chapterCount=Number(r.chapter_count||0);}if(kind==='plans'&&Number(item.price)>0){item.enabled=item.enabled===true&&commerce.enabled;item.available=item.enabled;}return item;});
- return json({books:collection('books'),tracks:collection('tracks'),videos:collection('videos'),settings:design[0]?.settings||defaultDesign,plans:collection('plans'),commerce,...(user?.isAdmin?{designPreview:draftRequested&&design[0]?.status==='draft',environment:{name:process.env.VERCEL_ENV==='preview'?'preview':'production',previewUrl:'https://lowf-library-preview.vercel.app',productionUrl:'https://lowf-library.vercel.app'}}:{})});
+ return json({books:collection('books'),tracks:collection('tracks'),videos:collection('videos'),settings:design[0]?.settings||defaultDesign,plans:collection('plans'),commerce,...(user?.isAdmin?{designPreview:draftRequested&&design[0]?.status==='draft',environment:{name:isIsolatedPreviewEnv()?'preview':'production',previewUrl:getStagingOrigin(),productionUrl:getCanonicalOrigin()}}:{})});
 });

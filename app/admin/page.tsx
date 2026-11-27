@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound,redirect } from 'next/navigation';
 import { getUser } from '@/lib/auth/server';
+import { isIsolatedPreviewEnv } from '@/lib/env';
 import AdminStudio from './studio';
 export const dynamic='force-dynamic';
 export const metadata:Metadata={title:'Lowf Studio',robots:{index:false,follow:false}};
@@ -13,5 +14,5 @@ export default async function AdminPage({searchParams}:{searchParams:Promise<Rec
  if(!user)redirect('/?auth=login&next='+encodeURIComponent(next));
  if(!user.emailVerified)redirect('/?auth=verify&next='+encodeURIComponent(next));
  if(!user.isAdmin)notFound();
- return <AdminStudio environment={process.env.VERCEL_ENV==='preview'?'preview':'production'}/>;
+ return <AdminStudio environment={isIsolatedPreviewEnv()?'preview':'production'}/>;
 }
