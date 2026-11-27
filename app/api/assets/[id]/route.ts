@@ -1,11 +1,15 @@
 import { route } from '@/lib/api';
-import { authorizeAssetRead, signedAssetURL } from '@/lib/assets';
+import { authorizeAssetRead, signedAssetURL, streamPublicImageAsset } from '@/lib/assets';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const GET = route(async (_request: Request, context: { params: Promise<{ id: string }> }) => {
   const { id } = await context.params;
   const asset = await authorizeAssetRead(id);
+  if (asset.isPublic && asset.kind === 'image') {
+    const cached = await streamPublicImageAsset(asset);
+    if (cached) return cached;
+  }
   const url = await signedAssetURL(asset);
   return new Response(null, {
     status: 307,

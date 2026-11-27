@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { head, issueSignedToken, presignUrl } from '@vercel/blob';
+import { get as getBlob, head, issueSignedToken, presignUrl } from '@vercel/blob';
 import { z } from 'zod';
 import { getSQL } from './db';
 import { HttpError } from './api';
@@ -95,7 +95,7 @@ export async function finalizeAsset(input: { url: string; kind: AssetKind; owner
   return publicAsset(rows[0] as AssetRow);
 }
 
-export async function authorizeAssetRead(id: string): Promise<AssetRow> {
+export async function authorizeAssetRead(id: string): Promise<AssetRow & { isPublic?: boolean }> {
   if (!uuidPattern.test(id)) throw new HttpError(404, 'Không tìm thấy tệp.');
   id = id.toLowerCase();
   const sql = getSQL();
@@ -104,7 +104,7 @@ export async function authorizeAssetRead(id: string): Promise<AssetRow> {
   if (!asset) throw new HttpError(404, 'Không tìm thấy tệp.');
   if (asset.kind === 'image') {
     const designs = await sql`SELECT 1 FROM lowf_design_versions WHERE status = 'published' AND settings->'hero'->>'imageAssetId' = ${id} LIMIT 1`;
-    if (designs.length) return asset;
+    if (designs.length) return { ...asset, isPublic: true };
   }
   const references = await sql`
     SELECT id,kind,data->>'access' AS access, data->>'coverAssetId' AS cover_id
@@ -113,12 +113,27 @@ export async function authorizeAssetRead(id: string): Promise<AssetRow> {
       AND (data->>'coverAssetId' = ${id} OR data->>'pdfAssetId' = ${id} OR data->>'assetId' = ${id})
     LIMIT 100
   `;
-  if (references.some(row => (asset.kind === 'image' && row.cover_id === id) || row.access === 'free' || row.access == null)) return asset;
+  if (references.some(row => (asset.kind === 'image' && row.cover_id === id) || row.access === 'free' || row.access == null)) return { ...asset, isPublic: true };
   const user = await getUser();
   if (user && (user.isAdmin || user.id === asset.owner_id)) return asset;
   if (user && references.length > 0 && await hasMembership(user.id)) return asset;
   if(user){for(const row of references){if(row.kind==='books'&&await hasPurchasedBook(user.id,String(row.id)))return asset;}}
   throw new HttpError(user ? 403 : 401, user ? 'Gói hiện tại chưa có quyền truy cập tệp này.' : 'Đăng nhập để đọc nội dung này.');
+}
+
+/** Stream small public images (book covers) directly so Vercel Edge CDN & browsers cache them for 30 days. */
+export async function streamPublicImageAsset(asset: AssetRow): Promise<Response | null> {
+  if (asset.kind !== 'image' || Number(asset.byte_size) > 768 * 1024) return null;
+  const result = await getBlob(asset.pathname, { access: 'private', ...blobCredentials() });
+  if (!result || result.statusCode !== 200 || !result.stream) return null;
+  return new Response(result.stream, {
+    status: 200,
+    headers: {
+      'Content-Type': asset.content_type || 'image/jpeg',
+      'Cache-Control': 'public, max-age=604800, s-maxage=2592000, stale-while-revalidate=86400',
+      'X-Content-Type-Options': 'nosniff',
+    },
+  });
 }
 
 /** A short-lived, single-path capability avoids routing large files through Functions. */
