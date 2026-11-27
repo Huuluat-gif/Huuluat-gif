@@ -1641,11 +1641,11 @@ export default function AdminStudio({environment='production'}:{environment?:'pr
                         userId={user.id}
                         onDone={(created) => {
                           if (created.length) {
-                            setItems((prev) => ({
+                            setContent((prev) => ({
                               ...prev,
                               books: [...created, ...prev.books],
                             }));
-                            setToast(`✨ Đã nhập thành công ${created.length} cuốn sách vào thư viện!`);
+                            inform(`✨ Đã nhập thành công ${created.length} cuốn sách vào thư viện!`);
                           }
                         }}
                       />
@@ -1671,14 +1671,14 @@ export default function AdminStudio({environment='production'}:{environment?:'pr
                               );
                               if (res.archivedIds?.length) {
                                 const idSet = new Set(res.archivedIds);
-                                setItems((prev) => ({
+                                setContent((prev) => ({
                                   ...prev,
                                   books: prev.books.map((bk) =>
                                     idSet.has(bk.id) ? { ...bk, status: "archived" } : bk
                                   ),
                                 }));
                               }
-                              setToast(
+                              inform(
                                 res.archivedCount
                                   ? `🧹 Đã ẩn ${res.archivedCount} cuốn sách mẫu cũ & sách dưới 20 trang!`
                                   : "Thư viện đã sạch — không còn sách mẫu cũ hay sách ngắn nào."
@@ -3936,7 +3936,7 @@ function cleanBulkTitle(filename: string): { title: string; author: string } {
 }
 
 function BulkPdfImporter({ userId, onDone }: { userId: string; onDone: (items: RecordItem[]) => void }) {
-  const [category, setCategory] = useState<"kinhte" | "kynang" | "vanhocvn" | "vanhocqt" | "tieuthuyet" | "khoahoc" | "lichsu" | "tamlinh" | "trinhtham" | "dacbiet">("kinhte");
+  const [category, setCategory] = useState<"marketing" | "kinhte" | "kynang" | "tamly" | "phapluat" | "ngoaingu" | "lichsu" | "khoahoc" | "vanhocvn" | "vanhocqt" | "tieuthuyet" | "tamlinh" | "trinhtham" | "dacbiet">("kinhte");
   const [status, setStatus] = useState<"published" | "draft">("published");
   const [access, setAccess] = useState<"free" | "member">("free");
   const [busy, setBusy] = useState(false);
@@ -4009,13 +4009,17 @@ function BulkPdfImporter({ userId, onDone }: { userId: string; onDone: (items: R
         </p>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10, alignItems: "center" }}>
           <select className={styles.categorySelect} value={category} onChange={(e) => setCategory(e.target.value as typeof category)} disabled={busy}>
+            <option value="marketing">Bán hàng &amp; Marketing</option>
             <option value="kinhte">Kinh tế &amp; Đầu tư</option>
             <option value="kynang">Phát triển bản thân</option>
+            <option value="tamly">Tâm lý &amp; Tư duy</option>
+            <option value="phapluat">Pháp luật &amp; Chính trị</option>
+            <option value="ngoaingu">Ngoại ngữ &amp; Tiếng Anh</option>
+            <option value="lichsu">Lịch sử &amp; Văn minh</option>
+            <option value="khoahoc">Khoa học &amp; Công nghệ</option>
             <option value="vanhocvn">Văn học Việt Nam</option>
             <option value="vanhocqt">Văn học nước ngoài</option>
             <option value="tieuthuyet">Tiểu thuyết &amp; Kỳ ảo</option>
-            <option value="khoahoc">Khoa học &amp; Công nghệ</option>
-            <option value="lichsu">Lịch sử &amp; Quân sự</option>
             <option value="tamlinh">Tôn giáo &amp; Tâm linh</option>
             <option value="trinhtham">Trinh thám &amp; Kinh dị</option>
             <option value="dacbiet">Tuyển chọn Lowf</option>
