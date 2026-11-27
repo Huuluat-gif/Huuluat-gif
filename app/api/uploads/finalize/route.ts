@@ -10,7 +10,7 @@ export const POST = route(async (request: Request) => {
   assertSameOrigin(request);
   const user = await requireAdmin();
   const body = await parseBody(request, schema, 4096);
-  await rateLimit(`upload-finalize:${user.id}`, 120, 3600);
+  await rateLimit(`upload-finalize:${user.id}`, 3000, 3600);
   const asset = await finalizeAsset({ ...body, ownerId: user.id });
   return json({ asset }, 201);
 });
