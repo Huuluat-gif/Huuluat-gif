@@ -1624,7 +1624,75 @@ function startReaderClock(){
   }
  },1000);
 }
-async function openBook(id){let b=book(id);if(!b)return;const fxDone=playBookOpenFx(b);let fresh;try{fresh=await api('/api/books/'+encodeURIComponent(id))}catch(e){await fxDone;if(e.status===401||e.status===403){if(!state.user){auth();return}modal('Mở quyền đọc sách',`<p class="auth-subtitle">${esc(e.message)}</p>${b.saleEnabled&&state.commerce.enabled?`<button class="button button-primary button-block" data-action="cart-add" data-kind="book" data-id="${esc(id)}">Thêm sách vào giỏ · ${money(b.price)}</button>`:''}<button class="button button-soft button-block" data-action="nav" data-view="plans">Xem gói thành viên</button>`);return}throw e}await fxDone;if(!fresh.book)throw new Error('Không tìm thấy nội dung sách.');b=fresh.book;state.books=state.books.map(x=>x.id===id?b:x);BookMedia.cancelPDF();const saved=state.data.progress[id],chapter=Math.max(0,Math.min((b.chapters?.length||1)-1,Number(saved?.chapter)||0));state.reader={type:b.pdfAssetId?'remote':'chapters',bookId:id,id:b.pdfAssetId||id,title:b.title,chapter,page:b.pdfAssetId?loadPdfPage('remote:'+b.pdfAssetId):1,pageStep:1,pages:1,ready:false,pdfReflow:false,isScan:false,pdfParagraphs:[]};$('#readerTitle').textContent=b.title;$('#readerSubtitle').textContent=b.author||'Lowf';const credit=$('#readerSource'),sourceURL=typeof b.sourceUrl==='string'&&/^https:\/\//.test(b.sourceUrl)?b.sourceUrl:'';credit.hidden=!(b.licenseLabel||sourceURL);credit.innerHTML=`${esc(b.licenseLabel||'')}${sourceURL?` · <a href="${esc(sourceURL)}" target="_blank" rel="noopener noreferrer">Nguồn bản sách ↗</a>`:''}`;$('#reader').showModal();startReaderClock();renderPlayer();updateThemeButtons();if(b.pdfAssetId){$('#chapterSelect').disabled=true;$('#chapterSelect').innerHTML='<option>Đang mở PDF…</option>';await renderPDF()}else if(b.chapters?.length){$('#chapterSelect').disabled=false;$('#chapterSelect').dataset.pdfId='';$('#chapterSelect').innerHTML=b.chapters.map((c,i)=>`<option value="${i}">${i+1}. ${esc(c.title)}</option>`).join('');renderChapter()}else{$('#readerTextStage').hidden=false;$('#pdfPageStage').hidden=true;$('#readerBody').hidden=false;$('#pdfCanvas').hidden=true;$('#readerBody').innerHTML=empty('Sách đang được hoàn thiện','Nội dung đọc chưa được xuất bản. Hãy quay lại sau.');$('#readerProgress').textContent='Chưa có nội dung';$('#chapterSelect').innerHTML='<option>Chưa có chương</option>';$('#chapterSelect').disabled=true;$$('[data-action="prev-page"],[data-action="next-page"]').forEach(e=>e.disabled=true);icons()}if(state.user){state.data.progress[id]={chapter,finished:!!saved?.finished,updated:dateKey()};saveUserData()}heartbeat()}
+const bookDetailCache=new Map(),bookPrefetchMap=new Map();
+function fetchBookDetail(id){
+ const hit=bookDetailCache.get(id);
+ if(hit&&hit.exp>Date.now())return Promise.resolve({book:hit.book});
+ if(bookPrefetchMap.has(id))return bookPrefetchMap.get(id);
+ const p=api('/api/books/'+encodeURIComponent(id)).then(res=>{
+  if(res?.book){
+   if(bookDetailCache.size>=30)bookDetailCache.delete(bookDetailCache.keys().next().value);
+   const ttl=res.book.signedPdfUrl?480000:1800000;
+   bookDetailCache.set(id,{book:res.book,exp:Date.now()+ttl});
+  }
+  bookPrefetchMap.delete(id);
+  return res;
+ }).catch(err=>{bookPrefetchMap.delete(id);throw err;});
+ bookPrefetchMap.set(id,p);
+ return p;
+}
+function prefetchBook(id){
+ if(!id||bookDetailCache.get(id)?.exp>Date.now()||bookPrefetchMap.has(id))return;
+ const b=book(id);
+ if(!b||b.access==='member')return;
+ if(b.pdfAssetId)window.BookMedia?.preloadPDFJS?.();
+ fetchBookDetail(id).catch(()=>{});
+}
+document.addEventListener('pointerenter',e=>{const t=e.target?.closest?.('[data-action="read"][data-id],.book-card [data-action="read"]');if(t?.dataset?.id)prefetchBook(t.dataset.id)},true);
+document.addEventListener('touchstart',e=>{const t=e.target?.closest?.('[data-action="read"][data-id],.book-card [data-action="read"]');if(t?.dataset?.id)prefetchBook(t.dataset.id)},{capture:true,passive:true});
+if(typeof requestIdleCallback==='function')requestIdleCallback(()=>window.BookMedia?.preloadPDFJS?.(),{timeout:3500});
+else setTimeout(()=>window.BookMedia?.preloadPDFJS?.(),2500);
+let openBookSeq=0;
+async function openBook(id){
+ let b=book(id);if(!b)return;
+ const seq=++openBookSeq;
+ BookMedia.cancelPDF();
+ // Open reader shell IMMEDIATELY (0ms perceived latency) with calm loading skeleton instead of freezing the grid!
+ $('#readerTitle').textContent=b.title;
+ $('#readerSubtitle').textContent=b.author||'Lowf';
+ $('#readerSource').hidden=true;
+ $('#readerTextStage').hidden=false;$('#pdfPageStage').hidden=true;$('#pdfCanvas').hidden=true;$('#readerBody').hidden=false;
+ $('#readerBody').className='book-sheet';
+ $('#readerBody').innerHTML=`<div class="page-loading" style="padding:48px 16px"><div class="book-loader" aria-hidden="true"><span></span><span></span><span></span></div><p>Đang mở “${esc(b.title)}”…</p></div>`;
+ $('#readerProgress').textContent='Đang tải trang sách…';
+ $('#chapterSelect').disabled=true;$('#chapterSelect').innerHTML='<option>Đang mở sách…</option>';
+ $$('[data-action="prev-page"],[data-action="next-page"]').forEach(e=>e.disabled=true);
+ if(!$('#reader').open)$('#reader').showModal();
+ updateThemeButtons();
+ if(b.pdfAssetId)window.BookMedia?.preloadPDFJS?.();
+ let fresh;
+ try{fresh=await fetchBookDetail(id)}catch(e){
+  if(seq!==openBookSeq)return;
+  if($('#reader').open)$('#reader').close();
+  if(e.status===401||e.status===403){if(!state.user){auth();return}modal('Mở quyền đọc sách',`<p class="auth-subtitle">${esc(e.message)}</p>${b.saleEnabled&&state.commerce.enabled?`<button class="button button-primary button-block" data-action="cart-add" data-kind="book" data-id="${esc(id)}">Thêm sách vào giỏ · ${money(b.price)}</button>`:''}<button class="button button-soft button-block" data-action="nav" data-view="plans">Xem gói thành viên</button>`);return}
+  throw e;
+ }
+ if(seq!==openBookSeq)return;
+ if(!fresh.book){if($('#reader').open)$('#reader').close();throw new Error('Không tìm thấy nội dung sách.');}
+ b=fresh.book;state.books=state.books.map(x=>x.id===id?b:x);
+ const saved=state.data.progress[id],chapter=Math.max(0,Math.min((b.chapters?.length||1)-1,Number(saved?.chapter)||0));
+ state.reader={type:b.pdfAssetId?'remote':'chapters',bookId:id,id:b.pdfAssetId||id,directPdfUrl:b.signedPdfUrl||'',title:b.title,chapter,page:b.pdfAssetId?loadPdfPage('remote:'+b.pdfAssetId):1,pageStep:1,pages:1,ready:false,pdfReflow:false,isScan:false,pdfParagraphs:[]};
+ $('#readerTitle').textContent=b.title;$('#readerSubtitle').textContent=b.author||'Lowf';
+ const credit=$('#readerSource'),sourceURL=typeof b.sourceUrl==='string'&&/^https:\/\//.test(b.sourceUrl)?b.sourceUrl:'';
+ credit.hidden=!(b.licenseLabel||sourceURL);
+ credit.innerHTML=`${esc(b.licenseLabel||'')}${sourceURL?` · <a href="${esc(sourceURL)}" target="_blank" rel="noopener noreferrer">Nguồn bản sách ↗</a>`:''}`;
+ startReaderClock();renderPlayer();updateThemeButtons();
+ if(b.pdfAssetId){$('#chapterSelect').disabled=true;$('#chapterSelect').innerHTML='<option>Đang mở PDF…</option>';await renderPDF()}
+ else if(b.chapters?.length){$('#chapterSelect').disabled=false;$('#chapterSelect').dataset.pdfId='';$('#chapterSelect').innerHTML=b.chapters.map((c,i)=>`<option value="${i}">${i+1}. ${esc(c.title)}</option>`).join('');renderChapter()}
+ else{$('#readerTextStage').hidden=false;$('#pdfPageStage').hidden=true;$('#readerBody').hidden=false;$('#pdfCanvas').hidden=true;$('#readerBody').innerHTML=empty('Sách đang được hoàn thiện','Nội dung đọc chưa được xuất bản. Hãy quay lại sau.');$('#readerProgress').textContent='Chưa có nội dung';$('#chapterSelect').innerHTML='<option>Chưa có chương</option>';$('#chapterSelect').disabled=true;$$('[data-action="prev-page"],[data-action="next-page"]').forEach(e=>e.disabled=true);icons()}
+ if(state.user){state.data.progress[id]={chapter,finished:!!saved?.finished,updated:dateKey()};saveUserData()}
+ heartbeat();
+}
 function renderReaderToc(){
  const pop=$('#readerTocPop'),btn=$('#readerTocBtn'),lbl=$('#readerTocLabel'),r=state.reader;
  if(btn)btn.setAttribute('aria-expanded',String(tocOpen));
@@ -1750,7 +1818,7 @@ async function renderPDF(turnDir=0){
  try{
   const rp=readerPrefs();
   renderPdfSmartBar();
-  const opts={enhanceScan:rp.scanBlend,trimMargins:rp.pdfTrim,fitMode:rp.pdfFit,zoom:rp.pdfZoom,canvas2:$('#pdfCanvas2')};
+  const opts={enhanceScan:rp.scanBlend,trimMargins:rp.pdfTrim,fitMode:rp.pdfFit,zoom:rp.pdfZoom,canvas2:$('#pdfCanvas2'),directUrl:r.directPdfUrl||''};
   const result=r.type==='remote'?await BookMedia.renderRemotePDF(r.id,r.title,$('#pdfCanvas'),r.page,$('#pdfTextLayer'),opts):await BookMedia.renderPDF(r.id,$('#pdfCanvas'),r.page,$('#pdfTextLayer'),opts);
   if(state.reader!==r)return;
   r.page=result.page;r.pageEnd=result.pageEnd||result.page;r.pageStep=result.pageStep||1;r.pages=result.pages;r.pdfText=result.text||'';r.pdfParagraphs=result.paragraphs||[];r.isScan=!!result.isScan;

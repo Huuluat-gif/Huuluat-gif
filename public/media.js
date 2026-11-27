@@ -556,8 +556,12 @@
   const remoteSources = new Map();
   function renderRemotePDF(id, title, canvas, page = 1, textLayer = null, options = {}) {
     const key='remote:'+id;
-    remoteSources.set(key,{name:title,url:'/api/assets/'+encodeURIComponent(id)});
+    const directUrl = typeof options.directUrl === 'string' && options.directUrl.startsWith('https://') ? options.directUrl : '';
+    remoteSources.set(key,{name:title,url:directUrl || ('/api/assets/'+encodeURIComponent(id)),fallbackUrl:'/api/assets/'+encodeURIComponent(id)});
     return renderPDF(key,canvas,page,textLayer,options);
+  }
+  function preloadPDFJS() {
+    loadPDFJS().catch(() => {});
   }
   function computeAvailableBox(canvas) {
     const scroller = canvas.closest('.reader-scroll');
@@ -571,9 +575,14 @@
   }
   async function renderSinglePdfPage(pdfPage, canvas, targetW, targetH, textLayer, options, epoch, isSpread) {
     const baseViewport = pdfPage.getViewport({ scale: 1 });
-    const dpr = Math.min(Math.max(window.devicePixelRatio || 1, 2), 2.5);
-    const pixelScale = Math.min((targetW * dpr) / baseViewport.width, 2400 / baseViewport.width, 3000 / baseViewport.height);
-    const viewport = pdfPage.getViewport({ scale: Math.max(1.2, pixelScale) });
+    const isMobile = window.innerWidth < 768;
+    const dpr = isMobile
+      ? Math.min(Math.max(window.devicePixelRatio || 1, 1.4), 1.8)
+      : Math.min(Math.max(window.devicePixelRatio || 1, 1.75), 2.25);
+    const maxW = isMobile ? 1360 : 2100;
+    const maxH = isMobile ? 1800 : 2700;
+    const pixelScale = Math.min((targetW * dpr) / baseViewport.width, maxW / baseViewport.width, maxH / baseViewport.height);
+    const viewport = pdfPage.getViewport({ scale: Math.max(1.1, pixelScale) });
     canvas.width = Math.ceil(viewport.width); canvas.height = Math.ceil(viewport.height);
     const context = canvas.getContext('2d', { alpha: false, willReadFrequently: true });
     if (!context) throw new Error('Trình duyệt không thể vẽ trang PDF.');
@@ -656,7 +665,7 @@
         disableAutoFetch: true,
         disableStream: false,
         disableRange: false,
-        rangeChunkSize: 262144
+        rangeChunkSize: 524288
       });
       return cache.task.promise;
     })();
@@ -754,6 +763,12 @@
         };
       } catch (error) {
         if (epoch !== renderEpoch || error.name === 'RenderingCancelledException' || error.name === 'AbortError') throw cancelled();
+        if (error.name === 'UnexpectedResponseException' && pdfCache?.id && remoteSources.get(pdfCache.id)?.fallbackUrl && remoteSources.get(pdfCache.id).url !== remoteSources.get(pdfCache.id).fallbackUrl) {
+          const src = remoteSources.get(pdfCache.id);
+          remoteSources.set(pdfCache.id, { ...src, url: src.fallbackUrl });
+          releaseCache(pdfCache); pdfCache = null;
+          continue;
+        }
         if (isRepairablePdfError(error) && repairLevel < 2) {
           repairLevel++;
           releaseCache(pdfCache); pdfCache = null;
@@ -769,7 +784,7 @@
   }
   window.addEventListener('pagehide', () => { pause(); cancelPDF(); });
   window.BookMedia = Object.freeze({
-    play, pause, chime, setVolume, savePDF, listPDFs, getPDF, deletePDF, renderPDF, renderRemotePDF, cancelPDF, exportPDF, parseEbookFile, cleanParagraphs,
+    play, pause, chime, setVolume, savePDF, listPDFs, getPDF, deletePDF, renderPDF, renderRemotePDF, cancelPDF, exportPDF, parseEbookFile, cleanParagraphs, preloadPDFJS,
     get playing() { return isPlaying; }, get mode() { return currentMode; },
     get volume() { return volume; }, maxPDFBytes: MAX_PDF_BYTES
   });
