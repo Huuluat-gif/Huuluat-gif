@@ -5,13 +5,11 @@ import { hasMembership } from '@/lib/membership';
 import { publicItem } from '@/lib/content';
 import { defaultDesign } from '@/lib/validation';
 import { getCommerceStatus,getPurchasedBookIds } from '@/lib/commerce';
-import { ensureCuratedCatalog } from '@/lib/curated-books';
 export const dynamic='force-dynamic';
 let curatedReady:Promise<void>|null=null;
 export const GET=route(async(request)=>{
  const sql=getSQL();
- if(!curatedReady)curatedReady=ensureCuratedCatalog(sql).catch(err=>{curatedReady=null;throw err;});
- const [user]=await Promise.all([getUser(),curatedReady]);
+ const user=await getUser();
  const draftRequested=new URL(request.url).searchParams.get('designPreview')==='1';
  if(draftRequested&&!user?.isAdmin)throw new HttpError(user?403:401,'Chỉ chủ website được xem bản nháp giao diện.');
  const entitled=!!user&&(user.isAdmin||await hasMembership(user.id));
