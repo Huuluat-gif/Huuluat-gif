@@ -24,12 +24,31 @@ export const POST = route(async (request: Request) => {
   for (const raw of body.books) {
     const candidateId = typeof raw.id === 'string' ? raw.id : '';
     try {
+      const preserveChapters = raw.preserveChapters === true;
       const cleanRaw = { ...raw };
+      delete cleanRaw.preserveChapters;
       if (!cleanRaw.id) delete cleanRaw.id;
       const item = normalizeItem('books', cleanRaw);
       const id = String(item.id || randomUUID());
       item.id = id;
       await validateAssets('books', item, user.id);
+
+      if (preserveChapters && !item.chapters) {
+        // Fast asset/metadata patch for existing EPUBs without transferring or overwriting existing chapters JSONB
+        const patched = await sql`
+          UPDATE lowf_content
+          SET data = (CASE WHEN data ? 'chapters' THEN jsonb_build_object('chapters', data->'chapters') ELSE '{}'::jsonb END) || ${JSON.stringify(item)}::jsonb,
+              status = ${String(item.status)},
+              updated_at = now()
+          WHERE kind = 'books' AND id = ${id}
+          RETURNING id
+        `;
+        if (patched.length) {
+          saved.push(adminItem(item));
+          continue;
+        }
+      }
+
       await sql`
         INSERT INTO lowf_content(kind, id, data, status)
         VALUES('books', ${id}, ${JSON.stringify(item)}::jsonb, ${String(item.status)})

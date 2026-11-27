@@ -4360,10 +4360,13 @@ function LocalLibrarySyncPanel({
 
     const base = sourceUrl.replace(/\/+$/, "");
     let existingSet = new Set(existingIds);
+    let existingEpubSet = new Set<string>();
+    let r2CoverMap: Record<string, string> = {};
+    let r2PdfMap: Record<string, string> = {};
     let r2Backend = false;
-    // Re-order existing books, archive trimmed books outside the curated plan & reclaim orphaned storage first
+    // Fast metadata + R2 migration state check
     try {
-      setProgress("Đang sắp xếp thứ tự sách bộ, dọn dung lượng thừa & ẩn sách ngoài danh sách…");
+      setProgress("Đang kiểm tra trạng thái Cloudflare R2 & lập danh sách tệp cần chuyển…");
       const keepIds = activePlan.items.map((it) => it.id);
       const orderPayload = activePlan.items.map((it, i) => ({
         id: it.id,
@@ -4375,6 +4378,9 @@ function LocalLibrarySyncPanel({
         storageBackend?: "r2" | "vercel-blob";
         updatedCount: number;
         updatedIds?: string[];
+        existingEpubIds?: string[];
+        r2CoverMap?: Record<string, string>;
+        r2PdfMap?: Record<string, string>;
         archivedCount: number;
         freedMb?: number;
       }>(
@@ -4387,11 +4393,17 @@ function LocalLibrarySyncPanel({
       if (syncRes.storageBackend === "r2") {
         r2Backend = true;
         existingSet = new Set(syncRes.updatedIds || []);
+        existingEpubSet = new Set(syncRes.existingEpubIds || []);
+        r2CoverMap = syncRes.r2CoverMap || {};
+        r2PdfMap = syncRes.r2PdfMap || {};
       } else {
         for (const uid of syncRes.updatedIds || []) existingSet.add(uid);
       }
-    } catch {
-      // Non-fatal: continue syncing new items
+    } catch (err) {
+      setStatus("idle");
+      setErrors([`Không thể kiểm tra danh sách R2 từ sync-order: ${err instanceof Error ? err.message : "lỗi kết nối"}`]);
+      setProgress("");
+      return;
     }
 
     const queue = activePlan.items.filter((it) => !existingSet.has(it.id) || (resyncPdfs && it.kind === "pdf"));
@@ -4406,7 +4418,7 @@ function LocalLibrarySyncPanel({
 
     if (!queue.length) {
       setStatus("done");
-      setProgress(`✨ Toàn bộ ${activePlan.totalCount} cuốn trong gói này đã có đầy đủ trên thư viện chính!`);
+      setProgress(`✨ Toàn bộ ${activePlan.totalCount} cuốn trong gói này đã nằm hoàn toàn trên Cloudflare R2!`);
       return;
     }
 
@@ -4418,7 +4430,7 @@ function LocalLibrarySyncPanel({
         if (idx >= queue.length) break;
         const item = queue[idx];
         try {
-          let coverAssetId = r2Backend ? "" : (existingCoverMap[item.id] || "");
+          let coverAssetId = r2Backend ? (r2CoverMap[item.id] || "") : (existingCoverMap[item.id] || "");
           let cover = "";
           if (!coverAssetId && item.hasPhotoCover) {
             const covRes = await fetch(`${base}/api/sync/cover/${encodeURIComponent(item.id)}`);
@@ -4434,40 +4446,53 @@ function LocalLibrarySyncPanel({
             cover = item.coverSvg || makeBulkCoverSvg(item.title, item.author, idx);
           }
 
-          let pdfAssetId = "";
+          let pdfAssetId = r2Backend && !resyncPdfs ? (r2PdfMap[item.id] || "") : "";
           let chapters: { title: string; paragraphs: string[] }[] | undefined;
+          let preserveChapters = false;
 
           if (item.kind === "pdf") {
-            const pdfRes = await fetch(`${base}/api/sync/pdf/${encodeURIComponent(item.id)}`);
-            if (!pdfRes.ok) throw new Error(`Không đọc được PDF (${pdfRes.status})`);
-            const pdfBlob = await pdfRes.blob();
-            if (pdfBlob.size <= 3.5 * 1024 * 1024) {
-              pdfAssetId = await uploadDirectFile(pdfBlob, "pdf", `${item.id}.pdf`);
-            } else {
-              const pdfFile = new File([pdfBlob], `${item.id}.pdf`, { type: "application/pdf" });
-              pdfAssetId = await uploadLargeAsset({
-                file: pdfFile,
-                userId,
-                kind: "pdf",
-                title: `${item.id}.pdf`,
-              });
+            if (!pdfAssetId) {
+              const pdfRes = await fetch(`${base}/api/sync/pdf/${encodeURIComponent(item.id)}`);
+              if (!pdfRes.ok) throw new Error(`Không đọc được PDF (${pdfRes.status})`);
+              const pdfBlob = await pdfRes.blob();
+              if (pdfBlob.size <= 3.5 * 1024 * 1024) {
+                pdfAssetId = await uploadDirectFile(pdfBlob, "pdf", `${item.id}.pdf`);
+              } else {
+                const pdfFile = new File([pdfBlob], `${item.id}.pdf`, { type: "application/pdf" });
+                pdfAssetId = await uploadLargeAsset({
+                  file: pdfFile,
+                  userId,
+                  kind: "pdf",
+                  title: `${item.id}.pdf`,
+                });
+              }
+              blobBytes += pdfBlob.size;
             }
-            blobBytes += pdfBlob.size;
+          } else if (r2Backend && existingEpubSet.has(item.id)) {
+            // Existing EPUB already has chapters in Neon DB — only patch its R2 coverAssetId without resending MBs of JSON!
+            preserveChapters = true;
           } else {
             const bookRes = await fetch(`${base}/api/books/${encodeURIComponent(item.id)}`);
             if (!bookRes.ok) throw new Error(`Không đọc được chương EPUB (${bookRes.status})`);
             const bookJson = (await bookRes.json()) as { book?: { chapters?: { title: string; paragraphs: string[] }[] } };
             const rawChapters = bookJson.book?.chapters || [];
-            chapters = rawChapters
-              .slice(0, 600)
-              .map((ch, cIdx) => ({
-                title: String(ch.title || `Chương ${cIdx + 1}`).trim().slice(0, 155) || `Chương ${cIdx + 1}`,
-                paragraphs: (Array.isArray(ch.paragraphs) ? ch.paragraphs : [])
-                  .map((p) => String(p || "").trim().slice(0, 11800))
-                  .filter(Boolean)
-                  .slice(0, 600),
-              }))
-              .filter((ch) => ch.paragraphs.length > 0);
+            // Keep serialized chapters JSON strictly under 2.8 MB so serverless body limit (4.5 MB) is never exceeded (HTTP 413)
+            const MAX_CHAPTER_BYTES = 2_800_000;
+            let accBytes = 0;
+            chapters = [];
+            for (let cIdx = 0; cIdx < Math.min(rawChapters.length, 600); cIdx++) {
+              const ch = rawChapters[cIdx];
+              const titleStr = String(ch.title || `Chương ${cIdx + 1}`).trim().slice(0, 155) || `Chương ${cIdx + 1}`;
+              const paras = (Array.isArray(ch.paragraphs) ? ch.paragraphs : [])
+                .map((p) => String(p || "").trim().slice(0, 11800))
+                .filter(Boolean)
+                .slice(0, 600);
+              if (!paras.length) continue;
+              const estBytes = titleStr.length * 2 + paras.reduce((s, p) => s + p.length * 2 + 8, 64);
+              if (accBytes + estBytes > MAX_CHAPTER_BYTES && chapters.length > 0) break;
+              accBytes += estBytes;
+              chapters.push({ title: titleStr, paragraphs: paras });
+            }
             if (!chapters.length) {
               chapters = [{ title: item.title.slice(0, 150), paragraphs: [item.description || item.title] }];
             }
@@ -4487,6 +4512,7 @@ function LocalLibrarySyncPanel({
             language: item.language || "vi",
             sortOrder: typeof item.sortOrder === "number" ? item.sortOrder : idx + 1,
           };
+          if (preserveChapters) payload.preserveChapters = true;
           if (coverAssetId) payload.coverAssetId = coverAssetId;
           else payload.cover = cover;
           if (pdfAssetId) payload.pdfAssetId = pdfAssetId;

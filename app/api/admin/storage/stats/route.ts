@@ -6,15 +6,15 @@ import { activeStorageBackend } from '@/lib/storage';
 export const dynamic = 'force-dynamic';
 
 /**
- * Admin Operations Center telemetry:
- * Real-time counts by lifecycle status, missing covers, duplicate checksums,
+ * Admin Operations Center telemetry (fast — never detoasts large JSONB `chapters` arrays):
+ * Real-time counts by lifecycle status, missing covers, duplicate titles,
  * copyright review queue, broken/legacy asset references, R2 usage & cost estimate.
  */
 export const GET = route(async () => {
   await requireAdmin();
   const sql = getSQL();
 
-  const [statusRows, assetRows, qualityRows, dupRows, userCountRows] = await Promise.all([
+  const [statusRows, assetRows, bookMetaRows, userCountRows] = await Promise.all([
     sql`
       SELECT status, COUNT(*)::int AS count
       FROM lowf_content
@@ -23,46 +23,23 @@ export const GET = route(async () => {
     `,
     sql`
       SELECT
+        id::text AS id,
         CASE WHEN pathname LIKE 'r2/%' OR pathname LIKE 'books/%' OR pathname LIKE 'covers/%' OR pathname LIKE 'assets/%' THEN 'r2' ELSE 'vercel-blob' END AS backend,
         kind,
-        COUNT(*)::int AS count,
-        COALESCE(SUM(byte_size), 0)::bigint AS bytes
+        byte_size::bigint AS bytes
       FROM lowf_assets
-      GROUP BY 1, 2
     `,
     sql`
       SELECT
-        COUNT(*) FILTER (WHERE COALESCE(data->>'coverAssetId', '') = '' AND COALESCE(data->>'cover', '') = '')::int AS missing_cover,
-        COUNT(*) FILTER (WHERE COALESCE(data->>'coverAssetId', '') = '' AND COALESCE(data->>'cover', '') LIKE 'data:image/svg+xml%')::int AS svg_fallback_cover,
-        COUNT(*) FILTER (WHERE COALESCE(data->>'copyrightStatus', 'needs_review') = 'needs_review')::int AS copyright_review,
-        COUNT(*) FILTER (WHERE COALESCE(data->>'pdfAssetId', '') <> '')::int AS pdf_books,
-        COUNT(*) FILTER (WHERE COALESCE(data->>'pdfAssetId', '') = '' AND jsonb_array_length(COALESCE(data->'chapters', '[]'::jsonb)) > 0)::int AS epub_books,
-        COUNT(*) FILTER (
-          WHERE COALESCE(data->>'pdfAssetId', '') <> ''
-            AND NOT EXISTS (SELECT 1 FROM lowf_assets a WHERE a.id::text = data->>'pdfAssetId')
-        )::int AS missing_pdf_assets,
-        COUNT(*) FILTER (
-          WHERE COALESCE(data->>'coverAssetId', '') <> ''
-            AND NOT EXISTS (SELECT 1 FROM lowf_assets a WHERE a.id::text = data->>'coverAssetId')
-        )::int AS missing_cover_assets,
-        COUNT(*) FILTER (
-          WHERE status = 'published' AND (
-            EXISTS (SELECT 1 FROM lowf_assets a WHERE a.id::text = data->>'coverAssetId' AND a.pathname LIKE 'lowf/%')
-            OR EXISTS (SELECT 1 FROM lowf_assets a WHERE a.id::text = data->>'pdfAssetId' AND a.pathname LIKE 'lowf/%')
-          )
-        )::int AS legacy_blob_published_books
+        id,
+        status,
+        COALESCE(data->>'title', '') AS title,
+        COALESCE(data->>'coverAssetId', '') AS cover_id,
+        LEFT(COALESCE(data->>'cover', ''), 24) AS cover_prefix,
+        COALESCE(data->>'pdfAssetId', '') AS pdf_id,
+        COALESCE(data->>'copyrightStatus', 'needs_review') AS copyright_status
       FROM lowf_content
       WHERE kind = 'books' AND status <> 'archived'
-    `,
-    sql`
-      SELECT COUNT(*)::int AS dup_groups
-      FROM (
-        SELECT lower(trim(COALESCE(data->>'title', ''))) AS t
-        FROM lowf_content
-        WHERE kind = 'books' AND status <> 'archived'
-        GROUP BY 1
-        HAVING COUNT(*) > 1
-      ) sub
     `,
     sql`SELECT COUNT(*)::int AS profiles FROM lowf_profiles`,
   ]);
@@ -88,22 +65,68 @@ export const GET = route(async () => {
   let r2Objects = 0;
   let blobBytes = 0;
   let blobObjects = 0;
+  const assetBackendMap = new Map<string, 'r2' | 'vercel-blob'>();
   for (const a of assetRows) {
+    const id = String(a.id);
+    const backend = a.backend === 'r2' ? 'r2' : 'vercel-blob';
+    assetBackendMap.set(id, backend);
     const bytes = Number(a.bytes || 0);
-    const cnt = Number(a.count || 0);
-    if (a.backend === 'r2') {
+    if (backend === 'r2') {
       r2Bytes += bytes;
-      r2Objects += cnt;
+      r2Objects += 1;
     } else {
       blobBytes += bytes;
-      blobObjects += cnt;
+      blobObjects += 1;
     }
+  }
+
+  let missingCover = 0;
+  let svgFallbackCover = 0;
+  let copyrightReview = 0;
+  let pdfBooks = 0;
+  let epubBooks = 0;
+  let missingPdfAssets = 0;
+  let missingCoverAssets = 0;
+  let legacyBlobPublishedBooks = 0;
+  const titleCounts = new Map<string, number>();
+
+  for (const b of bookMetaRows) {
+    const coverId = String(b.cover_id || '');
+    const coverPrefix = String(b.cover_prefix || '');
+    const pdfId = String(b.pdf_id || '');
+    const status = String(b.status || '');
+    const titleNorm = String(b.title || '').trim().toLowerCase();
+    if (titleNorm) titleCounts.set(titleNorm, (titleCounts.get(titleNorm) || 0) + 1);
+
+    if (!coverId && !coverPrefix) missingCover += 1;
+    else if (!coverId && coverPrefix.startsWith('data:image/svg+xml')) svgFallbackCover += 1;
+
+    if (String(b.copyright_status || 'needs_review') === 'needs_review') copyrightReview += 1;
+
+    if (pdfId) {
+      pdfBooks += 1;
+      if (!assetBackendMap.has(pdfId)) missingPdfAssets += 1;
+    } else {
+      epubBooks += 1;
+    }
+
+    if (coverId && !assetBackendMap.has(coverId)) missingCoverAssets += 1;
+
+    if (status === 'published') {
+      const covLegacy = Boolean(coverId && assetBackendMap.get(coverId) === 'vercel-blob');
+      const pdfLegacy = Boolean(pdfId && assetBackendMap.get(pdfId) === 'vercel-blob');
+      if (covLegacy || pdfLegacy) legacyBlobPublishedBooks += 1;
+    }
+  }
+
+  let duplicateTitleGroups = 0;
+  for (const count of titleCounts.values()) {
+    if (count > 1) duplicateTitleGroups += 1;
   }
 
   const r2Gb = r2Bytes / (1024 ** 3);
   const billableR2Gb = Math.max(0, r2Gb - 10);
   const estimatedR2MonthlyUsd = Math.round(billableR2Gb * 0.015 * 100) / 100;
-  const q = qualityRows[0] || {};
 
   return json({
     activeBackend: activeStorageBackend(),
@@ -111,15 +134,15 @@ export const GET = route(async () => {
       total: totalBooks,
       active: totalBooks - (byStatus.archived || 0),
       byStatus,
-      pdfBooks: Number(q.pdf_books || 0),
-      epubBooks: Number(q.epub_books || 0),
-      missingCover: Number(q.missing_cover || 0),
-      svgFallbackCover: Number(q.svg_fallback_cover || 0),
-      copyrightReview: Number(q.copyright_review || 0),
-      missingPdfAssets: Number(q.missing_pdf_assets || 0),
-      missingCoverAssets: Number(q.missing_cover_assets || 0),
-      legacyBlobPublishedBooks: Number(q.legacy_blob_published_books || 0),
-      duplicateTitleGroups: Number(dupRows[0]?.dup_groups || 0),
+      pdfBooks,
+      epubBooks,
+      missingCover,
+      svgFallbackCover,
+      copyrightReview,
+      missingPdfAssets,
+      missingCoverAssets,
+      legacyBlobPublishedBooks,
+      duplicateTitleGroups,
     },
     storage: {
       r2: {
