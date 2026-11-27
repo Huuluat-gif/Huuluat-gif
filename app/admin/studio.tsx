@@ -1636,18 +1636,62 @@ export default function AdminStudio({environment='production'}:{environment?:'pr
                     </button>
                   </div>
                   {tab === "books" && (
-                    <BulkPdfImporter
-                      userId={user.id}
-                      onDone={(created) => {
-                        if (created.length) {
-                          setItems((prev) => ({
-                            ...prev,
-                            books: [...created, ...prev.books],
-                          }));
-                          setToast(`✨ Đã nhập thành công ${created.length} cuốn sách vào thư viện!`);
-                        }
-                      }}
-                    />
+                    <>
+                      <BulkPdfImporter
+                        userId={user.id}
+                        onDone={(created) => {
+                          if (created.length) {
+                            setItems((prev) => ({
+                              ...prev,
+                              books: [...created, ...prev.books],
+                            }));
+                            setToast(`✨ Đã nhập thành công ${created.length} cuốn sách vào thư viện!`);
+                          }
+                        }}
+                      />
+                      <div className={styles.notice} style={{ marginTop: 12, justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                          <Trash2 size={18} />
+                          <div>
+                            <strong>Dọn sạch sách mẫu cũ &amp; sách ngắn dưới 20 trang</strong>
+                            <p style={{ margin: "2px 0 0" }}>
+                              Ẩn toàn bộ 24 cuốn sách minh họa cũ và các sách chữ ngắn dưới 20 trang để chỉ giữ lại đầu sách đạt chuẩn.
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          className={styles.secondary}
+                          onClick={async () => {
+                            if (!confirm("Ẩn toàn bộ sách mẫu cũ và sách ngắn dưới 20 trang khỏi thư viện? Bạn vẫn có thể khôi phục trong mục Lưu trữ.")) return;
+                            try {
+                              const res = await request<{ archivedCount: number; archivedIds: string[] }>(
+                                "/api/admin/content/cleanup-samples",
+                                { method: "POST", body: JSON.stringify({ includeShortText: true }) }
+                              );
+                              if (res.archivedIds?.length) {
+                                const idSet = new Set(res.archivedIds);
+                                setItems((prev) => ({
+                                  ...prev,
+                                  books: prev.books.map((bk) =>
+                                    idSet.has(bk.id) ? { ...bk, status: "archived" } : bk
+                                  ),
+                                }));
+                              }
+                              setToast(
+                                res.archivedCount
+                                  ? `🧹 Đã ẩn ${res.archivedCount} cuốn sách mẫu cũ & sách dưới 20 trang!`
+                                  : "Thư viện đã sạch — không còn sách mẫu cũ hay sách ngắn nào."
+                              );
+                            } catch (err) {
+                              inform(err instanceof Error ? err.message : "Chưa dọn được sách mẫu.");
+                            }
+                          }}
+                        >
+                          <Trash2 size={14} /> Ẩn sách mẫu cũ &amp; sách &lt;20 trang
+                        </button>
+                      </div>
+                    </>
                   )}
                   {tab === "plans" && (
                     <div className={styles.notice}>
@@ -1682,10 +1726,16 @@ export default function AdminStudio({environment='production'}:{environment?:'pr
                         aria-label="Lọc theo thể loại sách"
                       >
                         <option value="all">Tất cả thể loại</option>
+                        <option value="kinhte">Kinh tế &amp; Đầu tư</option>
+                        <option value="kynang">Phát triển bản thân</option>
                         <option value="vanhocvn">Văn học Việt Nam</option>
                         <option value="vanhocqt">Văn học nước ngoài</option>
-                        <option value="kinhte">Kinh tế &amp; Đầu tư</option>
-                        <option value="dacbiet">Tuyển chọn</option>
+                        <option value="tieuthuyet">Tiểu thuyết &amp; Kỳ ảo</option>
+                        <option value="khoahoc">Khoa học &amp; Công nghệ</option>
+                        <option value="lichsu">Lịch sử &amp; Quân sự</option>
+                        <option value="tamlinh">Tôn giáo &amp; Tâm linh</option>
+                        <option value="trinhtham">Trinh thám &amp; Kinh dị</option>
+                        <option value="dacbiet">Tuyển chọn Lowf</option>
                       </select>
                     )}
                     <div className={styles.filterTabs}>
