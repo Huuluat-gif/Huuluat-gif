@@ -1662,30 +1662,31 @@ export default function AdminStudio({environment='production'}:{environment?:'pr
                         <button
                           type="button"
                           className={styles.secondary}
-                          onClick={async () => {
-                            if (!confirm("Ẩn toàn bộ sách mẫu cũ và sách ngắn dưới 20 trang khỏi thư viện? Bạn vẫn có thể khôi phục trong mục Lưu trữ.")) return;
-                            try {
-                              const res = await request<{ archivedCount: number; archivedIds: string[] }>(
-                                "/api/admin/content/cleanup-samples",
-                                { method: "POST", body: JSON.stringify({ includeShortText: true }) }
-                              );
-                              if (res.archivedIds?.length) {
-                                const idSet = new Set(res.archivedIds);
-                                setContent((prev) => ({
-                                  ...prev,
-                                  books: prev.books.map((bk) =>
-                                    idSet.has(bk.id) ? { ...bk, status: "archived" } : bk
-                                  ),
-                                }));
-                              }
-                              inform(
-                                res.archivedCount
-                                  ? `🧹 Đã ẩn ${res.archivedCount} cuốn sách mẫu cũ & sách dưới 20 trang!`
-                                  : "Thư viện đã sạch — không còn sách mẫu cũ hay sách ngắn nào."
-                              );
-                            } catch (err) {
-                              inform(err instanceof Error ? err.message : "Chưa dọn được sách mẫu.");
-                            }
+                          onClick={() => {
+                            setConfirm({
+                              title: "Ẩn toàn bộ sách mẫu cũ & sách dưới 20 trang?",
+                              body: "Toàn bộ 24 cuốn sách minh họa cũ và các sách chữ ngắn dưới 20 trang sẽ được chuyển vào mục Lưu trữ. Bạn vẫn có thể khôi phục bất kỳ lúc nào.",
+                              action: async () => {
+                                const res = await request<{ archivedCount: number; archivedIds: string[] }>(
+                                  "/api/admin/content/cleanup-samples",
+                                  { method: "POST", body: JSON.stringify({ includeShortText: true }) }
+                                );
+                                if (res.archivedIds?.length) {
+                                  const idSet = new Set(res.archivedIds);
+                                  setContent((prev) => ({
+                                    ...prev,
+                                    books: prev.books.map((bk) =>
+                                      idSet.has(bk.id) ? { ...bk, status: "archived" } : bk
+                                    ),
+                                  }));
+                                }
+                                inform(
+                                  res.archivedCount
+                                    ? `🧹 Đã ẩn ${res.archivedCount} cuốn sách mẫu cũ & sách dưới 20 trang!`
+                                    : "Thư viện đã sạch — không còn sách mẫu cũ hay sách ngắn nào."
+                                );
+                              },
+                            });
                           }}
                         >
                           <Trash2 size={14} /> Ẩn sách mẫu cũ &amp; sách &lt;20 trang
